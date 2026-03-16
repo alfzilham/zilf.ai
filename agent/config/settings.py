@@ -35,8 +35,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class AgentSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="AGENT_", extra="ignore")
 
-    llm_provider: str = "anthropic"
-    model: str = "claude-sonnet-4-5"
+    llm_provider: str = "ollama"
+    model: str = "deepseek-coder"
     max_steps: int = 30
     tool_timeout: int = 30
     use_planner: bool = True
@@ -98,11 +98,9 @@ class Settings(BaseSettings):
     )
 
     # --- API Keys ---
-    anthropic_api_key: SecretStr = Field(default=SecretStr(""), alias="ANTHROPIC_API_KEY")
-    openai_api_key: SecretStr = Field(default=SecretStr(""), alias="OPENAI_API_KEY")
+    groq_api_key: SecretStr = Field(default=SecretStr(""), alias="GROQ_API_KEY")
     google_api_key: SecretStr = Field(default=SecretStr(""), alias="GOOGLE_API_KEY")
     tavily_api_key: SecretStr = Field(default=SecretStr(""), alias="TAVILY_API_KEY")
-    serpapi_key: SecretStr = Field(default=SecretStr(""), alias="SERPAPI_KEY")
     hf_token: SecretStr = Field(default=SecretStr(""), alias="HF_TOKEN")
 
     # --- Ollama ---

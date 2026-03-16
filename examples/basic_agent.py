@@ -150,14 +150,12 @@ class MockLLM:
 
 def build_agent(use_mock: bool = False) -> Any:
     """
-    Construct the Agent with real or mock LLM.
-
     Priority:
-      1. use_mock=True → MockLLM (no API key needed)
-      2. ANTHROPIC_API_KEY set → AnthropicLLM
-      3. OPENAI_API_KEY set → OpenAILLM
-      4. AGENT_LLM_PROVIDER=ollama → OllamaLLM
-      5. Fallback → MockLLM with warning
+      1. use_mock=True      → MockLLM
+      2. AGENT_LLM_PROVIDER=ollama → OllamaLLM  (default)
+      3. GROQ_API_KEY set   → GroqLLM
+      4. GOOGLE_API_KEY set → GoogleLLM
+      5. Fallback           → MockLLM with warning
     """
     from agent.core.agent import Agent
     from agent.tools.registry import ToolRegistry
@@ -169,13 +167,12 @@ def build_agent(use_mock: bool = False) -> Any:
         llm = MockLLM()
         return Agent(llm=llm, tool_registry=registry, use_planner=False, verbose=True)
 
-    # Try real providers
     from agent.llm.router import LLMRouter
     try:
         llm = LLMRouter.from_env()
         return Agent(llm=llm, tool_registry=registry, use_planner=True, verbose=True)
     except RuntimeError as e:
-        console.print(f"[yellow]⚠ No API key found ({e}). Falling back to MockLLM.[/yellow]")
+        console.print(f"[yellow]⚠ LLM init failed ({e}). Falling back to MockLLM.[/yellow]")
         return Agent(llm=MockLLM(), tool_registry=registry, use_planner=False, verbose=True)
 
 
