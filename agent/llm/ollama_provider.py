@@ -1,5 +1,5 @@
 """
-Ollama provider — run LLMs locally with zero API cost.
+Ollama provider — run LLMs locally with zero API cost. (v2)
 
 Supports any model available via `ollama pull`:
   - llama3, llama3:70b
@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from typing import Any, AsyncIterator
 
 from loguru import logger
@@ -33,22 +34,38 @@ class OllamaLLM(BaseLLM):
 
     Usage::
 
-        llm = OllamaLLM(model="codestral")
+        llm = OllamaLLM(model="llama3")
         response = await llm.generate(messages=[...], tools=[...], system="...")
     """
 
     DEFAULT_MODEL = "llama3"
+
     TOOL_PROMPT_SUFFIX = """
 
-Respond with a JSON object in one of these two formats:
+## MANDATORY RESPONSE FORMAT
 
-To call a tool:
+You MUST respond with a single JSON object. No prose. No markdown. No explanation outside JSON.
+
+### If you need to use a tool (CREATE file, RUN command, READ file, SEARCH web):
 {"action": "tool_call", "tool": "<tool_name>", "input": {<tool_arguments>}, "thought": "<your reasoning>"}
 
-When the task is complete:
-{"action": "final_answer", "answer": "<your final response>", "thought": "<your reasoning>"}
+### If the task is 100% complete and verified:
+{"action": "final_answer", "answer": "<your complete response>", "thought": "<your reasoning>"}
 
-Respond with ONLY the JSON — no markdown, no explanation outside the JSON.
+## CRITICAL RULES:
+1. For ANY task that involves creating a file → use write_file tool FIRST
+2. For ANY task that involves running code → use run_command tool FIRST  
+3. NEVER use final_answer if you haven't called write_file yet for file creation tasks
+4. After write_file → use run_command to verify → THEN use final_answer
+
+## Tool Reference:
+- write_file: {"action": "tool_call", "tool": "write_file", "input": {"path": "/workspace/file.py", "content": "..."}, "thought": "..."}
+- run_command: {"action": "tool_call", "tool": "run_command", "input": {"command": "python /workspace/file.py"}, "thought": "..."}
+- read_file: {"action": "tool_call", "tool": "read_file", "input": {"path": "/workspace/file.py"}, "thought": "..."}
+- list_dir: {"action": "tool_call", "tool": "list_dir", "input": {"directory": "/workspace"}, "thought": "..."}
+- web_search: {"action": "tool_call", "tool": "web_search", "input": {"query": "..."}, "thought": "..."}
+
+START YOUR RESPONSE WITH { AND END WITH }
 """
 
     def __init__(
@@ -123,7 +140,7 @@ Respond with ONLY the JSON — no markdown, no explanation outside the JSON.
             messages=api_messages,
             options={"temperature": self.temperature, "num_predict": max_tokens},
         )
-        return resp["message"]["content"]
+        return resp["message"]["content"] if isinstance(resp, dict) else resp.message.content
 
     # -----------------------------------------------------------------------
     # stream()
@@ -154,11 +171,8 @@ Respond with ONLY the JSON — no markdown, no explanation outside the JSON.
     def _build_system(self, system: str | None, tools: list[dict] | None) -> str:
         parts = [system or "You are a helpful AI coding assistant."]
         if tools:
-            tool_descs = "\n".join(
-                f"- {t['name']}: {t.get('description', '')}"
-                for t in tools
-            )
-            parts.append(f"\n## Available Tools\n{tool_descs}")
+            tool_names = ", ".join(t['name'] for t in tools)
+            parts.append(f"\n## Available Tools: {tool_names}")
         parts.append(self.TOOL_PROMPT_SUFFIX)
         return "\n".join(parts)
 
@@ -196,38 +210,55 @@ Respond with ONLY the JSON — no markdown, no explanation outside the JSON.
         raw_text: str = resp["message"]["content"] if isinstance(resp, dict) else resp.message.content
         raw_text = raw_text.strip()
 
-        # Strip markdown code fences if present
-        import re
+        # Strip markdown code fences
         raw_text = re.sub(r"^```(?:json)?\n?", "", raw_text)
         raw_text = re.sub(r"\n?```$", "", raw_text)
 
-        try:
-            data = json.loads(raw_text)
-        except json.JSONDecodeError:
-            # Model didn't follow the format — treat whole text as final answer
-            logger.warning("[ollama] Could not parse JSON response, treating as final answer.")
-            return LLMResponse(
-                thought=raw_text,
-                action_type=ActionType.FINAL_ANSWER,
-                final_answer=raw_text,
-            )
+        # Try to extract JSON object — find first { to last }
+        start = raw_text.find("{")
+        end = raw_text.rfind("}") + 1
 
-        action = data.get("action", "final_answer")
-        thought = data.get("thought", "")
+        if start != -1 and end > start:
+            json_str = raw_text[start:end]
+            try:
+                data = json.loads(json_str)
+                action = data.get("action", "final_answer")
+                thought = data.get("thought", "")
 
-        if action == "tool_call":
-            tc = ToolCall(
-                tool_name=data.get("tool", ""),
-                tool_input=data.get("input", {}),
-            )
-            return LLMResponse(
-                thought=thought,
-                action_type=ActionType.TOOL_CALL,
-                tool_calls=[tc],
-            )
-        else:
-            return LLMResponse(
-                thought=thought,
-                action_type=ActionType.FINAL_ANSWER,
-                final_answer=data.get("answer", raw_text),
-            )
+                if action == "tool_call":
+                    tool_name = data.get("tool", "")
+                    tool_input = data.get("input", {})
+
+                    # Validate tool call has required fields
+                    if tool_name:
+                        tc = ToolCall(
+                            tool_name=tool_name,
+                            tool_input=tool_input,
+                        )
+                        logger.debug(f"[ollama] Parsed tool_call: {tool_name}({list(tool_input.keys())})")
+                        return LLMResponse(
+                            thought=thought,
+                            action_type=ActionType.TOOL_CALL,
+                            tool_calls=[tc],
+                        )
+
+                # final_answer
+                answer = data.get("answer", "")
+                if not answer:
+                    answer = raw_text
+                return LLMResponse(
+                    thought=thought,
+                    action_type=ActionType.FINAL_ANSWER,
+                    final_answer=answer,
+                )
+
+            except json.JSONDecodeError:
+                pass
+
+        # Model didn't follow JSON format — treat whole text as final answer
+        logger.warning("[ollama] Could not parse JSON response, treating as final answer.")
+        return LLMResponse(
+            thought=raw_text,
+            action_type=ActionType.FINAL_ANSWER,
+            final_answer=raw_text,
+        )
