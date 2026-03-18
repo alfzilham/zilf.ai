@@ -219,3 +219,41 @@ async def get_status(run_id: str) -> dict[str, Any]:
     if run_id not in _tasks:
         raise HTTPException(status_code=404, detail=f"Run ID '{run_id}' not found.")
     return _tasks[run_id]
+
+
+# ---------------------------------------------------------------------------
+# Entry point — dipakai oleh hams CLI (npm install -g @hams-ai/cli)
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    import os
+    import argparse
+    import uvicorn
+
+    parser = argparse.ArgumentParser(description="hams.ai API Server")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("AGENT_PORT", 8000)),
+        help="Port to listen on (default: 8000)",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default=os.environ.get("AGENT_HOST", "127.0.0.1"),
+        help="Host to bind to (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--reload",
+        action="store_true",
+        help="Enable auto-reload for development",
+    )
+    args = parser.parse_args()
+
+    uvicorn.run(
+        "agent.api:app",
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
+        log_level="warning",  # suppress noise saat dijalankan dari CLI
+    )

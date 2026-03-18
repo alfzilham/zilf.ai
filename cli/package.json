@@ -1,0 +1,29 @@
+{
+  "name": "@hams-ai/cli",
+  "version": "1.0.0",
+  "description": "hams.ai — Official CLI for the hams.ai coding agent",
+  "bin": {
+    "hams": "./bin/hams.js"
+  },
+  "main": "./bin/hams.js",
+  "scripts": {
+    "start": "node bin/hams.js"
+  },
+  "keywords": ["hams", "hams-ai", "ai", "agent", "cli", "coding"],
+  "author": "hams.ai",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1",
+    "which": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
