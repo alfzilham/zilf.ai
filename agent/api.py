@@ -6,7 +6,8 @@ Provides:
   POST /run              — submit a task and get the result
   POST /run/stream       — submit a task and stream the response (Server-Sent Events)
   GET  /status/{run_id} — check status of a running task
-  GET  /chat-ui          — web chat interface
+  GET  /chat-ui          — web chat interface (multitask AI)
+  POST /chat             — chat endpoint for the web UI
 
 Run standalone:
     uvicorn agent.api:app --host 0.0.0.0 --port 8000 --reload
@@ -35,7 +36,6 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Allow requests from VS Code extension and local dev tools
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -44,7 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Simple in-memory task registry (replace with Redis in production)
 _tasks: dict[str, dict[str, Any]] = {}
 
 # ---------------------------------------------------------------------------
@@ -86,7 +85,6 @@ _start_time = time.time()
 
 
 def _build_agent(request: RunRequest) -> Any:
-    """Construct an Agent from a RunRequest."""
     from agent.tools.registry import ToolRegistry
     from agent.llm.router import LLMRouter
 
@@ -94,7 +92,6 @@ def _build_agent(request: RunRequest) -> Any:
     try:
         llm = LLMRouter.from_env()
     except RuntimeError:
-        # Fallback for environments without API keys (demo/test)
         from examples.basic_agent import MockLLM
         llm = MockLLM()
 
@@ -109,18 +106,12 @@ def _build_agent(request: RunRequest) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Endpoints
+# System / Agent endpoints
 # ---------------------------------------------------------------------------
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])
 async def health() -> HealthResponse:
-    """
-    Liveness and readiness probe.
-
-    Returns 200 when the API is ready to accept requests.
-    Docker healthcheck and Kubernetes readiness probe hit this endpoint.
-    """
     return HealthResponse(
         status="ok",
         version="0.1.0",
@@ -131,20 +122,11 @@ async def health() -> HealthResponse:
 
 @app.post("/run", response_model=RunResponse, tags=["agent"])
 async def run_task(request: RunRequest) -> RunResponse:
-    """
-    Submit a coding task and wait for the result.
-
-    Blocking — the request stays open until the agent completes.
-    For long tasks use `/run/stream` instead.
-    """
     agent = _build_agent(request)
     t0 = time.perf_counter()
-
     response = await agent.run(request.task)
-
     elapsed = time.perf_counter() - t0
     _tasks[response.run_id] = {"status": response.status.value, "completed": True}
-
     return RunResponse(
         run_id=response.run_id,
         status=response.status.value,
@@ -160,24 +142,10 @@ async def run_task(request: RunRequest) -> RunResponse:
 
 @app.post("/run/stream", tags=["agent"])
 async def run_task_stream(request: RunRequest) -> StreamingResponse:
-    """
-    Submit a task and stream progress as Server-Sent Events.
-
-    Each SSE event contains a JSON payload:
-      {"type": "step", "step": N, "thought": "...", "tool": "...", "observation": "..."}
-      {"type": "complete", "final_answer": "...", "steps": N}
-      {"type": "error", "message": "..."}
-
-    Client example (JavaScript):
-      const es = new EventSource('/run/stream', {method: 'POST', body: JSON.stringify({task: '...'})});
-      es.onmessage = e => console.log(JSON.parse(e.data));
-    """
     import json
 
     async def event_stream() -> AsyncIterator[str]:
         agent = _build_agent(request)
-
-        # Patch the agent's loop to emit SSE events per step
         original_run_step = agent._loop.run_step
 
         async def instrumented_step(state: Any) -> Any:
@@ -195,9 +163,7 @@ async def run_task_stream(request: RunRequest) -> StreamingResponse:
                 }
                 yield f"data: {json.dumps(event)}\n\n"
 
-        # Run the agent with a simple step iterator
         response = await agent.run(request.task)
-
         final_event = {
             "type": "complete" if response.success else "error",
             "run_id": response.run_id,
@@ -217,177 +183,145 @@ async def run_task_stream(request: RunRequest) -> StreamingResponse:
 
 @app.get("/status/{run_id}", tags=["agent"])
 async def get_status(run_id: str) -> dict[str, Any]:
-    """Check the status of a task by run_id."""
     if run_id not in _tasks:
         raise HTTPException(status_code=404, detail=f"Run ID '{run_id}' not found.")
     return _tasks[run_id]
 
 
 # ---------------------------------------------------------------------------
-# /chat-ui  — halaman web chat interface
+# /chat-ui  — serve halaman web chat
 # ---------------------------------------------------------------------------
 
 @app.get("/chat-ui", tags=["chat"], include_in_schema=False)
 async def chat_ui() -> FileResponse:
-    """Serve halaman web chat untuk HAMS.AI."""
+    """Serve halaman web chat multitask HAMS.AI."""
     html_path = os.path.join(os.path.dirname(__file__), "templates", "chat.html")
     return FileResponse(html_path, media_type="text/html")
 
 
 # ---------------------------------------------------------------------------
-# /chat  — endpoint untuk Hams.ai chatbox widget (menggunakan Groq)
+# /chat  — multitask AI endpoint
 # ---------------------------------------------------------------------------
 
 class ChatMessage(BaseModel):
-    role: str        # "user" | "assistant"
+    role: str       # "user" | "assistant"
     content: str
 
 class ChatRequest(BaseModel):
     session_id: str | None = None
     message: str
     history: list[ChatMessage] | None = []
+    model: str | None = Field(
+        default="llama-3.3-70b-versatile",
+        description=(
+            "Model ID. Groq: llama-3.3-70b-versatile, llama-3.1-8b-instant, "
+            "gemma2-9b-it, compound-beta. "
+            "NVIDIA: nvidia/llama-3.3-nemotron-super-49b-v1, "
+            "nvidia/llama-3.1-nemotron-ultra-253b-v1"
+        )
+    )
 
 class ChatResponse(BaseModel):
     session_id: str
     response: str
+    model_used: str
+
+
+# System prompt untuk general AI multitask
+_SYSTEM_PROMPT = """Kamu adalah HAMS.AI — asisten AI serba bisa yang powerful dan cerdas.
+
+## KEMAMPUAN UTAMA
+Kamu bisa melakukan SEMUA hal berikut dengan kualitas tinggi:
+
+1. **Membuat Website & UI**
+   - Buat HTML/CSS/JS lengkap yang langsung bisa dijalankan
+   - Landing page, dashboard, game web, UI component, portfolio
+   - Gunakan teknik modern: flexbox, grid, animasi CSS, gradient, glassmorphism
+   - Kode harus COMPLETE, tidak perlu dipotong, tidak perlu "...tambahkan sendiri..."
+
+2. **Generate Kode Program**
+   - Python, JavaScript, TypeScript, SQL, Bash, dan bahasa lainnya
+   - API backend (FastAPI, Express), script otomasi, algoritma
+   - Selalu sertakan komentar yang jelas dan error handling
+
+3. **Menulis Konten**
+   - Artikel blog, copywriting, deskripsi produk, caption media sosial
+   - Esai, laporan, press release, email profesional
+   - Konten dalam bahasa Indonesia maupun Inggris
+
+4. **Analisis & Riset**
+   - Bandingkan teknologi, framework, tools
+   - Breakdown strategi bisnis, marketing, atau teknis
+   - Buat tabel perbandingan yang jelas
+   - Jelaskan konsep kompleks dengan mudah dipahami
+
+5. **Brainstorming & Ideasi**
+   - Ide konten, nama produk, tagline, konsep desain
+   - Solusi masalah teknis maupun non-teknis
+   - Roadmap dan perencanaan project
+
+## ATURAN RESPONS
+- **Untuk kode HTML/CSS/JS**: selalu tulis LENGKAP dalam satu blok kode, siap digunakan
+- **Untuk artikel/konten**: tulis dengan struktur heading yang jelas (##, ###)
+- **Untuk analisis**: gunakan tabel dan poin-poin terstruktur
+- **Format markdown**: gunakan heading, bold, list, code block, tabel dengan tepat
+- **Bahasa**: ikuti bahasa pengguna (Indonesia atau Inggris)
+- **Kualitas**: prioritaskan output yang akurat, lengkap, dan langsung bisa dipakai
+- Jangan potong kode dengan "// ... tambahkan sendiri" — tulis SEMUA kode
+- Jangan tambahkan disclaimer berlebihan, langsung berikan hasilnya"""
 
 
 @app.post("/chat", response_model=ChatResponse, tags=["chat"])
 async def chat(req: ChatRequest) -> ChatResponse:
     """
-    Endpoint untuk chatbox widget di website.
-    Menggunakan Groq via LLMRouter yang sudah ada di project.
+    Endpoint chat multitask — mendukung pembuatan website, kode, artikel, analisis.
+    Model bisa dipilih dari Groq atau NVIDIA via parameter `model`.
     """
     import uuid as _uuid
     from agent.llm.router import LLMRouter
 
     session_id = req.session_id or str(_uuid.uuid4())
+    model      = req.model or "llama-3.3-70b-versatile"
 
-    # Bangun prompt dari history + pesan baru
-    system_prompt = (
-        "Kamu adalah Hams.ai, asisten AI pribadi milik Alfiz Ilham yang tertanam di website portfolio-nya (www.alfizilham.my.id). "
-        "Tugasmu adalah membantu pengunjung mengenal Alfiz Ilham secara profesional dan menjawab pertanyaan umum dengan ramah.\n\n"
+    # Tentukan provider berdasarkan model
+    is_nvidia = model.startswith("nvidia/")
 
-        "## IDENTITAS\n"
-        "Nama: Alfiz Ilham\n"
-        "Profesi: Frontend UI Developer & Graphic Designer & Kaligrafer\n"
-        "Lokasi: Banda Aceh, Aceh, Indonesia\n"
-        "Email: alfizilham@gmail.com\n"
-        "No. HP/WA: +62 852 1389 6460\n"
-        "Website: www.alfizilham.my.id\n"
-        "Jobstreet: https://id.jobstreet.com/id/profiles/alfiz-ilham-Tz4g3rB6XC\n"
-        "Status: Fresh Graduate, Tersedia untuk Freelance\n\n"
-
-        "## TENTANG\n"
-        "Fresh graduate dari MAS Jeumala Amal (2026) dengan minat kuat di desain grafis dan pengembangan web. "
-        "Berfokus pada tampilan visual yang bersih, terstruktur, dan bermakna. "
-        "Memiliki komunikasi yang baik, disiplin, terbuka terhadap umpan balik, dan siap berkontribusi di lingkungan profesional.\n\n"
-
-        "## PENDIDIKAN\n"
-        "- MTsS Darul Ihsan, Siem Darussalam (Lulus 2023)\n"
-        "- SMKs Darul Ihsan, Siem Darussalam (2023-2024, pindah ke MAS)\n"
-        "- MAS Jeumala Amal, Lueng Putu Pidie Jaya (Lulus 2026)\n\n"
-
-        "## KETERAMPILAN TEKNIS\n"
-        "Frontend: HTML5, CSS3, JavaScript, Tailwind CSS\n"
-        "Desain: Adobe Photoshop, CorelDRAW, Canva, Adobe Illustrator, Adobe Lightroom\n"
-        "Tools: VS Code\n"
-        "Kaligrafi: Kaligrafi Arab (Naskah & Hiasan Mushaf, Diwani Jali)\n"
-        "Windows: Instalasi OS Windows, Troubleshooting, Registry Editor, DiskPart, DxDiag\n\n"
-
-        "## LAYANAN\n"
-        "1. Web Developer — Website modern dengan HTML, CSS, JavaScript, performa cepat dan responsif\n"
-        "2. Graphic Design — Materi visual untuk branding, promosi, media digital\n"
-        "3. Calligraphy — Kaligrafi Arab handmade untuk dekorasi, sertifikat, undangan, karya seni\n"
-        "4. Windows Support — Instalasi dan troubleshooting Windows\n\n"
-
-        "## PROYEK UNGGULAN\n"
-        "Web:\n"
-        "- Grand Place Travel Hero Section — UI website travel menampilkan Masjid Raya Baiturrahman\n"
-        "- Clone Windows XP Portfolio UI — UI portfolio interaktif bergaya Windows XP\n"
-        "- IMTCoffee Menu Interface — UI menu restoran modern\n"
-        "- Nagita Restaurant Landing Page — Landing page restoran dengan CTA reservasi\n"
-        "- Luminous Living Glass UI — Konsep UI glassmorphism untuk website interior\n"
-        "- TypeDash Typing Game — Game mengetik interaktif\n"
-        "- Futuristic Cyberpunk Landing Page — Landing page bertema cyberpunk dengan animasi neon\n"
-        "- Cosmic Exploration Landing Page — Landing page luar angkasa dengan THREE.js\n"
-        "- Portfolio Website (www.alfizilham.my.id) — Website portfolio pribadi ini sendiri\n\n"
-        "Desain Grafis:\n"
-        "- Poster Umrah VIP, Poster Travel 3 Negara, Poster Thailand — untuk Imam Travel\n"
-        "- Logo Meuhase Jeumala 28\n"
-        "- Poster Donasi Banjir, Spanduk Pusaka Peduli\n"
-        "- Mockup Piagam Penghargaan\n\n"
-        "Kaligrafi:\n"
-        "- Hiasan Mushaf Batik\n"
-        "- Kaligrafi Hiasan Mushaf Nuansa Hijau & Biru Elegan\n"
-        "- Kaligrafi Naskah Dekoratif Latar Biru (Ayat Kursi)\n"
-        "- Kaligrafi Rainbow Scratch Paper\n"
-        "- Custom Rainbow Scratch Paper Calligraphy (pesanan klien)\n\n"
-
-        "## PENGALAMAN\n"
-        "- Desainer Freelance di Imam Travel (Juni 2025 - Sekarang): Desain poster promosi wisata\n"
-        "- Anggota Dept. Dekorasi OSMID Jeumala Amal (2025-2026): Desain poster/banner acara, "
-        "dekorasi edukatif, instalasi Windows, troubleshooting komputer\n\n"
-
-        "## SERTIFIKAT & PRESTASI\n"
-        "- Juara II Kaligrafi Hiasan Mushaf Penegak MTR-XXIV 2025, Meulaboh\n"
-        "- Sertifikat Anggota Dept. Dekorasi OSMID 2025-2026\n"
-        "- Peserta OMSDJA ke-V 2025 (Olimpiade Matematika & Sains Dayah Jeumala Amal)\n"
-        "- Sertifikat Tahfiz 2 Juz Gema Ramadhan 2025\n"
-        "- Peserta & Piagam KPMN 2024 (Kemah Pramuka Madrasah Nasional), Cibubur Jakarta\n\n"
-
-        "## BAHASA\n"
-        "- Bahasa Indonesia (Penutur Asli)\n"
-        "- Bahasa Arab (Menengah)\n"
-        "- Bahasa Inggris (Menengah)\n\n"
-
-        "## FAQ (Jawab sesuai ini jika ditanya)\n"
-        "- Layanan: Web Dev, Graphic Design, Kaligrafi, Windows Support\n"
-        "- Proses: Diskusi → Konsep → Desain/Dev → Revisi → Finalisasi\n"
-        "- Waktu: Beberapa hari (desain sederhana) hingga beberapa minggu (website/karya detail)\n"
-        "- Revisi: Tersedia sesuai kesepakatan awal\n"
-        "- Pembayaran: DP di awal, pelunasan setelah selesai (bisa disesuaikan)\n"
-        "- Kolaborasi: Terbuka untuk project custom dan kolaborasi\n\n"
-
-        "## ATURAN MENJAWAB\n"
-        "- Jawab dalam bahasa yang sama dengan pengguna (Indonesia/Inggris/Arab).\n"
-        "- Untuk pertanyaan tentang Alfiz, jawab akurat berdasarkan info di atas.\n"
-        "- Jika ditanya kontak, berikan email dan nomor HP.\n"
-        "- Untuk pertanyaan umum (coding, desain, dll), tetap bantu dengan ramah.\n"
-        "- Jangan mengarang informasi yang tidak ada di atas.\n"
-        "- Tetap singkat, jelas, dan profesional."
-    )
-
-    # Gabungkan history menjadi konteks
-    context = ""
+    # Bangun full prompt: system + history + pesan baru
+    history_text = ""
     for msg in (req.history or []):
         prefix = "User" if msg.role == "user" else "Assistant"
-        context += f"{prefix}: {msg.content}\n"
+        history_text += f"{prefix}: {msg.content}\n"
 
-    full_prompt = f"{system_prompt}\n\n{context}User: {req.message}\nAssistant:"
+    full_prompt = f"{_SYSTEM_PROMPT}\n\n{history_text}User: {req.message}\nAssistant:"
 
     try:
         hams_key = os.environ.get("HAMS_MAX_API_KEY")
+
         if hams_key:
             from agent.llm.hams_max_provider import HamsMaxLLM
-            llm = HamsMaxLLM(model="groq")
+            # Pass model langsung ke HAMS-MAX provider
+            llm = HamsMaxLLM(model=model)
         else:
             llm = LLMRouter.from_env()
 
         messages = [{"role": "user", "content": full_prompt}]
         reply = await llm.generate_text(
             messages=messages,
-            max_tokens=1024,
+            max_tokens=4096,   # lebih besar untuk output panjang (website, artikel)
         )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    return ChatResponse(session_id=session_id, response=reply.strip())
+    return ChatResponse(
+        session_id=session_id,
+        response=reply.strip(),
+        model_used=model,
+    )
 
 
 # ---------------------------------------------------------------------------
-# Entry point — dipakai oleh hams CLI (npm install -g @hams-ai/cli)
+# Entry point
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -395,23 +329,9 @@ if __name__ == "__main__":
     import uvicorn
 
     parser = argparse.ArgumentParser(description="hams.ai API Server")
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=int(os.environ.get("AGENT_PORT", 8000)),
-        help="Port to listen on (default: 8000)",
-    )
-    parser.add_argument(
-        "--host",
-        type=str,
-        default=os.environ.get("AGENT_HOST", "127.0.0.1"),
-        help="Host to bind to (default: 127.0.0.1)",
-    )
-    parser.add_argument(
-        "--reload",
-        action="store_true",
-        help="Enable auto-reload for development",
-    )
+    parser.add_argument("--port",   type=int, default=int(os.environ.get("AGENT_PORT", 8000)))
+    parser.add_argument("--host",   type=str, default=os.environ.get("AGENT_HOST", "127.0.0.1"))
+    parser.add_argument("--reload", action="store_true")
     args = parser.parse_args()
 
     uvicorn.run(
@@ -419,5 +339,5 @@ if __name__ == "__main__":
         host=args.host,
         port=args.port,
         reload=args.reload,
-        log_level="warning",  # suppress noise saat dijalankan dari CLI
+        log_level="warning",
     )
