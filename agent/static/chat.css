@@ -95,7 +95,7 @@ body>* {
     inset: 0;
     z-index: -10;
     pointer-events: none;
-    opacity: 0.15;
+    opacity: 0.30;
     width: 100%;
     height: 100%;
 }
@@ -650,13 +650,14 @@ body>* {
     width: 130px;
     height: 130px;
     border-radius: 50%;
-    background: radial-gradient(circle at 38% 35%,
-            #e8e0ff 0%, #c4b4f8 12%, #a090f0 28%,
-            #7860d8 50%, #5040b0 72%, #20154a 100%);
+    background: radial-gradient(circle at 32% 28%,
+        #ffffff 0%, #f0f0f0 6%, #d8d8d8 16%,
+        #a0a0a0 35%, #606060 58%, #1a1a1a 100%);
     box-shadow:
-        0 0 50px rgba(155, 142, 248, 0.4),
-        0 0 100px rgba(100, 80, 220, 0.2),
-        inset 0 0 30px rgba(255, 255, 255, 0.06);
+        0 0 60px rgba(255,255,255,0.18),
+        0 0 120px rgba(200,200,200,0.08),
+        inset 0 2px 4px rgba(255,255,255,0.5),
+        inset 0 0 40px rgba(0,0,0,0.4);
     animation: orbFloat 6s ease-in-out infinite;
     position: relative;
     overflow: hidden;
@@ -664,11 +665,9 @@ body>* {
 
 .orb-highlight {
     position: absolute;
-    top: 10%;
-    left: 15%;
-    width: 32%;
-    height: 24%;
-    background: radial-gradient(ellipse, rgba(255, 255, 255, 0.55) 0%, transparent 70%);
+    top: 8%; left: 12%;
+    width: 38%; height: 28%;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.1) 60%, transparent 100%);
     border-radius: 50%;
     transform: rotate(-30deg);
     pointer-events: none;
@@ -679,43 +678,35 @@ body>* {
     position: absolute;
     inset: -18px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(155, 142, 248, 0.14) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
     animation: orbGlow 4s ease-in-out infinite alternate;
-}
-
-.orb-eyes {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    gap: 22px;
-    margin-top: -4px;
-    pointer-events: none;
 }
 
 .orb-eye {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: rgba(10, 8, 30, 0.85);
-    border: 2px solid rgba(200, 190, 255, 0.25);
+    background: radial-gradient(circle at 40% 35%, #1a1a2e, #000000);
+    border: 1.5px solid rgba(255,255,255,0.3);
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+    box-shadow:
+        inset 0 1px 3px rgba(0,0,0,0.8),
+        0 0 8px rgba(255,255,255,0.15);
+    transition: transform 0.08s linear;
 }
 
 .orb-pupil {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #7a6ae8, #1a0a50);
+    background: radial-gradient(circle at 35% 35%, #555555, #000000);
     position: absolute;
     transition: transform 0.06s linear;
-    box-shadow: 0 0 4px rgba(155, 142, 248, 0.6);
+    box-shadow: 0 0 4px rgba(255,255,255,0.2);
 }
 
 .orb-pupil-shine {

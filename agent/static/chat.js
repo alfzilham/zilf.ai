@@ -215,21 +215,32 @@ function initOrbEyes() {
     const eyes = document.querySelectorAll('.orb-eye');
     if (!pupils.length) return;
 
-    const MAX_TRAVEL = 4;
+    const MAX_PUPIL = 3;
+    const MAX_EYE = 5;
 
     function trackCursor(e) {
         const cx = window.innerWidth / 2;
         const cy = window.innerHeight / 2;
         const clientX = e.clientX ?? (e.touches?.[0]?.clientX ?? cx);
         const clientY = e.clientY ?? (e.touches?.[0]?.clientY ?? cy);
+
         const dx = clientX - cx;
         const dy = clientY - cy;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const travel = Math.min(dist / 120, 1) * MAX_TRAVEL;
-        const nx = (dx / dist) * travel;
-        const ny = (dy / dist) * travel;
+        const norm = Math.min(dist / 120, 1);
+
+        // Eye moves
+        const ex = (dx / dist) * norm * MAX_EYE;
+        const ey = (dy / dist) * norm * MAX_EYE;
+        eyes.forEach(eye => {
+            eye.style.transform = `translate(${ex}px, ${ey}px)`;
+        });
+
+        // Pupil moves inside eye (smaller range)
+        const px = (dx / dist) * norm * MAX_PUPIL;
+        const py = (dy / dist) * norm * MAX_PUPIL;
         pupils.forEach(p => {
-            p.style.transform = `translate(${nx}px, ${ny}px)`;
+            p.style.transform = `translate(${px}px, ${py}px)`;
         });
     }
 
