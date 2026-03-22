@@ -25,7 +25,12 @@ from typing import Any, AsyncIterator
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+# ---------------------------------------------------------------------------
+# App setup — urutan PENTING: buat app → middleware → mount static
+# ---------------------------------------------------------------------------
 
 app = FastAPI(title="Hams AI", version="0.3.0")
 
@@ -36,6 +41,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="agent/static"), name="static")
+
+# ---------------------------------------------------------------------------
 
 _tasks: dict[str, dict[str, Any]] = {}
 _start_time = time.time()
@@ -71,7 +80,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     session_id: str
     response: str
-    thinking: str | None = None   # hanya ada kalau extended=True
+    thinking: str | None = None
     model_used: str
     extended: bool
 
@@ -220,12 +229,6 @@ async def chat_ui() -> FileResponse:
 
 @app.post("/chat", response_model=ChatResponse, tags=["chat"])
 async def chat(req: ChatRequest) -> ChatResponse:
-    """
-    Chat endpoint dengan optional Extended Thinking.
-
-    - extended=false (default): jawaban langsung
-    - extended=true: AI berpikir keras dulu, response termasuk field `thinking`
-    """
     session_id = req.session_id or str(uuid.uuid4())
     model      = req.model or "llama-3.3-70b-versatile"
 
@@ -250,7 +253,6 @@ async def chat(req: ChatRequest) -> ChatResponse:
     response_text: str
 
     if req.extended:
-        # generate_text dengan extended=True return JSON string
         try:
             parsed        = json.loads(raw)
             thinking      = parsed.get("thinking", "") or None
@@ -305,11 +307,6 @@ async def agent_run(req: AgentRunRequest) -> AgentRunResponse:
 
 @app.post("/agent/stream", tags=["agent"])
 async def agent_stream(req: AgentRunRequest) -> StreamingResponse:
-    """
-    Agentic task dengan real-time SSE streaming.
-
-    Events: start | step | tool_result | final | error
-    """
     model = req.model or "llama-3.3-70b-versatile"
 
     async def event_stream() -> AsyncIterator[str]:

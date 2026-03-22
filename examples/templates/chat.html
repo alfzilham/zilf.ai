@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HAMS.AI</title>
+    <link rel="icon" href="favicon/apple-icon.png">
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/chat.css" />
+</head>
+
+<body>
+
+    <!-- ══════════════════════════════════════
+     SIDEBAR OVERLAY (mobile backdrop)
+══════════════════════════════════════ -->
+    <div id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ══════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════ -->
+    <div id="sidebar">
+
+        <!-- Logo -->
+        <div class="sidebar-logo">
+            <div class="logo-icon"><i class="bi bi-stars"></i></div>
+            HAMS<span class="logo-dot">.AI</span>
+        </div>
+
+        <!-- Search -->
+        <div class="sidebar-search">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search chats" id="searchInput" autocomplete="off" />
+            <span class="search-kbd">⌘K</span>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+            <div class="nav-item active" id="navHome" onclick="clearChat()">
+                <i class="bi bi-house-door"></i> Home
+            </div>
+            <div class="nav-item" id="navChat" onclick="setMode('chat'); closeSidebar()">
+                <i class="bi bi-chat-dots"></i> Chat
+            </div>
+            <div class="nav-item" id="navAgent" onclick="setMode('agent'); closeSidebar()">
+                <i class="bi bi-lightning-charge"></i> Agent
+            </div>
+            <div class="nav-item">
+                <i class="bi bi-compass"></i> Explore
+            </div>
+            <div class="nav-item">
+                <i class="bi bi-clock-history"></i> History
+            </div>
+        </nav>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Chat history -->
+        <div class="sidebar-history" id="historyList">
+            <div class="history-group-label">Today</div>
+            <div class="history-item">Buat landing page kopi premium</div>
+            <div class="history-item">Analisis React vs Vue vs Svelte</div>
+            <div class="history-item">REST API FastAPI dengan JWT auth</div>
+
+            <div class="history-group-label">Yesterday</div>
+            <div class="history-item">Script monitoring sistem Python</div>
+            <div class="history-item">Artikel tren AI 2025</div>
+            <div class="history-item">Debug authentication middleware</div>
+
+            <div class="history-group-label">7 Days Ago</div>
+            <div class="history-item">Setup project FastAPI lengkap</div>
+            <div class="history-item">Perbandingan NVIDIA vs Groq models</div>
+        </div>
+
+        <!-- Bottom actions -->
+        <div class="sidebar-bottom">
+            <div class="nav-item" onclick="toggleTheme()">
+                <i class="bi bi-sun" id="themeIcon"></i> Theme
+            </div>
+        </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- ══════════════════════════════════════
+     MAIN AREA
+══════════════════════════════════════ -->
+    <div id="main">
+
+        <!-- Topbar -->
+        <div id="topbar">
+
+            <!-- Hamburger (mobile only) -->
+            <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <!-- Model selector -->
+            <div class="model-dropdown">
+                <i class="bi bi-cpu model-icon"></i>
+                <select id="modelSelect">
+                    <optgroup label="Groq — Fast">
+                        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+                        <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
+                        <option value="gemma2-9b-it">Gemma 2 9B</option>
+                        <option value="compound-beta">Compound Beta</option>
+                    </optgroup>
+                    <optgroup label="NVIDIA — Powerful">
+                        <option value="nvidia/llama-3.3-nemotron-super-49b-v1">Nemotron Super 49B</option>
+                        <option value="nvidia/llama-3.1-nemotron-ultra-253b-v1">Nemotron Ultra 253B</option>
+                    </optgroup>
+                </select>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </div>
+
+            <div class="topbar-spacer"></div>
+
+            <!-- Mode toggle -->
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="btnChat" onclick="setMode('chat')">
+                    <i class="bi bi-chat-dots"></i>
+                    <span>Chat</span>
+                </button>
+                <button class="mode-btn agent" id="btnAgent" onclick="setMode('agent')">
+                    <i class="bi bi-lightning-charge"></i>
+                    <span>Agent</span>
+                </button>
+            </div>
+
+            <!-- Extended thinking toggle -->
+            <div class="ext-pill" id="extPill" onclick="toggleExtended()" title="Extended Thinking">
+                <span>Extended</span>
+                <div class="ext-switch"></div>
+            </div>
+
+            <!-- New chat -->
+            <button class="tb-btn" onclick="clearChat()" title="New chat">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+
+        </div><!-- /topbar -->
+
+        <!-- ── Content area ── -->
+        <div id="content">
+
+            <!-- Welcome screen -->
+            <div id="welcome">
+
+                <!-- Interactive Orb -->
+                <div class="orb-wrap" id="orbWrap">
+                    <div class="orb" id="orb">
+                        <div class="orb-highlight"></div>
+                        <div class="orb-eyes">
+                            <div class="orb-eye" id="eyeLeft">
+                                <div class="orb-pupil" id="pupilLeft">
+                                    <div class="orb-pupil-shine"></div>
+                                </div>
+                            </div>
+                            <div class="orb-eye" id="eyeRight">
+                                <div class="orb-pupil" id="pupilRight">
+                                    <div class="orb-pupil-shine"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="welcome-greeting">
+                    Good <span id="greetPart">Evening</span>,
+                    <span class="greeting-name">HAMS.AI</span>.<br />
+                    Can I help you with anything?
+                </div>
+                <div class="welcome-sub">Powered by HAMS-MAX — Groq &amp; NVIDIA models</div>
+
+                <!-- Feature cards (updated by JS based on mode) -->
+                <div class="feature-cards" id="featureCards">
+                    <div class="feature-card"
+                        onclick="sendSuggestion('Buatkan landing page modern untuk produk kopi premium, HTML CSS JS lengkap dengan animasi.')">
+                        <div class="feature-card-title"><i class="bi bi-globe2" style="color:var(--accent)"></i>
+                            &nbsp;Buat Website</div>
+                        <div class="feature-card-desc">Landing page, dashboard, UI component, dan animasi interaktif
+                            siap pakai.</div>
+                    </div>
+                    <div class="feature-card"
+                        onclick="sendSuggestion('Buatkan REST API FastAPI Python untuk todo list dengan CRUD dan auth JWT, kode lengkap.')">
+                        <div class="feature-card-title"><i class="bi bi-code-slash" style="color:var(--accent)"></i>
+                            &nbsp;Generate Kode</div>
+                        <div class="feature-card-desc">Python, JS, SQL, API — kode lengkap dengan komentar dan error
+                            handling.</div>
+                    </div>
+                    <div class="feature-card"
+                        onclick="sendSuggestion('Analisis perbandingan React vs Vue vs Svelte untuk startup kecil: performa, ekosistem, rekomendasi.')">
+                        <div class="feature-card-title"><i class="bi bi-bar-chart-line" style="color:var(--accent)"></i>
+                            &nbsp;Analisis &amp; Riset</div>
+                        <div class="feature-card-desc">Perbandingan teknologi, strategi, breakdown mendalam, dan
+                            rekomendasi aksi.</div>
+                    </div>
+                </div>
+
+            </div><!-- /welcome -->
+
+            <!-- Chat messages -->
+            <div id="chatBox"></div>
+
+        </div><!-- /content -->
+
+        <!-- ── Input area ── -->
+        <div id="inputArea">
+            <div class="input-card">
+                <textarea id="userInput" rows="1" placeholder="Message AI Chat..." onkeydown="handleKey(event)"
+                    oninput="autoResize(this)" autocomplete="off"></textarea>
+                <div class="input-actions">
+                    <!-- Attach -->
+                    <button class="input-icon-btn" title="Attach file">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    <!-- Create image -->
+                    <button class="input-action-btn" onclick="sendSuggestion('Buatkan ilustrasi SVG yang menarik: ')">
+                        <i class="bi bi-image"></i>
+                        <span>Create an image</span>
+                    </button>
+                    <!-- Agent mode shortcut -->
+                    <button class="input-action-btn" onclick="setModeAndFocus('agent')">
+                        <i class="bi bi-globe2"></i>
+                        <span>Agent mode</span>
+                    </button>
+                    <div class="input-actions-spacer"></div>
+                    <!-- Send -->
+                    <button id="sendBtn" onclick="sendMessage()" title="Send">
+                        <i class="bi bi-arrow-up"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="input-hint">
+                Enter kirim &nbsp;·&nbsp; Shift+Enter baris baru &nbsp;·&nbsp;
+                Mode: <span id="modeHint">Chat</span> &nbsp;·&nbsp;
+                <span id="extHint" style="color:var(--text-3)">Extended Off</span>
+            </div>
+        </div><!-- /inputArea -->
+
+    </div><!-- /main -->
+
+    <!-- ══════════════════════════════════════
+     PREVIEW MODAL
+══════════════════════════════════════ -->
+    <div id="previewModal">
+        <div class="preview-box">
+            <div class="preview-head">
+                <div class="preview-title">
+                    <i class="bi bi-window" style="color:var(--green)"></i>
+                    Live Preview
+                </div>
+                <button class="preview-close-btn" onclick="closePreview()">
+                    <i class="bi bi-x-lg"></i> Tutup
+                </button>
+            </div>
+            <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"></div>
+
+    <!-- Script -->
+    <script src="/static/chat.js"></script>
+
+</body>
+
+</html>
