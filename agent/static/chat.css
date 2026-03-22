@@ -234,6 +234,77 @@ body {
     color: var(--text);
 }
 
+/* History dynamic items */
+.history-group {
+    margin-bottom: 8px;
+}
+
+.history-date {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-3);
+    letter-spacing: .08em;
+    padding: 8px 12px 4px;
+    text-transform: uppercase;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-2);
+    transition: background .15s;
+    gap: 8px;
+}
+
+.history-item:hover {
+    background: var(--bg-3);
+    color: var(--text-1);
+}
+
+.history-item.active {
+    background: var(--bg-3);
+    color: var(--accent);
+}
+
+.history-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-del {
+    background: none;
+    border: none;
+    color: var(--text-3);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity .15s;
+    font-size: 13px;
+}
+
+.history-item:hover .history-del {
+    opacity: 1;
+}
+
+.history-del:hover {
+    color: var(--red, #ff4d4f);
+}
+
+.history-empty {
+    font-size: 12px;
+    color: var(--text-3);
+    padding: 12px;
+    text-align: center;
+}
+
 .sidebar-bottom {
     padding: 10px 8px;
     border-top: 1px solid var(--border);

@@ -8,6 +8,7 @@ let sessionId = null;
 let isLoading = false;
 let mode = 'chat';
 let extended = false;
+let currentChatId = null;
 
 // ── Init ────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,7 +26,156 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Auto-blink loop
     scheduleNextBlink();
+
+    // Load sidebar history
+    renderHistoryList();
+
+    // Search input
+    document.getElementById('searchInput')?.addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.style.display =
+                item.querySelector('.history-title')?.textContent.toLowerCase().includes(q)
+                    ? '' : 'none';
+        });
+    });
 });
+
+// ═══════════════════════════════════════════════
+// HISTORY — localStorage helpers
+// ═══════════════════════════════════════════════
+const HISTORY_KEY = 'hams_chat_history';
+const MAX_HISTORY = 50;
+
+function loadAllChats() {
+    try {
+        return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    } catch { return []; }
+}
+
+function saveAllChats(chats) {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(chats));
+}
+
+function saveChatToHistory(title, msgs) {
+    const chats = loadAllChats();
+    const now = new Date();
+
+    if (currentChatId) {
+        // Update existing
+        const idx = chats.findIndex(c => c.id === currentChatId);
+        if (idx !== -1) {
+            chats[idx].messages = msgs;
+            chats[idx].title = title;
+            chats[idx].updatedAt = now.toISOString();
+            saveAllChats(chats);
+            renderHistoryList();
+            return;
+        }
+    }
+
+    // New entry
+    currentChatId = Date.now().toString();
+    chats.unshift({
+        id: currentChatId,
+        title,
+        messages: msgs,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+    });
+    saveAllChats(chats.slice(0, MAX_HISTORY));
+    renderHistoryList();
+}
+
+function deleteChatFromHistory(id, e) {
+    e.stopPropagation();
+    const chats = loadAllChats().filter(c => c.id !== id);
+    saveAllChats(chats);
+    if (currentChatId === id) clearChat();
+    else renderHistoryList();
+}
+
+function getDateLabel(isoStr) {
+    const d = new Date(isoStr);
+    const now = new Date();
+    const diff = (now - d) / 1000;
+    if (diff < 86400 && now.getDate() === d.getDate()) return 'TODAY';
+    if (diff < 172800) return 'YESTERDAY';
+    const days = Math.floor(diff / 86400);
+    if (days <= 7) return '7 DAYS AGO';
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
+}
+
+function renderHistoryList() {
+    const container = document.getElementById('historyList');
+    if (!container) return;
+
+    const chats = loadAllChats();
+    if (!chats.length) {
+        container.innerHTML = '<div class="history-empty">Belum ada riwayat chat</div>';
+        return;
+    }
+
+    // Group by date label
+    const groups = {};
+    chats.forEach(chat => {
+        const label = getDateLabel(chat.updatedAt || chat.createdAt);
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(chat);
+    });
+
+    container.innerHTML = '';
+    Object.entries(groups).forEach(([label, items]) => {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'history-group';
+        groupEl.innerHTML = `<div class="history-date">${label}</div>`;
+
+        items.forEach(chat => {
+            const item = document.createElement('div');
+            item.className = 'history-item' + (chat.id === currentChatId ? ' active' : '');
+            item.dataset.id = chat.id;
+            item.innerHTML = `
+                <span class="history-title">${escHtml(chat.title)}</span>
+                <button class="history-del" title="Hapus" onclick="deleteChatFromHistory('${chat.id}', event)">
+                    <i class="bi bi-x"></i>
+                </button>`;
+            item.addEventListener('click', () => restoreChat(chat.id));
+            groupEl.appendChild(item);
+        });
+
+        container.appendChild(groupEl);
+    });
+}
+
+function restoreChat(id) {
+    const chats = loadAllChats();
+    const chat = chats.find(c => c.id === id);
+    if (!chat) return;
+
+    // Reset state
+    history = [];
+    sessionId = null;
+    currentChatId = id;
+
+    const box = document.getElementById('chatBox');
+    box.innerHTML = '';
+    document.getElementById('welcome').style.display = 'none';
+    box.classList.add('active');
+
+    // Replay messages
+    chat.messages.forEach(msg => {
+        if (msg.role === 'user') {
+            appendMsg('user', msg.content);
+        } else if (msg.role === 'assistant') {
+            appendMsg('ai', msg.content, msg.thinking || null);
+        }
+        history.push({ role: msg.role, content: msg.content });
+    });
+
+    box.scrollTop = box.scrollHeight;
+    renderHistoryList();
+    closeSidebar();
+}
 
 // ═══════════════════════════════════════════════
 // THEME
@@ -65,26 +215,19 @@ function initOrbEyes() {
     const eyes = document.querySelectorAll('.orb-eye');
     if (!pupils.length) return;
 
-    // Max pupil travel in px (relative to eye center)
     const MAX_TRAVEL = 4;
 
     function trackCursor(e) {
         const cx = window.innerWidth / 2;
         const cy = window.innerHeight / 2;
-
-        // Use viewport center as reference when cursor is anywhere on page
         const clientX = e.clientX ?? (e.touches?.[0]?.clientX ?? cx);
         const clientY = e.clientY ?? (e.touches?.[0]?.clientY ?? cy);
-
         const dx = clientX - cx;
         const dy = clientY - cy;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-
-        // Normalize & clamp
         const travel = Math.min(dist / 120, 1) * MAX_TRAVEL;
         const nx = (dx / dist) * travel;
         const ny = (dy / dist) * travel;
-
         pupils.forEach(p => {
             p.style.transform = `translate(${nx}px, ${ny}px)`;
         });
@@ -97,7 +240,7 @@ function initOrbEyes() {
 // ── Blink ──
 let blinkTimeout;
 function scheduleNextBlink() {
-    const delay = 2000 + Math.random() * 4000; // 2–6s
+    const delay = 2000 + Math.random() * 4000;
     blinkTimeout = setTimeout(doBlink, delay);
 }
 function doBlink() {
@@ -140,7 +283,6 @@ function setMode(m) {
 
     updateFeatureCards(m);
 
-    // Update active nav
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const targetNav = m === 'agent'
         ? document.getElementById('navAgent')
@@ -252,7 +394,6 @@ function parseMarkdown(raw) {
         return `<p>${c.replace(/\n/g, '<br>')}</p>`;
     }).join('\n');
 
-    // Restore code blocks
     return text.replace(/%%CB(\d+)%%/g, (_, i) => buildCodeBlock(codeBlocks[i]));
 }
 
@@ -436,9 +577,14 @@ async function sendChat(text, model) {
         const thinking = data.thinking || null;
 
         history.push({ role: 'user', content: text });
-        history.push({ role: 'assistant', content: reply });
+        history.push({ role: 'assistant', content: reply, thinking });
         removeTyping();
         appendMsg('ai', reply, thinking);
+
+        // Save to localStorage — title = first user message (max 50 chars)
+        const title = history.find(m => m.role === 'user')?.content?.slice(0, 50) || text.slice(0, 50);
+        saveChatToHistory(title, history);
+
     } catch (err) {
         removeTyping();
         appendMsg('ai', `⚠️ **Error:** ${err.message}`);
@@ -452,7 +598,6 @@ async function sendChat(text, model) {
 async function sendAgent(text, model) {
     const box = showContent();
 
-    // Build agent UI block
     const row = document.createElement('div'); row.className = 'msg-row ai';
     const av = document.createElement('div'); av.className = 'avatar ai';
     av.innerHTML = '<i class="bi bi-stars"></i>';
@@ -493,7 +638,7 @@ async function sendAgent(text, model) {
                 if (!line.startsWith('data: ')) continue;
                 try {
                     const event = JSON.parse(line.slice(6));
-                    handleAgentEvent(event, blk, statusBanner);
+                    handleAgentEvent(event, blk, statusBanner, text);
                     box.scrollTop = box.scrollHeight;
                 } catch (_) { }
             }
@@ -505,7 +650,7 @@ async function sendAgent(text, model) {
     }
 }
 
-function handleAgentEvent(ev, block, statusBanner) {
+function handleAgentEvent(ev, block, statusBanner, taskText) {
     const st = document.getElementById('agentStatusText');
 
     if (ev.type === 'start') {
@@ -558,8 +703,12 @@ function handleAgentEvent(ev, block, statusBanner) {
         card.appendChild(fb);
         block.appendChild(card);
 
-        history.push({ role: 'user', content: '' });
+        history.push({ role: 'user', content: taskText || '' });
         history.push({ role: 'assistant', content: ev.answer || '' });
+
+        // Save to localStorage
+        const title = (taskText || ev.answer || '').slice(0, 50);
+        saveChatToHistory(title, history);
 
     } else if (ev.type === 'error') {
         statusBanner.innerHTML =
@@ -604,12 +753,14 @@ function sendSuggestion(text) {
 function clearChat() {
     history = [];
     sessionId = null;
+    currentChatId = null;
     const box = document.getElementById('chatBox');
     box.innerHTML = '';
     box.classList.remove('active');
     document.getElementById('welcome').style.display = 'flex';
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('navHome')?.classList.add('active');
+    renderHistoryList();
     closeSidebar();
 }
 
