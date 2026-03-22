@@ -16,6 +16,7 @@ Or via CLI:
 
 from __future__ import annotations
 
+import os
 import asyncio
 import time
 import uuid
