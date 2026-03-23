@@ -144,5 +144,7 @@ class HamsMaxBase(BaseLLM):
                 headers=self._headers(),
                 json=payload,
             )
+            if resp.status_code != 200:
+                logger.error(f"[hams-max] {resp.status_code} — body: {resp.text[:1000]}")
             resp.raise_for_status()
             return resp.json().get("reply", "")
