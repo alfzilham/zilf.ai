@@ -71,53 +71,46 @@ _FRONTEND_TO_HAMSMAX: dict[str, tuple[str, str]] = {
 
 # ── System prompts ─────────────────────────────────────────────────────────
 
-_REACT_SYSTEM = """You are an autonomous AI agent. Complete tasks step-by-step using tools.
+# FIX: _REACT_SYSTEM sekarang tipis — hanya wrapper format XML.
+# base_system dari reasoning_loop.py diletakkan di ATAS agar tidak tertimpa.
+_REACT_SYSTEM = """{base_system}
 
-CRITICAL: You MUST use tools to complete the task. Do NOT give a final answer until the task is truly complete.
+## TOOL CALLING FORMAT (WAJIB IKUTI PERSIS)
 
-## RESPONSE FORMAT — FOLLOW EXACTLY
-
-To call a tool (use this when you need to do something):
-<thought>Your reasoning here</thought>
+Untuk memanggil tool:
+<thought>Alasan mengapa tool ini diperlukan</thought>
 <action>tool_call</action>
-<tool>exact_tool_name</tool>
+<tool>nama_tool_persis</tool>
 <args>{{"param": "value"}}</args>
 
-To give final answer (ONLY when task is 100% complete):
-<thought>Task is complete because...</thought>
+Untuk final answer (HANYA setelah task selesai 100%):
+<thought>Task selesai karena...</thought>
 <action>final_answer</action>
-<answer>Your complete answer here</answer>
+<answer>Jawaban lengkap di sini</answer>
 
-## STRICT RULES
-- ALWAYS use XML tags exactly as shown above
-- NEVER write tool names outside of <tool> tags
-- NEVER write JSON outside of <args> tags
-- NEVER give final_answer if you haven't used any tools yet
-- Use final_answer ONLY after completing all necessary tool calls
-- One tool call per response
+## ATURAN KETAT
+- SELALU gunakan XML tags persis seperti di atas
+- JANGAN tulis nama tool di luar tag <tool>
+- JANGAN tulis JSON di luar tag <args>
+- JANGAN beri final_answer sebelum menggunakan tool yang diperlukan
+- Satu tool call per respons
+- <answer> hanya boleh berisi teks jawaban, BUKAN tool call
 
-## AVAILABLE TOOLS
-{tools_text}
+## DAFTAR TOOL TERSEDIA
+{tools_text}"""
 
-{base_system}"""
+# Extended thinking: inject sebelum format instructions
+_EXTENDED_THINKING_PROMPT = """Sebelum menjawab, pikirkan secara mendalam di dalam tag <think>...</think>.
+Gunakan ruang berpikir ini untuk:
+- Uraikan masalah langkah demi langkah
+- Pertimbangkan berbagai pendekatan dan trade-off
+- Rencanakan tool mana yang akan digunakan dan dalam urutan apa
+- Pastikan jawaban sudah lengkap sebelum memberi final_answer
 
-# Extended thinking: minta model berpikir keras sebelum menjawab
-_EXTENDED_THINKING_PROMPT = """Before answering, think deeply and thoroughly inside <think>...</think> tags.
-Use this thinking space to:
-- Break down the problem step by step
-- Consider multiple approaches and their tradeoffs
-- Reason through edge cases and potential issues
-- Plan your response structure
-- If you are an agent, plan which tools to use and in what order
-
-CRITICAL RULES for Extended Thinking:
-- NEVER put tool calls inside <think> tags
-- After </think>, immediately follow the correct XML response format
-- <think> is for reasoning only, not for actions
-
-After thinking, provide your response outside the <think> tags using the correct format.
-<think> blocks will be shown to the user as your reasoning process.
-Be thorough in your thinking — more thinking leads to better answers.
+ATURAN KRITIS untuk Extended Thinking:
+- JANGAN tulis tool call di dalam <think> tags
+- <think> hanya untuk berpikir/merencanakan, bukan untuk aksi
+- Setelah </think>, langsung ikuti format XML yang benar
 
 """
 
@@ -153,7 +146,72 @@ def _format_tools_text(tools: list[dict]) -> str:
     return "\n".join(lines)
 
 
+# ── Pattern deteksi tool call ──────────────────────────────────────────────
+_TOOL_CALL_PATTERNS = [
+    r'<tool>\s*\S+\s*</tool>',          # <tool>nama_tool</tool>
+    r'<args>\s*\{',                      # <args>{...
+    r'<action>\s*tool_call\s*</action>', # <action>tool_call</action>
+    r'\[Tool:\s*\w',                     # [Tool: nama_tool]
+    r'\[Tool\s+\w',                      # [Tool nama_tool]
+]
+
+def _looks_like_tool_call(text: str) -> bool:
+    """Return True jika text terlihat seperti tool call, bukan final answer."""
+    for pattern in _TOOL_CALL_PATTERNS:
+        if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
+            return True
+    return False
+
+
+def _extract_bracket_tool(text: str) -> tuple[str | None, dict]:
+    """
+    Extract tool name dan args dari format [Tool: name] {"args": ...}.
+    Handle kasus model menulis tool call tanpa XML tags.
+    """
+    m = re.search(r'\[Tool[:\s]+(\w+)\]\s*(\{.*?\})?', text, re.DOTALL | re.IGNORECASE)
+    if m:
+        tool_name = m.group(1).strip()
+        args = {}
+        if m.group(2):
+            try:
+                args = json.loads(m.group(2))
+            except json.JSONDecodeError:
+                pass
+        return tool_name, args
+    return None, {}
+
+
+def _clean_answer(text: str) -> str:
+    """
+    Bersihkan teks final answer dari artefak tool call.
+    Hapus: [Tool: ...], <tool>...</tool>, <args>...</args>, <action>...</action>, dll.
+    """
+    # Hapus blok XML tool call
+    text = re.sub(r'<thought>.*?</thought>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<action>.*?</action>',   '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<tool>.*?</tool>',       '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<args>.*?</args>',       '', text, flags=re.DOTALL | re.IGNORECASE)
+
+    # Hapus baris [Tool: ...] style
+    text = re.sub(r'^\[Tool[^\]]*\][^\n]*\n?', '', text, flags=re.MULTILINE | re.IGNORECASE)
+
+    # Hapus baris yang hanya berisi JSON object (sisa args)
+    text = re.sub(r'^\s*\{[^}]*\}\s*$', '', text, flags=re.MULTILINE)
+
+    return text.strip()
+
+
 def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]:
+    """
+    Parse respons ReAct dari model.
+
+    Return: (thought, action_type, tool_name_or_answer, tool_args_or_none)
+
+    FIX utama:
+    1. Kalau tidak ada <answer> tag tapi text mengandung pola tool call → paksa jadi tool_call
+    2. Kalau final answer mengandung sisa tool call text → bersihkan dulu
+    3. Validasi: kalau answer masih mengandung tool call patterns setelah dibersihkan → retry sebagai tool_call
+    """
     thought_m = re.search(r'<thought>(.*?)</thought>', text, re.DOTALL | re.IGNORECASE)
     action_m  = re.search(r'<action>(.*?)</action>',   text, re.DOTALL | re.IGNORECASE)
     tool_m    = re.search(r'<tool>(.*?)</tool>',       text, re.DOTALL | re.IGNORECASE)
@@ -161,8 +219,9 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
     answer_m  = re.search(r'<answer>(.*?)</answer>',   text, re.DOTALL | re.IGNORECASE)
 
     thought    = thought_m.group(1).strip() if thought_m else ""
-    action_raw = action_m.group(1).strip().lower() if action_m else "final_answer"
+    action_raw = action_m.group(1).strip().lower() if action_m else ""
 
+    # ── CASE 1: Eksplisit tool_call ──────────────────────────────────────
     if action_raw == "tool_call" and tool_m:
         tool_name = tool_m.group(1).strip()
         tool_args: dict = {}
@@ -178,12 +237,69 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
                         pass
         return thought, "tool_call", tool_name, tool_args
 
-    raw_answer = (answer_m.group(1).strip() if answer_m else None) or text.strip()
-    # Hapus baris yang terlihat seperti tool call
-    import re as _re
-    answer = _re.sub(r'\[Tool[^\]]*\][^\n]*\n?', '', raw_answer).strip()
-    answer = answer or raw_answer
-    return thought, "final_answer", answer, None
+    # ── CASE 2: Ada <answer> tag → ambil isinya ──────────────────────────
+    if answer_m:
+        raw_answer = answer_m.group(1).strip()
+
+        # Validasi: kalau isi <answer> MASIH mengandung tool call → paksa jadi tool_call
+        if _looks_like_tool_call(raw_answer):
+            # Coba XML format dulu
+            if tool_m:
+                tool_name = tool_m.group(1).strip()
+                tool_args = {}
+                if args_m:
+                    try:
+                        tool_args = json.loads(args_m.group(1).strip())
+                    except json.JSONDecodeError:
+                        pass
+                logger.warning(f"[hams-max] <answer> berisi tool call XML, forcing tool_call: {tool_name}")
+                return thought, "tool_call", tool_name, tool_args
+            # Fallback: coba extract dari [Tool: name] format
+            bracket_tool, bracket_args = _extract_bracket_tool(raw_answer)
+            if bracket_tool:
+                logger.warning(f"[hams-max] <answer> berisi [Tool:] format, forcing tool_call: {bracket_tool}")
+                return thought, "tool_call", bracket_tool, bracket_args
+
+        # Bersihkan answer dari sisa-sisa tool call text
+        clean = _clean_answer(raw_answer)
+        return thought, "final_answer", clean or raw_answer, None
+
+    # ── CASE 3: Tidak ada <answer> dan tidak ada action eksplisit ────────
+    # Cek apakah keseluruhan text ini sebenarnya adalah tool call
+    if _looks_like_tool_call(text):
+        # Coba parse sebagai tool call
+        if tool_m:
+            tool_name = tool_m.group(1).strip()
+            tool_args = {}
+            if args_m:
+                try:
+                    tool_args = json.loads(args_m.group(1).strip())
+                except json.JSONDecodeError:
+                    m = re.search(r'\{.*\}', args_m.group(1), re.DOTALL)
+                    if m:
+                        try:
+                            tool_args = json.loads(m.group())
+                        except json.JSONDecodeError:
+                            pass
+            logger.debug(f"[hams-max] No <answer> tag, detected tool call: {tool_name}")
+            return thought, "tool_call", tool_name, tool_args
+
+        # FIX: Fallback ke [Tool: name] format (model kadang tidak pakai XML)
+        bracket_tool, bracket_args = _extract_bracket_tool(text)
+        if bracket_tool:
+            logger.debug(f"[hams-max] Detected [Tool:] bracket format: {bracket_tool}")
+            return thought, "tool_call", bracket_tool, bracket_args
+
+    # ── CASE 4: Fallback — bersihkan text dan jadikan final answer ────────
+    # Tapi hanya kalau TIDAK ada tanda-tanda tool call sama sekali
+    clean_text = _clean_answer(text)
+
+    # Kalau setelah dibersihkan hasilnya kosong → ada yang salah, return raw
+    if not clean_text:
+        logger.warning("[hams-max] Answer empty after cleaning, returning raw text")
+        clean_text = text.strip()
+
+    return thought, "final_answer", clean_text, None
 
 
 def _extract_thinking(text: str) -> tuple[str, str]:
@@ -201,7 +317,7 @@ class HamsMaxLLM(BaseLLM):
     """
     LLM provider yang memanggil HAMS-MAX API.
 
-    Fitur baru:
+    Fitur:
         extended=True  → inject extended thinking prompt, parse <think> blocks
         tools=[...]    → ReAct tool calling via prompt engineering
     """
@@ -301,16 +417,19 @@ class HamsMaxLLM(BaseLLM):
 
         if tools:
             # Agentic ReAct mode
+            # FIX: base_system (dari reasoning_loop) diletakkan PERTAMA di _REACT_SYSTEM
             tools_text   = _format_tools_text(tools)
             react_system = _REACT_SYSTEM.format(
-                tools_text=tools_text,
                 base_system=system or "",
+                tools_text=tools_text,
             )
             if use_extended:
                 react_system = _EXTENDED_THINKING_PROMPT + react_system
 
             payload  = self._build_payload(messages, system=react_system)
             raw_text = await self._call_api(payload)
+
+            logger.debug(f"[hams-max] Raw response (first 300 chars): {raw_text[:300]}")
 
             # Extract thinking if present
             thinking, clean_text = _extract_thinking(raw_text)
@@ -325,6 +444,7 @@ class HamsMaxLLM(BaseLLM):
                     tool_use_id=f"tc_{uuid.uuid4().hex[:8]}",
                     tool_input=tool_args or {},
                 )
+                logger.debug(f"[hams-max] → tool_call: {tool_or_answer} args={tool_args}")
                 return LLMResponse(
                     thought=thought,
                     action_type=ActionType.TOOL_CALL if hasattr(ActionType, 'TOOL_CALL') else "tool_call",
@@ -334,6 +454,17 @@ class HamsMaxLLM(BaseLLM):
                 )
             else:
                 answer = tool_or_answer or thought or raw_text
+
+                # Validasi final: kalau answer masih mengandung tool call text → log warning
+                if _looks_like_tool_call(answer):
+                    logger.warning(
+                        f"[hams-max] final_answer still contains tool call patterns after cleaning! "
+                        f"Answer (first 200): {answer[:200]}"
+                    )
+                    # Last resort clean
+                    answer = _clean_answer(answer) or answer
+
+                logger.debug(f"[hams-max] → final_answer (first 200): {answer[:200]}")
                 return LLMResponse(
                     thought=thought,
                     action_type=ActionType.FINAL_ANSWER if hasattr(ActionType, 'FINAL_ANSWER') else "final_answer",
@@ -372,7 +503,6 @@ class HamsMaxLLM(BaseLLM):
         """
         Simple text generation.
         Jika extended=True, return dict {"thinking": "...", "answer": "..."} sebagai JSON string.
-        Kalau tidak, return string biasa.
         """
         use_extended = extended or self._extended
         full_system  = system or ""
@@ -385,7 +515,6 @@ class HamsMaxLLM(BaseLLM):
 
         if use_extended:
             thinking, answer = _extract_thinking(raw_text)
-            # Return JSON string supaya api.py bisa parse
             return json.dumps({
                 "thinking": thinking,
                 "answer":   answer,
