@@ -966,6 +966,86 @@ function shareMsg(btn) {
 }
 
 // ═══════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+    const isMac = navigator.platform.toUpperCase().includes('MAC');
+    const mod   = isMac ? e.metaKey : e.ctrlKey;
+    const tag   = document.activeElement.tagName;
+    const isTyping = tag === 'TEXTAREA' || tag === 'INPUT';
+
+    // Cmd/Ctrl + K → focus search sidebar
+    if (mod && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('searchInput')?.focus();
+    }
+
+    // Cmd/Ctrl + N → new chat
+    if (mod && e.key === 'n') {
+        e.preventDefault();
+        clearChat();
+    }
+
+    // Cmd/Ctrl + L → focus input
+    if (mod && e.key === 'l') {
+        e.preventDefault();
+        document.getElementById('userInput')?.focus();
+    }
+
+    // Cmd/Ctrl + / → toggle sidebar
+    if (mod && e.key === '/') {
+        e.preventDefault();
+        const sidebar = document.getElementById('sidebar');
+        sidebar?.classList.toggle('open');
+        document.getElementById('sidebarOverlay')?.classList.toggle('open');
+    }
+
+    // Cmd/Ctrl + M → toggle mode (chat ↔ agent)
+    if (mod && e.key === 'm') {
+        e.preventDefault();
+        const current = document.getElementById('btnChat')?.classList.contains('active');
+        setMode(current ? 'agent' : 'chat');
+    }
+
+    // Cmd/Ctrl + E → toggle extended thinking
+    if (mod && e.key === 'e') {
+        e.preventDefault();
+        toggleExtended();
+    }
+
+    // Cmd/Ctrl + Enter → send message (dari mana saja)
+    if (mod && e.key === 'Enter') {
+        e.preventDefault();
+        sendMessage();
+    }
+
+    // Cmd/Ctrl + Shift + C → copy last AI response
+    if (mod && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        const bubbles = document.querySelectorAll('.md-body');
+        if (bubbles.length) {
+            const last = bubbles[bubbles.length - 1];
+            navigator.clipboard.writeText(last.innerText);
+            showToast('✅ Copied last response!');
+        }
+    }
+
+    // Escape → tutup preview / sidebar
+    if (e.key === 'Escape') {
+        closePreview();
+        document.getElementById('sidebar')?.classList.remove('open');
+        document.getElementById('sidebarOverlay')?.classList.remove('open');
+        document.activeElement?.blur();
+    }
+
+    // ? → tampilkan shortcut help (saat tidak typing)
+    if (e.key === '?' && !isTyping) {
+        e.preventDefault();
+        showToast('⌨️ K=Search · N=New · L=Input · /=Sidebar · M=Mode · E=Extended · ↵=Send · ⇧C=Copy');
+    }
+});
+
+// ═══════════════════════════════════════════════
 // UTILITIES
 // ═══════════════════════════════════════════════
 function escHtml(s) {
