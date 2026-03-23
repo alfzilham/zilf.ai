@@ -1,15 +1,11 @@
 """
 Terminal Tool — executes shell commands inside the Docker sandbox.
 
-The agent uses this to run tests, install packages, call git,
-build projects, and inspect the runtime environment.
-
 Security notes:
   - All commands run inside the isolated Docker sandbox (non-root, no network by default)
-  - Command inputs are passed to bash -c; no shell injection is possible at the Python layer
-    because the sandbox itself is the isolation boundary
   - Every command is logged to an immutable audit trail
   - Output is capped at MAX_OUTPUT_CHARS to prevent context overflow
+  - working_directory default di-sync dengan WORKSPACE_ROOT dari filesystem.py
 """
 
 from __future__ import annotations
@@ -26,14 +22,41 @@ SANDBOX_AVAILABLE = os.environ.get("AGENT_SANDBOX_DISABLED", "0") != "1"
 
 
 # ---------------------------------------------------------------------------
-# Sandbox singleton (created once per process)
+# Workspace root — sync dengan filesystem.py
+# ---------------------------------------------------------------------------
+
+def _get_workspace_root() -> str:
+    """
+    Ambil WORKSPACE_ROOT dari filesystem.py supaya CWD selalu konsisten.
+    Fallback ke /workspace atau ./workspace.
+    """
+    try:
+        from agent.tools.filesystem import get_workspace_root
+        return str(get_workspace_root())
+    except ImportError:
+        pass
+
+    # Fallback: sama dengan logika di filesystem.py
+    env_ws = os.environ.get("AGENT_WORKSPACE")
+    if env_ws:
+        return env_ws
+
+    import pathlib
+    system_ws = pathlib.Path("/workspace")
+    if system_ws.exists() and system_ws.is_dir():
+        return "/workspace"
+
+    return str(pathlib.Path("./workspace").resolve())
+
+
+# ---------------------------------------------------------------------------
+# Sandbox singleton
 # ---------------------------------------------------------------------------
 
 _sandbox: "Any | None" = None  # type: ignore[name-defined]
 
 
 async def _get_sandbox() -> "Any":  # type: ignore[name-defined]
-    """Return (and lazily start) the shared DockerSandbox instance."""
     global _sandbox
     if _sandbox is None:
         try:
@@ -48,7 +71,6 @@ async def _get_sandbox() -> "Any":  # type: ignore[name-defined]
 
 
 async def _shutdown_sandbox() -> None:
-    """Call this at agent shutdown to stop the sandbox container."""
     global _sandbox
     if _sandbox is not None:
         try:
@@ -59,19 +81,18 @@ async def _shutdown_sandbox() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Local executor fallback (when Docker is not available)
+# Local executor fallback
 # ---------------------------------------------------------------------------
 
 
 class _LocalExecutor:
     """
-    Fallback executor that runs commands directly on the host.
-    Use only in dev / CI where Docker is unavailable.
+    Fallback executor yang runs commands langsung di host.
+    Dipakai di dev / CI / Railway (tanpa Docker).
     """
 
     async def run(self, command: str, workdir: str = ".", timeout: int = 60) -> "Any":  # type: ignore
         import asyncio
-        import subprocess
 
         class _Result:
             def __init__(self, exit_code: int, stdout: str, stderr: str) -> None:
@@ -80,6 +101,17 @@ class _LocalExecutor:
                 self.stderr = stderr
                 self.success = exit_code == 0
                 self.output = (stdout + ("\n[stderr] " + stderr if stderr else "")).strip()
+
+        # Pastikan workdir ada sebelum dipakai
+        import pathlib
+        wd = pathlib.Path(workdir)
+        if not wd.exists():
+            # Coba buat, kalau gagal fallback ke CWD
+            try:
+                wd.mkdir(parents=True, exist_ok=True)
+            except Exception:
+                workdir = str(pathlib.Path.cwd())
+                logger.warning(f"[terminal] workdir '{wd}' tidak ada, fallback ke {workdir}")
 
         try:
             proc = await asyncio.wait_for(
@@ -110,30 +142,37 @@ class _LocalExecutor:
 
 async def run_command(
     command: str,
-    working_directory: str = "/workspace",
+    working_directory: Optional[str] = None,
     timeout_seconds: Optional[int] = 60,
 ) -> str:
     """
-    Execute a shell command inside the /workspace Docker sandbox.
+    Execute a shell command inside the /workspace directory.
 
-    Commands run as a non-root user under /bin/bash -c.
-    Use this to run tests, install packages, build projects, or call git.
-    Output (stdout + stderr) is returned as a single string.
-
-    IMPORTANT: This tool has a 60-second default timeout.
-    For long processes, use background execution (append & to the command)
-    and poll for results with a follow-up command.
+    Commands run under /bin/bash -c. Output (stdout + stderr) is returned
+    as a single string. Working directory default ke WORKSPACE_ROOT
+    (sama dengan direktori yang dipakai write_file).
 
     Args:
         command: Shell command string. Runs under /bin/bash -c.
-            Examples: 'pytest tests/ -v --tb=short', 'pip install httpx', 'git status'
-        working_directory: Absolute working directory inside the container.
-            Must be under /workspace. Defaults to /workspace.
-        timeout_seconds: Max seconds before killing the process. Default 60, max 300.
+            Examples: 'pytest tests/ -v', 'pip install httpx', 'git status'
+        working_directory: Working directory untuk command. Default: /workspace
+            (atau path WORKSPACE_ROOT yang aktif). Harus di dalam /workspace.
+        timeout_seconds: Max seconds sebelum process di-kill. Default 60, max 300.
     """
     timeout = min(int(timeout_seconds or 60), 300)
 
-    logger.info(f"[terminal] $ {command[:120]}")
+    # FIX: default working_directory = WORKSPACE_ROOT (sync dengan filesystem.py)
+    if not working_directory:
+        working_directory = _get_workspace_root()
+
+    # Remap /workspace → WORKSPACE_ROOT kalau berbeda
+    # (supaya konsisten meski Railway mount path berbeda)
+    ws_root = _get_workspace_root()
+    if working_directory == "/workspace" and ws_root != "/workspace":
+        working_directory = ws_root
+        logger.debug(f"[terminal] Remapped /workspace → {ws_root}")
+
+    logger.info(f"[terminal] $ {command[:120]} (cwd={working_directory})")
 
     sandbox = await _get_sandbox()
     result = await sandbox.run(command, workdir=working_directory, timeout=timeout)

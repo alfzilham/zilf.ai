@@ -1,324 +1,562 @@
 """
-Reasoning Loop — the heart of the Hams AI.
+HAMS-MAX LLM Provider — wraps hams-max-api-production.up.railway.app
 
-Implements the Perceive → Reason → Act → Observe → Reflect cycle
-based on the ReAct (Reasoning + Acting) framework.
-
-Each call to `run_step()` performs one full iteration:
-  1. Perceive  — build context from current AgentState
-  2. Reason    — call LLM to get thought + action decision
-  3. Act       — execute chosen tools in the sandbox
-  4. Observe   — collect tool outputs
-  5. Reflect   — update state, check if done
+Fitur:
+- ReAct-style tool calling via prompt engineering (XML tags)
+- Extended Thinking: AI menulis proses berpikirnya di <think>...</think>
+- Auto-detect Groq vs NVIDIA provider dari model ID
+- Streaming support untuk Groq models
+- Backward compatible dengan shorthand alias
 """
 
 from __future__ import annotations
 
-import time
+import json
+import os
+import re
 import uuid
-from typing import TYPE_CHECKING, Awaitable, Callable, Protocol
+from typing import Any, AsyncIterator
 
+import httpx
 from loguru import logger
 
-from agent.core.state import (
-    ActionType,
-    AgentState,
-    AgentStatus,
-    ReasoningStep,
-    StepStatus,
-    ToolCall,
-    ToolResult,
-)
+from agent.llm.base import BaseLLM, LLMResponse
 
-if TYPE_CHECKING:
-    from agent.llm.base import BaseLLM
-    from agent.tools.registry import ToolRegistry
+HAMS_MAX_BASE = "https://hams-max-api-production.up.railway.app"
+
+HAMS_MAX_MODELS: dict[str, str] = {
+    "groq":       "llama-3.3-70b-versatile",
+    "qwen":       "qwen3.5-122b-a10b",
+    "deepseek":   "deepseek-v3.2",
+    "nemotron":   "nemotron-3-super-120b-a12b",
+    "kimi-think": "kimi-k2-instruct",
+    "mistral":    "mistral-small-4-119b",
+    "qwen397b":   "qwen3.5-397b-a17b",
+    "kimi":       "kimi-k2.5",
+    "minimax":    "minimax-m2.5",
+    "glm":        "glm5",
+    "step":       "step-3.5-flash",
+}
+
+_GROQ_MODELS: set[str] = {
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "llama-3.1-70b-versatile",
+    "gemma2-9b-it",
+    "gemma-7b-it",
+    "mixtral-8x7b-32768",
+    "compound-beta",
+    "compound-beta-mini",
+}
+
+_FRONTEND_TO_HAMSMAX: dict[str, tuple[str, str]] = {
+    "llama-3.3-70b-versatile": ("llama-3.3-70b-versatile", "groq"),
+    "llama-3.1-8b-instant":    ("llama-3.1-8b-instant",    "groq"),
+    "llama3-8b-8192":          ("llama-3.1-8b-instant",    "groq"),   # deprecated → redirect
+    "llama3-70b-8192":         ("llama-3.3-70b-versatile", "groq"),   # deprecated → redirect
+    "gemma2-9b-it":            ("gemma2-9b-it",             "groq"),
+    "compound-beta":           ("compound-beta",            "groq"),
+    "nvidia/qwen-3.5":         ("qwen",       "nvidia"),
+    "nvidia/glm-5":            ("glm",        "nvidia"),
+    "nvidia/minimax-m25":      ("minimax",    "nvidia"),
+    "nvidia/kimi-k2.5":        ("kimi",       "nvidia"),
+    "nvidia/stepfun-step3.5":  ("step",       "nvidia"),
+    "nvidia/mistral-small-4":  ("mistral",    "nvidia"),
+    "nvidia/qwen-397b":        ("qwen397b",   "nvidia"),
+    "nvidia/deepseek-v3.2":    ("deepseek",   "nvidia"),
+    "nvidia/kimi-k2-thinking": ("kimi-think", "nvidia"),
+    "nvidia/nemotron-super-3": ("nemotron",   "nvidia"),
+    "hams-max":                ("llama-3.3-70b-versatile", "groq"),
+}
+
+# ── System prompts ─────────────────────────────────────────────────────────
+
+# FIX: _REACT_SYSTEM sekarang tipis — hanya wrapper format XML.
+# base_system dari reasoning_loop.py diletakkan di ATAS agar tidak tertimpa.
+_REACT_SYSTEM = """{base_system}
+
+## TOOL CALLING FORMAT (WAJIB IKUTI PERSIS)
+
+Untuk memanggil tool:
+<thought>Alasan mengapa tool ini diperlukan</thought>
+<action>tool_call</action>
+<tool>nama_tool_persis</tool>
+<args>{{"param": "value"}}</args>
+
+Untuk final answer (HANYA setelah task selesai 100%):
+<thought>Task selesai karena...</thought>
+<action>final_answer</action>
+<answer>Jawaban lengkap di sini</answer>
+
+## ATURAN KETAT
+- SELALU gunakan XML tags persis seperti di atas
+- JANGAN tulis nama tool di luar tag <tool>
+- JANGAN tulis JSON di luar tag <args>
+- JANGAN beri final_answer sebelum menggunakan tool yang diperlukan
+- Satu tool call per respons
+- <answer> hanya boleh berisi teks jawaban, BUKAN tool call
+
+## DAFTAR TOOL TERSEDIA
+{tools_text}"""
+
+# Extended thinking: inject sebelum format instructions
+_EXTENDED_THINKING_PROMPT = """Sebelum menjawab, pikirkan secara mendalam di dalam tag <think>...</think>.
+Gunakan ruang berpikir ini untuk:
+- Uraikan masalah langkah demi langkah
+- Pertimbangkan berbagai pendekatan dan trade-off
+- Rencanakan tool mana yang akan digunakan dan dalam urutan apa
+- Pastikan jawaban sudah lengkap sebelum memberi final_answer
+
+ATURAN KRITIS untuk Extended Thinking:
+- JANGAN tulis tool call di dalam <think> tags
+- <think> hanya untuk berpikir/merencanakan, bukan untuk aksi
+- Setelah </think>, langsung ikuti format XML yang benar
+
+"""
 
 
-# ---------------------------------------------------------------------------
-# Protocol for the LLM response
-# ---------------------------------------------------------------------------
+def _resolve_model(model: str) -> tuple[str, str]:
+    if model in _FRONTEND_TO_HAMSMAX:
+        return _FRONTEND_TO_HAMSMAX[model]
+    if model in HAMS_MAX_MODELS:
+        model_id = HAMS_MAX_MODELS[model]
+        provider = "groq" if model_id in _GROQ_MODELS else "nvidia"
+        return model_id, provider
+    if model in _GROQ_MODELS:
+        return model, "groq"
+    return model, "groq"
 
 
-class LLMResponse(Protocol):
-    """Minimal interface we expect back from any LLM provider."""
+def _format_tools_text(tools: list[dict]) -> str:
+    lines = []
+    for t in tools:
+        name     = t.get("name", "")
+        desc     = t.get("description", "")
+        schema   = t.get("input_schema", {})
+        props    = schema.get("properties", {})
+        required = schema.get("required", [])
+        params   = [
+            f"  {'*' if p in required else '?'} {p} ({info.get('type','str')}): {info.get('description','')}"
+            for p, info in props.items()
+        ]
+        lines += [f"### {name}", f"Description: {desc}"]
+        if params:
+            lines += ["Parameters (* = required):"] + params
+        lines.append("")
+    return "\n".join(lines)
 
-    thought: str
-    action_type: ActionType
-    tool_calls: list[ToolCall]
-    final_answer: str | None
-    input_tokens: int
-    output_tokens: int
+
+# ── Pattern deteksi tool call ──────────────────────────────────────────────
+_TOOL_CALL_PATTERNS = [
+    r'<tool>\s*\S+\s*</tool>',          # <tool>nama_tool</tool>
+    r'<args>\s*\{',                      # <args>{...
+    r'<action>\s*tool_call\s*</action>', # <action>tool_call</action>
+    r'\[Tool:\s*\w',                     # [Tool: nama_tool]
+    r'\[Tool\s+\w',                      # [Tool nama_tool]
+]
+
+def _looks_like_tool_call(text: str) -> bool:
+    """Return True jika text terlihat seperti tool call, bukan final answer."""
+    for pattern in _TOOL_CALL_PATTERNS:
+        if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
+            return True
+    return False
 
 
-# ---------------------------------------------------------------------------
-# Reasoning Loop
-# ---------------------------------------------------------------------------
-
-
-class ReasoningLoop:
+def _extract_bracket_tool(text: str) -> tuple[str | None, dict]:
     """
-    Drives the agent through its Perceive → Reason → Act → Observe → Reflect cycle.
+    Extract tool name dan args dari format [Tool: name] {"args": ...}.
+    Handle kasus model menulis tool call tanpa XML tags.
+    """
+    m = re.search(r'\[Tool[:\s]+(\w+)\]\s*(\{.*?\})?', text, re.DOTALL | re.IGNORECASE)
+    if m:
+        tool_name = m.group(1).strip()
+        args = {}
+        if m.group(2):
+            try:
+                args = json.loads(m.group(2))
+            except json.JSONDecodeError:
+                pass
+        return tool_name, args
+    return None, {}
 
-    Args:
-        llm:           LLM provider instance.
-        tool_registry: Registry of all available tools.
-        max_steps:     Hard cap on iterations.
-        verbose:       Log step-by-step to stdout.
-        step_callback: Optional async callback called after each step.
-                       Signature: async def callback(step: ReasoningStep) -> None
-                       Used for real-time streaming of agent progress.
 
-    Usage::
+def _clean_answer(text: str) -> str:
+    """
+    Bersihkan teks final answer dari artefak tool call.
+    Hapus: [Tool: ...], <tool>...</tool>, <args>...</args>, <action>...</action>, dll.
+    """
+    # Hapus blok XML tool call
+    text = re.sub(r'<thought>.*?</thought>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<action>.*?</action>',   '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<tool>.*?</tool>',       '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<args>.*?</args>',       '', text, flags=re.DOTALL | re.IGNORECASE)
 
-        loop = ReasoningLoop(llm=claude, tool_registry=registry)
-        state = await loop.run(state)
+    # Hapus baris [Tool: ...] style
+    text = re.sub(r'^\[Tool[^\]]*\][^\n]*\n?', '', text, flags=re.MULTILINE | re.IGNORECASE)
+
+    # Hapus baris yang hanya berisi JSON object (sisa args)
+    text = re.sub(r'^\s*\{[^}]*\}\s*$', '', text, flags=re.MULTILINE)
+
+    return text.strip()
+
+
+def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]:
+    """
+    Parse respons ReAct dari model.
+
+    Return: (thought, action_type, tool_name_or_answer, tool_args_or_none)
+
+    FIX utama:
+    1. Kalau tidak ada <answer> tag tapi text mengandung pola tool call → paksa jadi tool_call
+    2. Kalau final answer mengandung sisa tool call text → bersihkan dulu
+    3. Validasi: kalau answer masih mengandung tool call patterns setelah dibersihkan → retry sebagai tool_call
+    """
+    thought_m = re.search(r'<thought>(.*?)</thought>', text, re.DOTALL | re.IGNORECASE)
+    action_m  = re.search(r'<action>(.*?)</action>',   text, re.DOTALL | re.IGNORECASE)
+    tool_m    = re.search(r'<tool>(.*?)</tool>',       text, re.DOTALL | re.IGNORECASE)
+    args_m    = re.search(r'<args>(.*?)</args>',       text, re.DOTALL | re.IGNORECASE)
+    answer_m  = re.search(r'<answer>(.*?)</answer>',   text, re.DOTALL | re.IGNORECASE)
+
+    thought    = thought_m.group(1).strip() if thought_m else ""
+    action_raw = action_m.group(1).strip().lower() if action_m else ""
+
+    # ── CASE 1: Eksplisit tool_call ──────────────────────────────────────
+    if action_raw == "tool_call" and tool_m:
+        tool_name = tool_m.group(1).strip()
+        tool_args: dict = {}
+        if args_m:
+            try:
+                tool_args = json.loads(args_m.group(1).strip())
+            except json.JSONDecodeError:
+                m = re.search(r'\{.*\}', args_m.group(1), re.DOTALL)
+                if m:
+                    try:
+                        tool_args = json.loads(m.group())
+                    except json.JSONDecodeError:
+                        pass
+        return thought, "tool_call", tool_name, tool_args
+
+    # ── CASE 2: Ada <answer> tag → ambil isinya ──────────────────────────
+    if answer_m:
+        raw_answer = answer_m.group(1).strip()
+
+        # Validasi: kalau isi <answer> MASIH mengandung tool call → paksa jadi tool_call
+        if _looks_like_tool_call(raw_answer):
+            # Coba XML format dulu
+            if tool_m:
+                tool_name = tool_m.group(1).strip()
+                tool_args = {}
+                if args_m:
+                    try:
+                        tool_args = json.loads(args_m.group(1).strip())
+                    except json.JSONDecodeError:
+                        pass
+                logger.warning(f"[hams-max] <answer> berisi tool call XML, forcing tool_call: {tool_name}")
+                return thought, "tool_call", tool_name, tool_args
+            # Fallback: coba extract dari [Tool: name] format
+            bracket_tool, bracket_args = _extract_bracket_tool(raw_answer)
+            if bracket_tool:
+                logger.warning(f"[hams-max] <answer> berisi [Tool:] format, forcing tool_call: {bracket_tool}")
+                return thought, "tool_call", bracket_tool, bracket_args
+
+        # Bersihkan answer dari sisa-sisa tool call text
+        clean = _clean_answer(raw_answer)
+        return thought, "final_answer", clean or raw_answer, None
+
+    # ── CASE 3: Tidak ada <answer> dan tidak ada action eksplisit ────────
+    # Cek apakah keseluruhan text ini sebenarnya adalah tool call
+    if _looks_like_tool_call(text):
+        # Coba parse sebagai tool call
+        if tool_m:
+            tool_name = tool_m.group(1).strip()
+            tool_args = {}
+            if args_m:
+                try:
+                    tool_args = json.loads(args_m.group(1).strip())
+                except json.JSONDecodeError:
+                    m = re.search(r'\{.*\}', args_m.group(1), re.DOTALL)
+                    if m:
+                        try:
+                            tool_args = json.loads(m.group())
+                        except json.JSONDecodeError:
+                            pass
+            logger.debug(f"[hams-max] No <answer> tag, detected tool call: {tool_name}")
+            return thought, "tool_call", tool_name, tool_args
+
+        # FIX: Fallback ke [Tool: name] format (model kadang tidak pakai XML)
+        bracket_tool, bracket_args = _extract_bracket_tool(text)
+        if bracket_tool:
+            logger.debug(f"[hams-max] Detected [Tool:] bracket format: {bracket_tool}")
+            return thought, "tool_call", bracket_tool, bracket_args
+
+    # ── CASE 4: Fallback — bersihkan text dan jadikan final answer ────────
+    # Tapi hanya kalau TIDAK ada tanda-tanda tool call sama sekali
+    clean_text = _clean_answer(text)
+
+    # Kalau setelah dibersihkan hasilnya kosong → ada yang salah, return raw
+    if not clean_text:
+        logger.warning("[hams-max] Answer empty after cleaning, returning raw text")
+        clean_text = text.strip()
+
+    return thought, "final_answer", clean_text, None
+
+
+def _extract_thinking(text: str) -> tuple[str, str]:
+    """
+    Pisahkan <think>...</think> dari teks respons.
+    Return (thinking_content, answer_without_think_tags).
+    """
+    think_blocks = re.findall(r'<think>(.*?)</think>', text, re.DOTALL | re.IGNORECASE)
+    answer = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE).strip()
+    thinking = "\n\n".join(block.strip() for block in think_blocks)
+    return thinking, answer
+
+
+class HamsMaxLLM(BaseLLM):
+    """
+    LLM provider yang memanggil HAMS-MAX API.
+
+    Fitur:
+        extended=True  → inject extended thinking prompt, parse <think> blocks
+        tools=[...]    → ReAct tool calling via prompt engineering
     """
 
     def __init__(
         self,
-        llm: "BaseLLM",
-        tool_registry: "ToolRegistry",
-        max_steps: int = 30,
-        verbose: bool = True,
-        step_callback: Callable[[ReasoningStep], Awaitable[None]] | None = None,
+        model: str = "groq",
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        extended: bool = False,
     ) -> None:
-        self.llm = llm
-        self.tool_registry = tool_registry
-        self.max_steps = max_steps
-        self.verbose = verbose
-        self.step_callback = step_callback   # ← NEW: agentic streaming callback
+        model_id, provider = _resolve_model(model)
+        super().__init__(model=model_id, max_tokens=max_tokens, temperature=temperature)
 
-    # -----------------------------------------------------------------------
-    # Public API
-    # -----------------------------------------------------------------------
+        self._model_key = model_id
+        self._provider  = provider
+        self._extended  = extended
+        self._api_key   = os.environ.get("HAMS_MAX_API_KEY", "")
 
-    async def run(self, state: AgentState) -> AgentState:
-        """
-        Run the full reasoning loop until complete, final_answer, or max_steps.
-        """
-        logger.info(f"[run:{state.run_id}] Starting reasoning loop — task: {state.task!r}")
-        state.status = AgentStatus.RUNNING
+        if not self._api_key:
+            raise RuntimeError("HAMS_MAX_API_KEY environment variable is not set.")
 
-        while not state.is_done:
-            if state.current_step >= self.max_steps:
-                logger.warning(f"[run:{state.run_id}] Max steps ({self.max_steps}) reached.")
-                state.status = AgentStatus.MAX_STEPS_REACHED
-                state.error = f"Stopped after {self.max_steps} steps without completing the task."
-                break
+        logger.info(f"[hams-max] provider={self._provider} model={self._model_key} extended={self._extended}")
 
-            state = await self.run_step(state)
+    def _headers(self) -> dict:
+        return {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
 
-        if state.status == AgentStatus.RUNNING:
-            state.status = AgentStatus.FAILED
-            state.error = "Loop exited in RUNNING state — unexpected."
+    def _build_payload(self, messages: list[dict], system: str | None = None) -> dict:
+        history: list[dict] = []
+        user_message = ""
 
-        logger.info(f"[run:{state.run_id}] Loop finished — status={state.status}")
-        return state
+        for msg in messages:
+            if msg["role"] not in ("user", "assistant"):
+                continue
 
-    async def run_step(self, state: AgentState) -> AgentState:
-        """Execute one full Perceive → Reason → Act → Observe → Reflect iteration."""
-        step_num = state.current_step + 1
-        step = ReasoningStep(step_number=step_num, status=StepStatus.RUNNING)
+            # Flatten content kalau berupa list (tool call, tool result, dll)
+            content = msg["content"]
+            if isinstance(content, list):
+                parts = []
+                for block in content:
+                    if isinstance(block, dict):
+                        if block.get("type") == "text":
+                            parts.append(block["text"])
+                        elif block.get("type") == "tool_use":
+                            parts.append(f"[Tool: {block.get('name')}] {json.dumps(block.get('input', {}))}")
+                        elif block.get("type") == "tool_result":
+                            parts.append(f"[Result] {block.get('content', '')}")
+                    else:
+                        parts.append(str(block))
+                content = "\n".join(parts)
 
-        if self.verbose:
-            logger.info(f"  ── Step {step_num}/{self.max_steps} ──")
+            history.append({"role": msg["role"], "content": str(content)})
 
-        try:
-            # 1. PERCEIVE
-            messages = self._perceive(state)
+        if history and history[-1]["role"] == "user":
+            user_message = history[-1]["content"]
+            history = history[:-1]
 
-            # 2. REASON
-            llm_response = await self.llm.generate(
-                messages=messages,
-                tools=self.tool_registry.tool_schemas(),
-                system=self._system_prompt(state),
+        if system and history:
+            history[0]["content"] = f"{system}\n\n{history[0]['content']}"
+        elif system:
+            user_message = f"{system}\n\n{user_message}"
+
+        return {
+            "message":    user_message,
+            "session_id": f"hams-agent-{uuid.uuid4().hex[:8]}",
+            "history":    history,
+            "provider":   self._provider,
+            "model":      self._model_key,
+        }
+
+    async def _call_api(self, payload: dict) -> str:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            resp = await client.post(
+                f"{HAMS_MAX_BASE}/v1/chat",
+                headers=self._headers(),
+                json=payload,
             )
-            step.thought      = llm_response.thought
-            step.action_type  = llm_response.action_type
-            step.tool_calls   = llm_response.tool_calls
-            step.final_answer = llm_response.final_answer
-            step.input_tokens  = llm_response.input_tokens
-            step.output_tokens = llm_response.output_tokens
+            resp.raise_for_status()
+            return resp.json().get("reply", "")
 
-            if self.verbose and step.thought:
-                logger.debug(f"  💭 Thought: {step.thought[:200]}")
+    # ── generate ──────────────────────────────────────────────────────────
 
-            # 3. ACT + 4. OBSERVE
-            if step.action_type == ActionType.FINAL_ANSWER:
-                step.tool_results = []
-                step.mark_complete(StepStatus.SUCCESS)
-                state.add_step(step)
-                self._finish(state, step)
+    async def generate(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        system: str | None = None,
+        extended: bool | None = None,
+        **kwargs: Any,
+    ) -> LLMResponse:
+        from agent.core.state import ToolCall, ActionType
 
-                # Fire callback for final step
-                await self._fire_callback(step)
-                return state
+        use_extended = extended if extended is not None else self._extended
 
-            step.tool_results = await self._act_and_observe(step.tool_calls)
-
-            # 5. REFLECT
-            self._reflect(state, step)
-            step.mark_complete(StepStatus.SUCCESS)
-
-        except Exception as exc:
-            logger.exception(f"  Step {step_num} raised an exception: {exc}")
-            step.status     = StepStatus.FAILED
-            step.reflection = f"Step failed with error: {exc}"
-            state.add_step(step)
-            state.status = AgentStatus.FAILED
-            state.error  = str(exc)
-
-            await self._fire_callback(step)
-            return state
-
-        state.add_step(step)
-
-        # ── Fire step callback (for streaming) ──
-        await self._fire_callback(step)
-
-        return state
-
-    # -----------------------------------------------------------------------
-    # Private: Callback
-    # -----------------------------------------------------------------------
-
-    async def _fire_callback(self, step: ReasoningStep) -> None:
-        """Invoke step_callback safely — never lets it break the reasoning loop."""
-        if self.step_callback is None:
-            return
-        try:
-            await self.step_callback(step)
-        except Exception as exc:
-            logger.warning(f"[loop] step_callback raised: {exc} — ignoring")
-
-    # -----------------------------------------------------------------------
-    # Private: Perceive
-    # -----------------------------------------------------------------------
-
-    def _perceive(self, state: AgentState) -> list[dict]:
-        """
-        Build the message list for the next LLM call.
-        First message = user task, then interleaved thought/action/observation history.
-        """
-        messages: list[dict] = [{"role": "user", "content": state.task}]
-        messages.extend(state.context_messages())
-        return messages
-
-    # -----------------------------------------------------------------------
-    # Private: Act + Observe
-    # -----------------------------------------------------------------------
-
-    async def _act_and_observe(self, tool_calls: list[ToolCall]) -> list[ToolResult]:
-        """Execute all tool calls chosen by the LLM and collect outputs."""
-        results: list[ToolResult] = []
-
-        for tc in tool_calls:
-            if self.verbose:
-                logger.info(f"  🔧 Tool: {tc.tool_name}({list(tc.tool_input.keys())})")
-
-            t0 = time.perf_counter()
-            try:
-                output = await self.tool_registry.dispatch(tc.tool_name, tc.tool_input)
-                elapsed = (time.perf_counter() - t0) * 1000
-                result = ToolResult(
-                    tool_name=tc.tool_name,
-                    tool_use_id=tc.tool_use_id,
-                    output=str(output),
-                    elapsed_ms=round(elapsed, 2),
-                )
-                if self.verbose:
-                    logger.debug(f"  ✅ {tc.tool_name}: {str(output)[:120]}")
-
-            except Exception as exc:
-                elapsed = (time.perf_counter() - t0) * 1000
-                result = ToolResult(
-                    tool_name=tc.tool_name,
-                    tool_use_id=tc.tool_use_id,
-                    output="",
-                    error=str(exc),
-                    elapsed_ms=round(elapsed, 2),
-                )
-                logger.warning(f"  ❌ {tc.tool_name} failed: {exc}")
-
-            results.append(result)
-
-        return results
-
-    # -----------------------------------------------------------------------
-    # Private: Reflect
-    # -----------------------------------------------------------------------
-
-    def _reflect(self, state: AgentState, step: ReasoningStep) -> None:
-        """Post-observation reflection: check errors, decide if done."""
-        failed = [r for r in step.tool_results if not r.success]
-        if failed:
-            names = [r.tool_name for r in failed]
-            step.reflection = (
-                f"⚠️  {len(failed)} tool(s) failed: {names}. "
-                "Will try to recover on the next step."
+        if tools:
+            # Agentic ReAct mode
+            tools_text   = _format_tools_text(tools)
+            react_system = _REACT_SYSTEM.format(
+                base_system=system or "",
+                tools_text=tools_text,
             )
-            if self.verbose:
-                logger.warning(f"  {step.reflection}")
+
+            # FIX: JANGAN inject extended thinking saat agent mode.
+            # 1. Model harus fokus format ReAct XML — <think> blocks mengganggu parsing
+            # 2. Combined prompt (extended + react + tools + base) terlalu besar → 500 error step 1
+            # Extended thinking hanya untuk simple chat mode (tanpa tools)
+
+            # Trim system prompt kalau > 4000 chars untuk cegah payload overflow di HAMS-MAX
+            MAX_SYSTEM_CHARS = 4000
+            if len(react_system) > MAX_SYSTEM_CHARS:
+                trimmed_base = (system or "")[:300]
+                react_system = _REACT_SYSTEM.format(
+                    base_system=trimmed_base,
+                    tools_text=tools_text,
+                )
+                logger.debug(f"[hams-max] System prompt trimmed to {len(react_system)} chars")
+
+            payload  = self._build_payload(messages, system=react_system)
+            raw_text = await self._call_api(payload)
+
+            logger.debug(f"[hams-max] Raw response (first 300 chars): {raw_text[:300]}")
+
+            # Extract thinking if present
+            thinking, clean_text = _extract_thinking(raw_text)
+            thought, action_type, tool_or_answer, tool_args = _parse_react_response(clean_text)
+
+            if not thought and thinking:
+                thought = thinking  # use thinking as thought for display
+
+            if action_type == "tool_call" and tool_or_answer:
+                tc = ToolCall(
+                    tool_name=tool_or_answer,
+                    tool_use_id=f"tc_{uuid.uuid4().hex[:8]}",
+                    tool_input=tool_args or {},
+                )
+                logger.debug(f"[hams-max] → tool_call: {tool_or_answer} args={tool_args}")
+                return LLMResponse(
+                    thought=thought,
+                    action_type=ActionType.TOOL_CALL if hasattr(ActionType, 'TOOL_CALL') else "tool_call",
+                    tool_calls=[tc],
+                    final_answer=None,
+                    raw=raw_text,
+                )
+            else:
+                answer = tool_or_answer or thought or raw_text
+
+                # Validasi final: kalau answer masih mengandung tool call text → log warning
+                if _looks_like_tool_call(answer):
+                    logger.warning(
+                        f"[hams-max] final_answer still contains tool call patterns after cleaning! "
+                        f"Answer (first 200): {answer[:200]}"
+                    )
+                    # Last resort clean
+                    answer = _clean_answer(answer) or answer
+
+                logger.debug(f"[hams-max] → final_answer (first 200): {answer[:200]}")
+                return LLMResponse(
+                    thought=thought,
+                    action_type=ActionType.FINAL_ANSWER if hasattr(ActionType, 'FINAL_ANSWER') else "final_answer",
+                    tool_calls=[],
+                    final_answer=answer,
+                    raw=raw_text,
+                )
+
         else:
-            step.reflection = "All tools executed successfully."
+            # Simple chat mode
+            full_system = system or ""
+            if use_extended:
+                full_system = _EXTENDED_THINKING_PROMPT + full_system
 
-    def _finish(self, state: AgentState, step: ReasoningStep) -> None:
-        """Mark state as complete when final answer is produced."""
-        state.final_answer  = step.final_answer
-        state.status        = AgentStatus.COMPLETE
-        state.completed_at  = step.completed_at
-        if self.verbose:
-            logger.success(f"  ✔ Task complete. Answer: {str(step.final_answer)[:200]}")
+            payload  = self._build_payload(messages, system=full_system if full_system else None)
+            raw_text = await self._call_api(payload)
 
-    # -----------------------------------------------------------------------
-    # Private: System prompt
-    # -----------------------------------------------------------------------
-
-    def _system_prompt(self, state: AgentState) -> str:
-        tools_list = "\n".join(
-            f"- {name}: {desc}"
-            for name, desc in self.tool_registry.tool_descriptions().items()
-        )
-        plan_section = ""
-        if state.plan:
-            completed = len(state.plan.completed_subtasks)
-            total     = len(state.plan.subtasks)
-            plan_section = (
-                f"\n\n## Current Plan ({completed}/{total} steps done)\n"
-                + "\n".join(
-                    f"[{'✓' if s.status.value == 'success' else ' '}] {s.id}: {s.title}"
-                    for s in state.plan.subtasks
-                )
+            return LLMResponse(
+                thought=raw_text,
+                action_type="final_answer",
+                tool_calls=[],
+                final_answer=raw_text,
+                raw=raw_text,
             )
 
-        return f"""You are an expert AI coding agent. Complete the given task autonomously using tools.
+    # ── generate_text ──────────────────────────────────────────────────────
 
-    ## WORKSPACE
-    - Working directory: /workspace (persistent storage, gunakan ini)
-    - Gunakan write_file tool untuk membuat file
-    - Untuk final answer: tampilkan semua kode lengkap, siap digunakan
+    async def generate_text(
+        self,
+        messages: list[dict[str, Any]],
+        system: str | None = None,
+        max_tokens: int = 4096,
+        extended: bool = False,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Simple text generation.
+        Jika extended=True, return dict {"thinking": "...", "answer": "..."} sebagai JSON string.
+        """
+        use_extended = extended or self._extended
+        full_system  = system or ""
 
-    ## CRITICAL RULES
-    - NEVER give a final answer before using at least one tool
-    - NEVER stop after just thinking — you MUST act
-    - Use tools repeatedly until the task is 100% complete
-    - Only use final_answer when ALL work is done and verified
+        if use_extended:
+            full_system = _EXTENDED_THINKING_PROMPT + full_system
 
-    ## RESPONSE FORMAT — FOLLOW EXACTLY
+        payload  = self._build_payload(messages, system=full_system if full_system else None)
+        raw_text = await self._call_api(payload)
 
-    To call a tool:
-    <thought>Your reasoning</thought>
-    <action>tool_call</action>
-    <tool>exact_tool_name</tool>
-    <args>{{"param": "value"}}</args>
+        if use_extended:
+            thinking, answer = _extract_thinking(raw_text)
+            return json.dumps({
+                "thinking": thinking,
+                "answer":   answer,
+                "raw":      raw_text,
+            }, ensure_ascii=False)
 
-    When fully done:
-    <thought>Task complete because...</thought>
-    <action>final_answer</action>
-    <answer>Your complete answer</answer>
+        return raw_text
 
-    ## Available Tools
-    {tools_list}
+    # ── stream ─────────────────────────────────────────────────────────────
 
-    ## Steps remaining: {state.steps_remaining}{plan_section}"""
+    async def stream(
+        self,
+        messages: list[dict[str, Any]],
+        system: str | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
+        if self._provider != "groq":
+            result = await self.generate(messages, system=system)
+            yield result.final_answer or ""
+            return
+
+        payload = self._build_payload(messages, system=system)
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            async with client.stream(
+                "POST",
+                f"{HAMS_MAX_BASE}/v1/chat/stream",
+                headers=self._headers(),
+                json=payload,
+            ) as resp:
+                resp.raise_for_status()
+                async for chunk in resp.aiter_text():
+                    if chunk:
+                        yield chunk
