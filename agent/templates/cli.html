@@ -150,133 +150,146 @@
             font-weight: 400;
         }
 
-        /* ── Ticket ── */
+        /* ── Ticket glassmorphism ── */
         .intro-ticket {
-            position: relative;
-            width: min(560px, 90vw);
-            background: #f5f0e8;
-            border-radius: 12px;
+            width: min(480px, 90vw);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            perspective: 1000px;
             margin-bottom: 32px;
-            overflow: visible;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
-        .intro-ticket:hover {
-            transform: translateY(-4px) rotate(0.3deg);
-            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.6);
+        .ticket-inner {
+            position: relative;
+            background: linear-gradient(135deg,
+                    rgba(255, 255, 255, 0.14) 0%,
+                    rgba(255, 255, 255, 0.06) 50%,
+                    rgba(255, 255, 255, 0.10) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow:
+                0 24px 60px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+            padding: 32px 28px 24px;
+            transform-style: preserve-3d;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            overflow: hidden;
         }
 
-        .ticket-top,
-        .ticket-bottom {
+        .ticket-glow {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle,
+                    rgba(255, 255, 255, 0.12) 0%,
+                    transparent 70%);
+            top: -60px;
+            left: -40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ticket-badge {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.6rem;
+            font-size: 0.62rem;
             font-weight: 600;
-            letter-spacing: 0.12em;
-            color: #c8845a;
-            padding: 10px 20px;
-            text-align: center;
-            border-bottom: 1.5px dashed rgba(200, 132, 90, 0.3);
-        }
-
-        .ticket-bottom {
-            border-bottom: none;
-            border-top: 1.5px dashed rgba(200, 132, 90, 0.3);
-        }
-
-        .ticket-body {
-            display: flex;
-            align-items: stretch;
-            min-height: 200px;
-        }
-
-        .ticket-side {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            transform: rotate(180deg);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.55rem;
-            letter-spacing: 0.2em;
-            color: #c8845a;
-            padding: 16px 10px;
-            border-right: 1.5px dashed rgba(200, 132, 90, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .ticket-side-right {
-            transform: rotate(0deg);
-            border-right: none;
-            border-left: 1.5px dashed rgba(200, 132, 90, 0.3);
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 4px 10px;
+            border-radius: 20px;
         }
 
         .ticket-main {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 28px 20px;
-            gap: 8px;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+            padding: 8px 0 16px;
         }
 
         .ticket-logo {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 4px;
+            gap: 14px;
         }
 
         .ticket-logo img {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
             object-fit: cover;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }
 
         .ticket-logo span {
             font-family: 'Sora', sans-serif;
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 800;
-            color: #2a2a2a;
-            letter-spacing: -0.03em;
+            color: #ffffff;
+            letter-spacing: -0.04em;
+            text-shadow: 0 2px 12px rgba(255, 255, 255, 0.2);
         }
 
         .ticket-access {
             font-family: 'Sora', sans-serif;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-style: italic;
-            font-weight: 500;
-            color: #c8845a;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.02em;
         }
 
         .ticket-robot {
-            margin-top: 8px;
-            font-size: 1.6rem;
-            color: #c8845a;
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
         }
 
-        /* Perforation holes */
-        .ticket-perf {
-            position: absolute;
-            width: 22px;
-            height: 22px;
+        .ticket-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.12);
+            padding-top: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ticket-dots {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .ticket-dots span {
+            width: 4px;
+            height: 4px;
             border-radius: 50%;
-            background: #1a1a1a;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 2;
+            background: rgba(255, 255, 255, 0.2);
         }
 
-        .ticket-perf-left {
-            left: -11px;
-        }
-
-        .ticket-perf-right {
-            right: -11px;
+        .ticket-hint {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.08em;
+            white-space: nowrap;
         }
 
         /* ── CTA ── */
@@ -304,7 +317,7 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: #c8845a;
+            background: var(--text);
             border: none;
             color: #fff;
             display: flex;
@@ -317,7 +330,7 @@
         }
 
         .intro-scroll-btn:hover {
-            background: #d4956e;
+            background: var(--accent);
         }
 
         @keyframes scrollBounce {
@@ -810,12 +823,11 @@
             <p class="intro-sub">From idea to code — autonomously, from anywhere.</p>
 
             <div class="intro-ticket" onclick="closeIntro()">
-                <div class="ticket-top">
-                    ADMIT ONE &nbsp;•&nbsp; VALID FOR: HAMS AI FREE & PRO
-                </div>
-                <div class="ticket-body">
-                    <div class="ticket-side">
-                        <span>C L I C K &nbsp; H E R E</span>
+                <div class="ticket-inner">
+                    <div class="ticket-glow"></div>
+                    <div class="ticket-header">
+                        <span class="ticket-badge">HAMS AI</span>
+                        <span class="ticket-badge">FREE & PRO</span>
                     </div>
                     <div class="ticket-main">
                         <div class="ticket-logo">
@@ -824,19 +836,22 @@
                         </div>
                         <div class="ticket-access">Access now</div>
                         <div class="ticket-robot">
-                            <i class="bi bi-robot"></i>
+                            <i class="bi bi-terminal-fill"></i>
                         </div>
                     </div>
-                    <div class="ticket-side ticket-side-right">
-                        <span>C L I C K &nbsp; H E R E</span>
+                    <div class="ticket-footer">
+                        <div class="ticket-dots">
+                            <span></span><span></span><span></span>
+                            <span></span><span></span><span></span>
+                            <span></span><span></span>
+                        </div>
+                        <span class="ticket-hint">Click anywhere to continue</span>
+                        <div class="ticket-dots">
+                            <span></span><span></span><span></span>
+                            <span></span><span></span><span></span>
+                            <span></span><span></span>
+                        </div>
                     </div>
-                </div>
-                <div class="ticket-bottom">
-                    ORB FREE & PRO &nbsp;•&nbsp; VALID FOR: HAMS AI FREE & PRO &nbsp;•&nbsp; ORB FREE & PRO
-                </div>
-                <div class="ticket-perfs">
-                    <div class="ticket-perf ticket-perf-left"></div>
-                    <div class="ticket-perf ticket-perf-right"></div>
                 </div>
             </div>
 
@@ -1201,6 +1216,32 @@ curl -X POST http://localhost:8000/run \
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') closeIntro();
         });
+
+        // 3D tilt effect on ticket
+        const ticket = document.querySelector('.intro-ticket');
+        if (ticket) {
+            ticket.addEventListener('mousemove', e => {
+                const inner = ticket.querySelector('.ticket-inner');
+                const rect = ticket.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                inner.style.transform = `
+            perspective(600px)
+            rotateY(${x * 18}deg)
+            rotateX(${-y * 18}deg)
+            scale3d(1.04, 1.04, 1.04)
+        `;
+                const glow = ticket.querySelector('.ticket-glow');
+                if (glow) {
+                    glow.style.left = `${(x + 0.5) * 100 - 20}%`;
+                    glow.style.top = `${(y + 0.5) * 100 - 20}%`;
+                }
+            });
+            ticket.addEventListener('mouseleave', () => {
+                ticket.querySelector('.ticket-inner').style.transform =
+                    'perspective(600px) rotateY(0deg) rotateX(0deg) scale3d(1,1,1)';
+            });
+        }
     </script>
 </body>
 
