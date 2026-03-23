@@ -154,7 +154,7 @@ _MULTITASK_SYSTEM = """Kamu adalah HAMS.AI — asisten AI serba bisa yang powerf
 
 
 def _build_llm(model: str, extended: bool = False) -> Any:
-    # Google Gemini
+    # Gemini → Google langsung
     if model.startswith("gemini-"):
         google_key = os.environ.get("GOOGLE_API_KEY")
         if google_key:
@@ -164,36 +164,12 @@ def _build_llm(model: str, extended: bool = False) -> Any:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Gemini error: {e}")
 
-    # Groq langsung
-    _GROQ_IDS = {
-        "llama-3.3-70b-versatile", "llama-3.1-8b-instant",
-        "llama3-8b-8192", "gemma2-9b-it", "compound-beta",
-    }
-    if model in _GROQ_IDS:
-        groq_key = os.environ.get("GROQ_API_KEY")
-        if groq_key:
-            try:
-                from agent.llm.groq_provider import GroqLLM
-                return GroqLLM(model=model)
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Groq error: {e}")
+    # Semua lainnya → HAMS-MAX
+    hams_key = os.environ.get("HAMS_MAX_API_KEY")
+    if hams_key:
+        from agent.llm.hams_max_provider import HamsMaxLLM
+        return HamsMaxLLM(model=model, extended=extended)
 
-    # NVIDIA — pakai provider baru dengan per-model API key
-    if model.startswith("nvidia/"):
-        try:
-            from agent.llm.nvidia_provider import NvidiaLLM
-            return NvidiaLLM(model=model)
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"NVIDIA error: {e}")
-
-    # HAMS-MAX default (Flowise)
-    if model == "hams-max":
-        hams_key = os.environ.get("HAMS_MAX_API_KEY")
-        if hams_key:
-            from agent.llm.hams_max_provider import HamsMaxLLM
-            return HamsMaxLLM(model=model, extended=extended)
-
-    # Fallback
     from agent.llm.router import LLMRouter
     return LLMRouter.from_env()
 

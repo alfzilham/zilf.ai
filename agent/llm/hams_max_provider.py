@@ -49,6 +49,25 @@ _GROQ_MODELS: set[str] = {
     "compound-beta-mini",
 }
 
+_FRONTEND_TO_HAMSMAX: dict[str, tuple[str, str]] = {
+    "llama-3.3-70b-versatile": ("llama-3.3-70b-versatile", "groq"),
+    "llama-3.1-8b-instant":    ("llama-3.1-8b-instant",    "groq"),
+    "llama3-8b-8192":          ("llama3-8b-8192",           "groq"),
+    "gemma2-9b-it":            ("gemma2-9b-it",             "groq"),
+    "compound-beta":           ("compound-beta",            "groq"),
+    "nvidia/qwen-3.5":         ("qwen",       "nvidia"),
+    "nvidia/glm-5":            ("glm",        "nvidia"),
+    "nvidia/minimax-m25":      ("minimax",    "nvidia"),
+    "nvidia/kimi-k2.5":        ("kimi",       "nvidia"),
+    "nvidia/stepfun-step3.5":  ("step",       "nvidia"),
+    "nvidia/mistral-small-4":  ("mistral",    "nvidia"),
+    "nvidia/qwen-397b":        ("qwen397b",   "nvidia"),
+    "nvidia/deepseek-v3.2":    ("deepseek",   "nvidia"),
+    "nvidia/kimi-k2-thinking": ("kimi-think", "nvidia"),
+    "nvidia/nemotron-super-3": ("nemotron",   "nvidia"),
+    "hams-max":                ("deepseek",   "nvidia"),
+}
+
 # ── System prompts ─────────────────────────────────────────────────────────
 
 _REACT_SYSTEM = """You are an autonomous AI agent. Complete tasks step-by-step using tools.
@@ -92,29 +111,14 @@ Be thorough in your thinking — more thinking leads to better answers.
 
 
 def _resolve_model(model: str) -> tuple[str, str]:
-    # Shorthand alias
+    if model in _FRONTEND_TO_HAMSMAX:
+        return _FRONTEND_TO_HAMSMAX[model]
     if model in HAMS_MAX_MODELS:
         model_id = HAMS_MAX_MODELS[model]
-        provider = "groq" if (model == "groq" or model_id in _GROQ_MODELS) else "nvidia"
+        provider = "groq" if model_id in _GROQ_MODELS else "nvidia"
         return model_id, provider
-
-    # NVIDIA explicit prefix
-    if model.startswith("nvidia/"):
-        return model, "nvidia"
-
-    # Groq model set
     if model in _GROQ_MODELS:
         return model, "groq"
-
-    # Groq shorthand IDs (tanpa prefix)
-    if model in {"llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it"}:
-        return model, "groq"
-
-    # hams-max sendiri → pakai groq default
-    if model == "hams-max":
-        return "llama-3.3-70b-versatile", "groq"
-
-    # Default groq
     return model, "groq"
 
 
