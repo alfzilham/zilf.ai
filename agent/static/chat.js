@@ -654,9 +654,7 @@ function appendMsgStreaming(role, text, id) {
 function updateStreamingBubble(id, text) {
     const bubble = document.getElementById(id);
     if (!bubble) return;
-    bubble.innerHTML = typeof renderMarkdown === 'function'
-        ? renderMarkdown(text)
-        : text.replace(/\n/g, '<br>');
+    bubble.innerHTML = parseMarkdown(text);
     bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
