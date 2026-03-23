@@ -95,7 +95,7 @@ body>* {
     inset: 0;
     z-index: -10;
     pointer-events: none;
-    opacity: 1;
+    opacity: 0.5;
     width: 100%;
     height: 100%;
 }
@@ -2094,4 +2094,16 @@ body>* {
         height: 92vh;
         border-radius: 12px;
     }
+}
+
+/* ── Section divider di dalam respons AI ── */
+.md-body hr.section-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    margin: 16px 0 12px;
+}
+
+.md-body h2,
+.md-body h3 {
+    padding-top: 2px;
 }
