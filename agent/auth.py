@@ -1,29 +1,20 @@
 from __future__ import annotations
-import hashlib
 import base64
+import hashlib
 import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 # ── Config ──
-SECRET_KEY  = os.environ.get("SECRET_KEY", "hams-secret-key-change-in-production")
-ALGORITHM   = "HS256"
-TOKEN_EXPIRE = 60 * 24 * 7  # 7 hari
-
-# FIX: gunakan bcrypt__truncate_error (bukan truncate_error) agar benar-benar
-# diteruskan ke handler bcrypt. truncate_error tanpa prefix diabaikan oleh
-# CryptContext → bcrypt default ke truncate_error=True → raise error.
-pwd_ctx = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=12,
-    bcrypt__truncate_error=False,   # ← FIX: prefix bcrypt__ wajib
-)
+SECRET_KEY   = os.environ.get("SECRET_KEY", "hams-secret-key-change-in-production")
+ALGORITHM    = "HS256"
+TOKEN_EXPIRE = 60 * 24 * 7   # 7 hari
+BCRYPT_ROUNDS = 12
 
 # ── Database ──
 DB_PATH = Path(os.environ.get("HAMS_DB_PATH", "/app/data/hams.db"))
@@ -51,22 +42,24 @@ def init_db():
     conn.close()
 
 # ── Password ──
-# FIX: ganti _prep (truncate bytes) dengan sha256 pre-hash.
-# sha256 → digest 32 bytes → base64 44 bytes, selalu < 72 byte limit bcrypt.
-# Tidak ada edge case multi-byte character yang bisa ditruncate di tengah.
+# Passlib memblokir password > 72 bytes di layer validasinya sendiri,
+# sebelum sampai ke bcrypt — tidak bisa dimatikan dengan parameter apapun.
+# Solusi: pakai library bcrypt langsung, tanpa passlib sama sekali.
+#
+# Pre-hash sha256 → base64 memastikan input ke bcrypt selalu 44 byte,
+# sehingga 72-byte limit tidak pernah tercapai apapun panjang password asli.
+
 def _prep(pw: str) -> bytes:
-    """
-    Pre-hash password sebelum masuk bcrypt agar tidak pernah melebihi 72 byte.
-    sha256(utf-8) → 32 bytes → base64 → 44 bytes (selalu aman untuk bcrypt).
-    """
+    """sha256(password) → base64 → 44 bytes. Selalu aman untuk bcrypt."""
     digest = hashlib.sha256(pw.encode("utf-8")).digest()
-    return base64.b64encode(digest)          # bytes, 44 chars, aman
+    return base64.b64encode(digest)
 
 def hash_password(password: str) -> str:
-    return pwd_ctx.hash(_prep(password))
+    salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
+    return bcrypt.hashpw(_prep(password), salt).decode("utf-8")
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_ctx.verify(_prep(plain), hashed)
+    return bcrypt.checkpw(_prep(plain), hashed.encode("utf-8"))
 
 # ── JWT ──
 def create_token(user_id: int, username: str) -> str:
