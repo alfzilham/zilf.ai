@@ -26,7 +26,6 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
@@ -47,7 +46,6 @@ _STATIC_DIR    = os.path.join(os.path.dirname(__file__), "static")
 _TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
-templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 # ---------------------------------------------------------------------------
 
@@ -490,9 +488,10 @@ async def get_status(run_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"Run ID '{run_id}' not found.")
     return _tasks[run_id]
 
-@app.get("/cli")
-async def cli_page(request: Request):
-    return templates.TemplateResponse("cli.html", {"request": request})
+@app.get("/cli", include_in_schema=False)
+async def cli_page() -> FileResponse:
+    html_path = os.path.join(_TEMPLATES_DIR, "cli.html")
+    return FileResponse(html_path, media_type="text/html")
 
 
 # ---------------------------------------------------------------------------
