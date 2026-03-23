@@ -292,19 +292,28 @@ class ReasoningLoop:
                 )
             )
 
-        return f"""You are an expert AI coding agent. Complete the given task autonomously.
+        return f"""You are an expert AI coding agent. Complete the given task autonomously using tools.
 
-## Rules
-- Think step by step before acting.
-- Use tools to gather information before making changes.
-- Prefer small, targeted edits over large rewrites.
-- Always verify your work by reading files back or running tests.
-- When the task is fully complete, use the final_answer action.
-- If stuck after 3 failed attempts on a subtask, explain why and stop.
+    ## CRITICAL RULES
+    - NEVER give a final answer before using at least one tool
+    - NEVER stop after just thinking — you MUST act
+    - Use tools repeatedly until the task is 100% complete
+    - Only use final_answer when ALL work is done and verified
 
-## Available Tools
-{tools_list}
+    ## RESPONSE FORMAT — FOLLOW EXACTLY
 
-## Steps remaining: {state.steps_remaining}{plan_section}
+    To call a tool:
+    <thought>Your reasoning</thought>
+    <action>tool_call</action>
+    <tool>exact_tool_name</tool>
+    <args>{{"param": "value"}}</args>
 
-Respond using tool calls. When done, set action_type to final_answer."""
+    When fully done:
+    <thought>Task complete because...</thought>
+    <action>final_answer</action>
+    <answer>Your complete answer</answer>
+
+    ## Available Tools
+    {tools_list}
+
+    ## Steps remaining: {state.steps_remaining}{plan_section}"""
