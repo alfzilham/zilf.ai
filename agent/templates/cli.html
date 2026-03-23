@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HAMS.AI — CLI & Code</title>
+    <link rel="icon" type="image/png" href="/static/favicon/apple-icon.png" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #07070d;
+            --surface: #0a0a0a;
+            --surface2: #0e0e0e;
+            --border: rgba(255, 255, 255, 0.06);
+            --border2: rgba(255, 255, 255, 0.10);
+            --text: #f3f3f3;
+            --text-2: #909090;
+            --text-3: #444444;
+            --accent: #f3f3f3;
+            --green: #4ade80;
+            --code-bg: #050505;
+            --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+            --sidebar-w: 260px;
+        }
+
+        [data-theme="light"] {
+            --bg: #e8e8e8;
+            --surface: rgba(255, 255, 255, 0.75);
+            --border: rgba(0, 0, 0, 0.07);
+            --border2: rgba(0, 0, 0, 0.11);
+            --text: #1a1a1a;
+            --text-2: #606060;
+            --text-3: #aaaaaa;
+            --accent: #1a1a1a;
+            --code-bg: #0a0a0a;
+            --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.8) 100%);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            width: var(--sidebar-w);
+            flex-shrink: 0;
+            background: var(--glass-bg);
+            border-right: 1px solid var(--border2);
+            backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            z-index: 50;
+        }
+
+        .sidebar-logo {
+            padding: 20px 20px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.05rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border2);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-nav {
+            padding: 0 8px 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 9px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-2);
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 1px solid var(--border2);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .nav-item i {
+            font-size: 0.95rem;
+            width: 18px;
+            text-align: center;
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background: var(--border2);
+            margin: 6px 14px;
+        }
+
+        .sidebar-bottom {
+            padding: 10px 8px;
+            border-top: 1px solid var(--border2);
+            margin-top: auto;
+        }
+
+        .sidebar-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            cursor: pointer;
+        }
+
+        .profile-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .profile-name {
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .profile-plan {
+            font-size: 0.67rem;
+            color: var(--text-3);
+        }
+
+        /* ── Main ── */
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        #topbar {
+            height: 52px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border2);
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+        }
+
+        #topbar h1 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #topbar h1 i {
+            color: var(--accent);
+        }
+
+        .tb-back {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--glass-bg);
+            color: var(--text-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .tb-back:hover {
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* ── Content ── */
+        #content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        #content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        .cli-layout {
+            display: flex;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 32px;
+            gap: 48px;
+        }
+
+        /* ── TOC Sidebar ── */
+        .toc {
+            width: 200px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 40px;
+            align-self: flex-start;
+        }
+
+        .toc-title {
+            font-size: 0.67rem;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        .toc-item {
+            display: block;
+            padding: 5px 10px;
+            font-size: 0.78rem;
+            color: var(--text-2);
+            border-left: 2px solid var(--border2);
+            text-decoration: none;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .toc-item:hover,
+        .toc-item.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .toc-sub {
+            display: block;
+            padding: 4px 10px 4px 20px;
+            font-size: 0.72rem;
+            color: var(--text-3);
+            border-left: 2px solid var(--border2);
+            text-decoration: none;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .toc-sub:hover {
+            color: var(--text-2);
+            border-left-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ── Doc Content ── */
+        .doc-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .doc-hero {
+            margin-bottom: 40px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .doc-hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border2);
+            background: var(--glass-bg);
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-2);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .doc-hero h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 10px;
+            line-height: 1.15;
+        }
+
+        .doc-hero p {
+            font-size: 0.95rem;
+            color: var(--text-2);
+            line-height: 1.7;
+            max-width: 560px;
+        }
+
+        .doc-section {
+            margin-bottom: 48px;
+        }
+
+        .doc-section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .doc-section-title i {
+            color: var(--accent);
+            font-size: 1rem;
+        }
+
+        .doc-subsection {
+            margin-bottom: 28px;
+        }
+
+        .doc-subsection-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .doc-text {
+            font-size: 0.85rem;
+            color: var(--text-2);
+            line-height: 1.75;
+            margin-bottom: 12px;
+        }
+
+        .doc-text strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--border2);
+            padding: 1px 6px;
+            border-radius: 4px;
+            color: var(--accent);
+        }
+
+        /* ── Code Block ── */
+        .code-wrap {
+            background: var(--code-bg);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .code-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 14px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .code-lang {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .copy-btn {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 5px;
+            border: 1px solid var(--border2);
+            background: var(--glass-bg);
+            color: var(--text-2);
+            cursor: pointer;
+            font-family: 'Sora', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+
+        .copy-btn:hover {
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .code-wrap pre {
+            padding: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            line-height: 1.65;
+            color: #c8c8c8;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .code-wrap pre::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .code-wrap pre::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+
+        /* ── Prereq list ── */
+        .prereq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .prereq-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border2);
+            background: var(--glass-bg);
+            font-size: 0.82rem;
+        }
+
+        .prereq-item i {
+            color: var(--green);
+            font-size: 0.9rem;
+        }
+
+        /* ── Info box ── */
+        .info-box {
+            display: flex;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            background: rgba(74, 222, 128, 0.04);
+            margin: 12px 0;
+        }
+
+        .info-box i {
+            color: var(--green);
+            font-size: 0.9rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .info-box p {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            line-height: 1.6;
+        }
+
+        .info-box p code {
+            font-size: 0.75em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <img src="/static/image/logo.png" alt="HAMS.AI"
+                    style="width:22px;height:22px;border-radius:5px;object-fit:cover;" />
+            </div>
+            <span>HAMS<span style="color:var(--accent)">AI</span></span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/chat-ui" class="nav-item">
+                <i class="bi bi-house-door"></i> Home
+            </a>
+            <a href="/chat-ui" class="nav-item">
+                <i class="bi bi-chat-dots"></i> Chat
+            </a>
+            <a href="/chat-ui" class="nav-item">
+                <i class="bi bi-lightning-charge"></i> Agent
+            </a>
+            <div class="nav-item active">
+                <i class="bi bi-code-slash"></i> Code
+            </div>
+            <a href="/chat-ui" class="nav-item">
+                <i class="bi bi-clock-history"></i> History
+            </a>
+        </nav>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-bottom">
+            <div class="nav-item" onclick="toggleTheme()">
+                <i class="bi bi-sun" id="themeIcon"></i> Theme
+            </div>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-profile">
+                <div class="profile-avatar">AI</div>
+                <div>
+                    <div class="profile-name">HAMS User</div>
+                    <div class="profile-plan">Free plan</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div id="main">
+        <div id="topbar">
+            <a href="/chat-ui" class="tb-back"><i class="bi bi-arrow-left"></i></a>
+            <h1><i class="bi bi-code-slash"></i> CLI & Code</h1>
+        </div>
+
+        <div id="content">
+            <div class="cli-layout">
+
+                <!-- TOC -->
+                <div class="toc">
+                    <div class="toc-title">On this page</div>
+                    <a class="toc-item active" onclick="scrollTo('cli')">CLI via npm</a>
+                    <a class="toc-sub" onclick="scrollTo('prereq')">Prasyarat</a>
+                    <a class="toc-sub" onclick="scrollTo('install')">Instalasi</a>
+                    <a class="toc-sub" onclick="scrollTo('commands')">Perintah</a>
+                    <a class="toc-sub" onclick="scrollTo('session')">Contoh Sesi</a>
+                    <a class="toc-item" onclick="scrollTo('usage')">Penggunaan</a>
+                    <a class="toc-sub" onclick="scrollTo('agent')">Jalankan Agent</a>
+                    <a class="toc-sub" onclick="scrollTo('python')">Via CLI Python</a>
+                    <a class="toc-sub" onclick="scrollTo('api')">Via API</a>
+                </div>
+
+                <!-- Doc Content -->
+                <div class="doc-content">
+
+                    <!-- Hero -->
+                    <div class="doc-hero">
+                        <div class="doc-hero-badge">
+                            <i class="bi bi-terminal"></i> Developer Tools
+                        </div>
+                        <h1>CLI & Code</h1>
+                        <p>Gunakan HAMS AI langsung dari terminal, API, atau integrasi Python. Semua cara untuk
+                            menjalankan agent dari environment kamu sendiri.</p>
+                    </div>
+
+                    <!-- CLI via npm -->
+                    <div class="doc-section" id="cli">
+                        <div class="doc-section-title">
+                            <i class="bi bi-terminal-fill"></i> CLI via npm
+                        </div>
+
+                        <div class="doc-text">
+                            Gunakan HAMS AI langsung dari terminal mana saja menggunakan <code>hams</code> — tanpa perlu
+                            masuk ke folder project setiap kali.
+                        </div>
+
+                        <!-- Prasyarat -->
+                        <div class="doc-subsection" id="prereq">
+                            <div class="doc-subsection-title">Prasyarat CLI</div>
+                            <div class="prereq-list">
+                                <div class="prereq-item">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span><strong>Node.js</strong> 16+</span>
+                                </div>
+                                <div class="prereq-item">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span><strong>Python</strong> 3.14+ (sudah terinstall dari langkah di atas)</span>
+                                </div>
+                                <div class="prereq-item">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span>Repository <strong>hams-ai</strong> sudah di-clone di komputer kamu</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instalasi -->
+                        <div class="doc-subsection" id="install">
+                            <div class="doc-subsection-title">Instalasi — PowerShell (Windows)</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">powershell</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i>
+                                        Copy</button>
+                                </div>
+                                <pre># Step 1 — Install CLI secara global
+npm install -g @hams-ai/cli
+
+# Step 2 — Tambahkan Python Scripts ke PATH (jika belum)
+$env:PATH += ";C:\Users\&lt;username&gt;\AppData\Local\Python\pythoncore-3.14-64\Scripts"
+
+# Step 3 — Install Python dependencies (pertama kali saja)
+pip install -r "C:\path\to\hams-ai\requirements.txt"
+
+# Step 4 — Set path ke folder project hams-ai
+$env:HAMS_PATH = "C:\path\to\hams-ai"
+
+# Step 5 — Jalankan!
+hams</pre>
+                            </div>
+                            <div class="info-box">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <p>Ganti <code>C:\path\to\hams-ai</code> dengan path aktual folder hasil clone di
+                                    komputer kamu. Contoh: <code>D:\2026\Workspace\Website\.hams.ai</code></p>
+                            </div>
+
+                            <div class="doc-subsection-title" style="margin-top:20px;">Buat PATH permanen</div>
+                            <div class="doc-text">Agar tidak perlu set ulang setiap restart:</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">powershell</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i>
+                                        Copy</button>
+                                </div>
+                                <pre># Buka PowerShell profile
+notepad $PROFILE
+
+# Tambahkan dua baris ini ke dalam file, lalu simpan:
+$env:PATH += ";C:\Users\&lt;username&gt;\AppData\Local\Python\pythoncore-3.14-64\Scripts"
+$env:HAMS_PATH = "C:\path\to\hams-ai"</pre>
+                            </div>
+                        </div>
+
+                        <!-- Perintah -->
+                        <div class="doc-subsection" id="commands">
+                            <div class="doc-subsection-title">Perintah CLI</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">bash</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i>
+                                        Copy</button>
+                                </div>
+                                <pre># Mode chat interaktif (default)
+hams
+
+# Jalankan satu task langsung
+hams run "Buatkan fungsi Python untuk sorting bubble sort"
+
+# Lihat daftar tools yang tersedia
+hams tools
+
+# Cek status backend
+hams status
+
+# Tampilkan output Python (untuk debug)
+hams --verbose
+
+# Gunakan port custom
+hams --port 9000</pre>
+                            </div>
+                        </div>
+
+                        <!-- Contoh Sesi -->
+                        <div class="doc-subsection" id="session">
+                            <div class="doc-subsection-title">Contoh Sesi Chat</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">terminal</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i>
+                                        Copy</button>
+                                </div>
+                                <pre>PS C:\Users\LENOVO> hams
+
+hams.ai — AI Coding Agent
+
+✔ hams.ai ready — port 8000
+
+  Type your task and press Enter. Type "exit" to quit.
+
+› Buatkan REST API sederhana dengan FastAPI
+
+  Baik, saya akan membuat REST API dengan FastAPI...
+  [agent bekerja...]
+
+› exit
+
+  Goodbye.</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Penggunaan -->
+                    <div class="doc-section" id="usage">
+                        <div class="doc-section-title">
+                            <i class="bi bi-rocket-takeoff-fill"></i> Penggunaan
+                        </div>
+
+                        <!-- Jalankan Agent -->
+                        <div class="doc-subsection" id="agent">
+                            <div class="doc-subsection-title">Jalankan Agent</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">bash</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i>
+                                        Copy</button>
+                                </div>
+                                <pre># Pastikan Ollama berjalan terlebih dahulu
+ollama serve
+
+# Jalankan basic agent
+python examples/basic_agent.py
+
+# Atau dengan task custom
+python examples/basic_agent.py "Buat fungsi Python untuk sorting bubble sort"
+
+# Mode demo (tanpa Ollama)
+python examples/basic_agent.py --demo</pre>
+                            </div>
+                        </div>
+
+                        <!-- Via CLI Python -->
+                        <div class="doc-subsection" id="python">
+                            <div class="doc-subsection-title">Via CLI Python</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">bash</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i>
+                                        Copy</button>
+                                </div>
+                                <pre># Jalankan task
+python -m agent.main run "Fix the failing tests in auth.py"
+
+# Gunakan provider tertentu
+python -m agent.main run "Add type hints" --provider groq --model llama3-70b-8192
+
+# Mode verbose
+python -m agent.main run "Refactor utils.py" --verbose</pre>
+                            </div>
+                        </div>
+
+                        <!-- Via API -->
+                        <div class="doc-subsection" id="api">
+                            <div class="doc-subsection-title">Via API (FastAPI)</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">bash</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i>
+                                        Copy</button>
+                                </div>
+                                <pre># Jalankan server
+uvicorn agent.api:app --host 0.0.0.0 --port 8000 --reload
+
+# Kirim task
+curl -X POST http://localhost:8000/run \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Write a binary search function in Python"}'</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /doc-content -->
+            </div><!-- /cli-layout -->
+        </div><!-- /content -->
+    </div><!-- /main -->
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const t = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', t);
+            localStorage.setItem('hams_theme', t);
+            document.getElementById('themeIcon').className = t === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+        // Apply saved theme
+        const saved = localStorage.getItem('hams_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+        document.getElementById('themeIcon').className = saved === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+
+        function scrollTo(id) {
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.querySelectorAll('.toc-item').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function copyCode(btn) {
+            const pre = btn.closest('.code-wrap').querySelector('pre');
+            const text = pre.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
+                setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy', 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -74,10 +74,10 @@
             <div class="nav-item" id="navAgent" onclick="setMode('agent'); closeSidebar()" title="Agent">
                 <i class="bi bi-lightning-charge"></i> <span class="sidebar-label">Agent</span>
             </div>
-            <div class="nav-item" title="Explore">
-                <i class="bi bi-compass"></i> <span class="sidebar-label">Explore</span>
+            <div class="nav-item" title="Code" onclick="window.location.href='/cli'">
+                <i class="bi bi-code-slash"></i> <span class="sidebar-label">Code</span>
             </div>
-            <div class="nav-item" title="History">
+            <div class="nav-item" title="History" onclick="openHistoryModal()">
                 <i class="bi bi-clock-history"></i> <span class="sidebar-label">History</span>
             </div>
         </nav>
@@ -350,6 +350,27 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/static/chat.js"></script>
+
+    <!-- History Modal -->
+    <div id="historyModal">
+        <div class="hmodal-box">
+            <div class="hmodal-head">
+                <div class="hmodal-title">
+                    <i class="bi bi-clock-history" style="color:var(--accent)"></i>
+                    Riwayat Chat
+                </div>
+                <button class="hmodal-close" onclick="closeHistoryModal()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="hmodal-search">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Cari riwayat..." id="hmSearch"
+                    oninput="filterHistoryModal(this.value)" />
+            </div>
+            <div class="hmodal-list" id="hmList"></div>
+        </div>
+    </div>
 
 </body>
 

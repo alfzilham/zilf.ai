@@ -1196,3 +1196,104 @@ function showToast(msg) {
     t.style.display = 'block';
     setTimeout(() => t.style.display = 'none', 3500);
 }
+
+// ═══════════════════════════════════════════════
+// HISTORY MODAL
+// ═══════════════════════════════════════════════
+function openHistoryModal() {
+    renderHistoryModal('');
+    document.getElementById('historyModal').classList.add('open');
+    document.getElementById('hmSearch')?.focus();
+    closeSidebar();
+}
+
+function closeHistoryModal() {
+    document.getElementById('historyModal').classList.remove('open');
+}
+
+function filterHistoryModal(q) {
+    renderHistoryModal(q.toLowerCase());
+}
+
+function renderHistoryModal(query = '') {
+    const container = document.getElementById('hmList');
+    if (!container) return;
+
+    const chats = loadAllChats().filter(c =>
+        !query || c.title.toLowerCase().includes(query)
+    );
+
+    if (!chats.length) {
+        container.innerHTML = `
+            <div class="hmodal-empty">
+                <i class="bi bi-clock-history"></i>
+                ${query ? 'Tidak ada hasil untuk "' + query + '"' : 'Belum ada riwayat chat'}
+            </div>`;
+        return;
+    }
+
+    const groups = {};
+    chats.forEach(chat => {
+        const label = getDateLabel(chat.updatedAt || chat.createdAt);
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(chat);
+    });
+
+    container.innerHTML = '';
+    Object.entries(groups).forEach(([label, items]) => {
+        const groupEl = document.createElement('div');
+        groupEl.innerHTML = `<div class="hmodal-group-label">${label}</div>`;
+
+        items.forEach(chat => {
+            const d = new Date(chat.updatedAt || chat.createdAt);
+            const timeStr = d.toLocaleString('id-ID', {
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            const msgCount = chat.messages?.length || 0;
+
+            const item = document.createElement('div');
+            item.className = 'hmodal-item';
+            item.innerHTML = `
+                <div class="hmodal-item-icon"><i class="bi bi-chat-dots"></i></div>
+                <div class="hmodal-item-body">
+                    <div class="hmodal-item-title">${escHtml(chat.title)}</div>
+                    <div class="hmodal-item-meta">
+                        <i class="bi bi-calendar3"></i> ${timeStr}
+                        &nbsp;·&nbsp;
+                        <i class="bi bi-chat-text"></i> ${Math.floor(msgCount/2)} pesan
+                    </div>
+                </div>
+                <button class="hmodal-item-del" title="Hapus"
+                    onclick="deleteFromModal('${chat.id}', event)">
+                    <i class="bi bi-trash3"></i>
+                </button>`;
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.hmodal-item-del')) return;
+                restoreChat(chat.id);
+                closeHistoryModal();
+            });
+            groupEl.appendChild(item);
+        });
+
+        container.appendChild(groupEl);
+    });
+}
+
+function deleteFromModal(id, e) {
+    e.stopPropagation();
+    deleteChatFromHistory(id, e);
+    renderHistoryModal(document.getElementById('hmSearch')?.value || '');
+}
+
+// Close on backdrop click
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('historyModal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('historyModal')) closeHistoryModal();
+    });
+});
+
+// Keyboard shortcut — Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeHistoryModal();
+});
