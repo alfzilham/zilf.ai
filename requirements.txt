@@ -12,3 +12,4 @@ loguru>=0.7.2
 aiofiles>=24.1.0
 ollama>=0.4.7
 tiktoken>=0.9.0
+google-generativeai>=0.8.0

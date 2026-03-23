@@ -154,7 +154,7 @@ _MULTITASK_SYSTEM = """Kamu adalah HAMS.AI — asisten AI serba bisa yang powerf
 
 
 def _build_llm(model: str, extended: bool = False) -> Any:
-    # Ollama — selalu local, tidak butuh API key
+    # Ollama — local
     if model.startswith("ollama/"):
         try:
             from agent.llm.ollama_provider import OllamaLLM
@@ -172,13 +172,28 @@ def _build_llm(model: str, extended: bool = False) -> Any:
             except Exception:
                 pass
 
-    # HAMS-MAX — handle Groq, NVIDIA, dan hams-max sendiri
-    hams_key = os.environ.get("HAMS_MAX_API_KEY")
-    if hams_key:
-        from agent.llm.hams_max_provider import HamsMaxLLM
-        return HamsMaxLLM(model=model, extended=extended)
+    # Groq — langsung ke Groq API
+    _GROQ_IDS = {
+        "llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it",
+        "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "compound-beta"
+    }
+    if model in _GROQ_IDS:
+        groq_key = os.environ.get("GROQ_API_KEY")
+        if groq_key:
+            try:
+                from agent.llm.groq_provider import GroqLLM
+                return GroqLLM(model=model)
+            except Exception:
+                pass
 
-    # Fallback ke router
+    # NVIDIA & hams-max — lewat HAMS-MAX API
+    if model.startswith("nvidia/") or model == "hams-max":
+        hams_key = os.environ.get("HAMS_MAX_API_KEY")
+        if hams_key:
+            from agent.llm.hams_max_provider import HamsMaxLLM
+            return HamsMaxLLM(model=model, extended=extended)
+
+    # Fallback
     from agent.llm.router import LLMRouter
     return LLMRouter.from_env()
 
