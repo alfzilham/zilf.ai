@@ -259,6 +259,120 @@ function doBlink() {
 }
 
 // ═══════════════════════════════════════════════
+// ORB 3D LIGHT ANIMATION
+// ═══════════════════════════════════════════════
+function initOrb3DLight() {
+    const orb = document.getElementById('orb');
+    if (!orb) return;
+
+    let angle = 0;
+    let speed = 0.004;
+    let rx = 0.38, ry = 0.32;
+    const radiusX = 0.28, radiusY = 0.22;
+
+    // Secondary highlight
+    const shine = document.createElement('div');
+    shine.id = 'orbShine';
+    shine.style.cssText = `
+        position:absolute;
+        border-radius:50%;
+        pointer-events:none;
+        z-index:2;
+        transition:none;
+        mix-blend-mode:screen;
+    `;
+    orb.appendChild(shine);
+
+    // Rim light
+    const rim = document.createElement('div');
+    rim.id = 'orbRim';
+    rim.style.cssText = `
+        position:absolute;
+        inset:0;
+        border-radius:50%;
+        pointer-events:none;
+        z-index:1;
+    `;
+    orb.appendChild(rim);
+
+    function tick() {
+        angle += speed;
+
+        // Light source position (circular orbit)
+        rx = 0.30 + Math.cos(angle) * radiusX;
+        ry = 0.22 + Math.sin(angle * 0.7) * radiusY;
+
+        // Opposite side dim
+        const dx = 1 - rx;
+        const dy = 1 - ry;
+
+        // Update main orb background — realistic 3D sphere shading
+        const lightPct = Math.round(rx * 100);
+        const lightPctY = Math.round(ry * 100);
+
+        orb.style.background = `
+            radial-gradient(
+                circle at ${lightPct}% ${lightPctY}%,
+                #ffffff    0%,
+                #f5f5f5    4%,
+                #e0e0e0   10%,
+                #c0c0c0   22%,
+                #909090   40%,
+                #505050   62%,
+                #141414  100%
+            )
+        `;
+
+        // Primary specular highlight — small bright spot
+        const hSize = 28 + Math.sin(angle * 1.3) * 6;
+        const hLeft = (rx * 130) - hSize / 2;
+        const hTop  = (ry * 130) - hSize / 2;
+        shine.style.cssText = `
+            position:absolute;
+            width:${hSize}px;
+            height:${hSize * 0.75}px;
+            left:${hLeft}px;
+            top:${hTop}px;
+            border-radius:50%;
+            pointer-events:none;
+            z-index:9;
+            background: radial-gradient(ellipse,
+                rgba(255,255,255,0.9) 0%,
+                rgba(255,255,255,0.4) 40%,
+                transparent 70%
+            );
+            transform: rotate(${-30 + Math.sin(angle)*15}deg);
+        `;
+
+        // Rim light — opposite side of light source
+        const rimAngle = angle + Math.PI;
+        const rimX = 50 + Math.cos(rimAngle) * 40;
+        const rimY = 50 + Math.sin(rimAngle * 0.7) * 35;
+        rim.style.background = `
+            radial-gradient(
+                circle at ${rimX}% ${rimY}%,
+                rgba(255,255,255,0.08) 0%,
+                transparent 55%
+            )
+        `;
+
+        // Subtle box-shadow glow follows light
+        const glowX = (rx - 0.5) * 20;
+        const glowY = (ry - 0.5) * 20;
+        orb.style.boxShadow = `
+            ${glowX}px ${glowY}px 40px rgba(255,255,255,0.15),
+            0 0 80px rgba(180,180,180,0.08),
+            inset 0 2px 4px rgba(255,255,255,0.5),
+            inset 0 0 40px rgba(0,0,0,0.45)
+        `;
+
+        requestAnimationFrame(tick);
+    }
+
+    tick();
+}
+
+// ═══════════════════════════════════════════════
 // EXTENDED THINKING
 // ═══════════════════════════════════════════════
 function toggleExtended() {
