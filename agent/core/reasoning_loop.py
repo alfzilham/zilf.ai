@@ -5,7 +5,7 @@ Implements the Perceive → Reason → Act → Observe → Reflect cycle
 based on the ReAct (Reasoning + Acting) framework.
 
 Each call to `run_step()` performs one full iteration:
-  1. Perceive  — build context from current AgentState
+  1. Perceive  — build context from current AgentState (with windowing)
   2. Reason    — call LLM to get thought + action decision
   3. Act       — execute chosen tools in the sandbox
   4. Observe   — collect tool outputs
@@ -33,6 +33,20 @@ from agent.core.state import (
 if TYPE_CHECKING:
     from agent.llm.base import BaseLLM
     from agent.tools.registry import ToolRegistry
+
+
+# ---------------------------------------------------------------------------
+# Context window config
+# ---------------------------------------------------------------------------
+
+# Maksimal karakter total dari context_messages sebelum di-trim
+MAX_CONTEXT_CHARS = 12_000
+
+# Berapa step terakhir yang selalu disertakan penuh (tidak di-trim)
+RECENT_STEPS_KEPT = 4
+
+# Maksimal karakter per tool result (supaya output panjang tidak meledakkan context)
+MAX_TOOL_RESULT_CHARS = 800
 
 
 # ---------------------------------------------------------------------------
@@ -66,13 +80,6 @@ class ReasoningLoop:
         max_steps:     Hard cap on iterations.
         verbose:       Log step-by-step to stdout.
         step_callback: Optional async callback called after each step.
-                       Signature: async def callback(step: ReasoningStep) -> None
-                       Used for real-time streaming of agent progress.
-
-    Usage::
-
-        loop = ReasoningLoop(llm=claude, tool_registry=registry)
-        state = await loop.run(state)
     """
 
     def __init__(
@@ -87,16 +94,14 @@ class ReasoningLoop:
         self.tool_registry = tool_registry
         self.max_steps = max_steps
         self.verbose = verbose
-        self.step_callback = step_callback   # ← NEW: agentic streaming callback
+        self.step_callback = step_callback
 
     # -----------------------------------------------------------------------
     # Public API
     # -----------------------------------------------------------------------
 
     async def run(self, state: AgentState) -> AgentState:
-        """
-        Run the full reasoning loop until complete, final_answer, or max_steps.
-        """
+        """Run the full reasoning loop until complete, final_answer, or max_steps."""
         logger.info(f"[run:{state.run_id}] Starting reasoning loop — task: {state.task!r}")
         state.status = AgentStatus.RUNNING
 
@@ -125,7 +130,7 @@ class ReasoningLoop:
             logger.info(f"  ── Step {step_num}/{self.max_steps} ──")
 
         try:
-            # 1. PERCEIVE
+            # 1. PERCEIVE — dengan context trimming
             messages = self._perceive(state)
 
             # 2. REASON
@@ -150,8 +155,6 @@ class ReasoningLoop:
                 step.mark_complete(StepStatus.SUCCESS)
                 state.add_step(step)
                 self._finish(state, step)
-
-                # Fire callback for final step
                 await self._fire_callback(step)
                 return state
 
@@ -168,15 +171,11 @@ class ReasoningLoop:
             state.add_step(step)
             state.status = AgentStatus.FAILED
             state.error  = str(exc)
-
             await self._fire_callback(step)
             return state
 
         state.add_step(step)
-
-        # ── Fire step callback (for streaming) ──
         await self._fire_callback(step)
-
         return state
 
     # -----------------------------------------------------------------------
@@ -184,7 +183,6 @@ class ReasoningLoop:
     # -----------------------------------------------------------------------
 
     async def _fire_callback(self, step: ReasoningStep) -> None:
-        """Invoke step_callback safely — never lets it break the reasoning loop."""
         if self.step_callback is None:
             return
         try:
@@ -193,24 +191,82 @@ class ReasoningLoop:
             logger.warning(f"[loop] step_callback raised: {exc} — ignoring")
 
     # -----------------------------------------------------------------------
-    # Private: Perceive
+    # Private: Perceive — WITH context trimming
     # -----------------------------------------------------------------------
 
     def _perceive(self, state: AgentState) -> list[dict]:
         """
-        Build the message list for the next LLM call.
-        First message = user task, then interleaved thought/action/observation history.
+        Build the message list untuk LLM call berikutnya.
+
+        FIX: Context trimming untuk mencegah context overflow (500 error).
+
+        Strategy:
+        1. Ambil semua context messages dari state
+        2. Selalu include RECENT_STEPS_KEPT steps terakhir penuh
+        3. Steps lama di-summarize jadi satu baris per step
+        4. Total chars dijaga di bawah MAX_CONTEXT_CHARS
         """
-        messages: list[dict] = [{"role": "user", "content": state.task}]
-        messages.extend(state.context_messages())
-        return messages
+        base_messages: list[dict] = [{"role": "user", "content": state.task}]
+        all_context = state.context_messages()
+
+        if not all_context:
+            return base_messages
+
+        # Hitung total chars dari full context
+        total_chars = sum(len(str(m.get("content", ""))) for m in all_context)
+
+        if total_chars <= MAX_CONTEXT_CHARS:
+            # Masih aman, kirim semua
+            base_messages.extend(all_context)
+            logger.debug(f"[loop] Context OK: {total_chars} chars, {len(all_context)} messages")
+            return base_messages
+
+        # Context terlalu besar — trim
+        logger.warning(
+            f"[loop] Context overflow: {total_chars:,} chars > {MAX_CONTEXT_CHARS:,}. "
+            f"Trimming to last {RECENT_STEPS_KEPT} steps."
+        )
+
+        # Split: recent (penuh) vs old (di-summarize)
+        recent = all_context[-RECENT_STEPS_KEPT * 2:]   # *2 karena tiap step ada 2 messages (assistant + tool result)
+        old    = all_context[:-RECENT_STEPS_KEPT * 2] if len(all_context) > RECENT_STEPS_KEPT * 2 else []
+
+        if old:
+            # Buat summary singkat dari steps lama
+            summary_lines = [f"[Steps 1-{state.current_step - RECENT_STEPS_KEPT} summary]"]
+            for msg in old:
+                content = str(msg.get("content", ""))
+                # Ambil baris pertama saja sebagai summary
+                first_line = content.split("\n")[0][:120]
+                summary_lines.append(f"• {first_line}")
+
+            summary_msg = {
+                "role": "user",
+                "content": "\n".join(summary_lines),
+            }
+            base_messages.append(summary_msg)
+
+        # Tool result di recent messages juga di-trim kalau terlalu panjang
+        trimmed_recent = []
+        for msg in recent:
+            content = str(msg.get("content", ""))
+            if len(content) > MAX_TOOL_RESULT_CHARS:
+                content = content[:MAX_TOOL_RESULT_CHARS] + f"\n... [truncated, {len(content)} total chars]"
+            trimmed_recent.append({**msg, "content": content})
+
+        base_messages.extend(trimmed_recent)
+
+        new_total = sum(len(str(m.get("content", ""))) for m in base_messages)
+        logger.debug(f"[loop] After trim: {new_total:,} chars, {len(base_messages)} messages")
+
+        return base_messages
 
     # -----------------------------------------------------------------------
     # Private: Act + Observe
     # -----------------------------------------------------------------------
 
     async def _act_and_observe(self, tool_calls: list[ToolCall]) -> list[ToolResult]:
-        """Execute all tool calls chosen by the LLM and collect outputs."""
+        """Execute all tool calls and collect outputs."""
         results: list[ToolResult] = []
 
         for tc in tool_calls:
@@ -221,14 +277,23 @@ class ReasoningLoop:
             try:
                 output = await self.tool_registry.dispatch(tc.tool_name, tc.tool_input)
                 elapsed = (time.perf_counter() - t0) * 1000
+
+                # Trim output panjang sebelum disimpan ke state
+                output_str = str(output)
+                if len(output_str) > MAX_TOOL_RESULT_CHARS * 2:
+                    output_str = (
+                        output_str[:MAX_TOOL_RESULT_CHARS]
+                        + f"\n... [truncated, {len(output_str):,} total chars]"
+                    )
+
                 result = ToolResult(
                     tool_name=tc.tool_name,
                     tool_use_id=tc.tool_use_id,
-                    output=str(output),
+                    output=output_str,
                     elapsed_ms=round(elapsed, 2),
                 )
                 if self.verbose:
-                    logger.debug(f"  ✅ {tc.tool_name}: {str(output)[:120]}")
+                    logger.debug(f"  ✅ {tc.tool_name}: {output_str[:120]}")
 
             except Exception as exc:
                 elapsed = (time.perf_counter() - t0) * 1000
@@ -250,7 +315,6 @@ class ReasoningLoop:
     # -----------------------------------------------------------------------
 
     def _reflect(self, state: AgentState, step: ReasoningStep) -> None:
-        """Post-observation reflection: check errors, decide if done."""
         failed = [r for r in step.tool_results if not r.success]
         if failed:
             names = [r.tool_name for r in failed]
@@ -264,7 +328,6 @@ class ReasoningLoop:
             step.reflection = "All tools executed successfully."
 
     def _finish(self, state: AgentState, step: ReasoningStep) -> None:
-        """Mark state as complete when final answer is produced."""
         state.final_answer  = step.final_answer
         state.status        = AgentStatus.COMPLETE
         state.completed_at  = step.completed_at
@@ -276,10 +339,24 @@ class ReasoningLoop:
     # -----------------------------------------------------------------------
 
     def _system_prompt(self, state: AgentState) -> str:
-        tools_list = "\n".join(
-            f"- {name}: {desc}"
-            for name, desc in self.tool_registry.tool_descriptions().items()
-        )
+        """
+        System prompt yang dikirim ke LLM setiap step.
+
+        FIX: Format XML response DIHAPUS dari sini karena sudah ada
+        di _REACT_SYSTEM di hams_max_provider.py (via {base_system}).
+        Ini mencegah duplikasi instruksi yang membingungkan model.
+
+        Yang tersisa di sini:
+        - Context spesifik task (workspace, plan, steps remaining)
+        - Rules agent-level
+        """
+        # Working directory info — sync dengan filesystem.py
+        try:
+            from agent.tools.filesystem import get_workspace_root
+            workspace_path = str(get_workspace_root())
+        except ImportError:
+            workspace_path = "/workspace"
+
         plan_section = ""
         if state.plan:
             completed = len(state.plan.completed_subtasks)
@@ -294,31 +371,20 @@ class ReasoningLoop:
 
         return f"""You are an expert AI coding agent. Complete the given task autonomously using tools.
 
-    ## WORKSPACE
-    - Working directory: /workspace (persistent storage, gunakan ini)
-    - Gunakan write_file tool untuk membuat file
-    - Untuk final answer: tampilkan semua kode lengkap, siap digunakan
+## WORKSPACE
+- Working directory: {workspace_path}
+- Gunakan path ABSOLUT saat menulis/membaca file: {workspace_path}/namafile.py
+- Contoh benar: write_file(path="{workspace_path}/app.py", ...)
+- Contoh SALAH: write_file(path="app.py", ...) — relative path bisa hilang saat run_command
 
-    ## CRITICAL RULES
-    - NEVER give a final answer before using at least one tool
-    - NEVER stop after just thinking — you MUST act
-    - Use tools repeatedly until the task is 100% complete
-    - Only use final_answer when ALL work is done and verified
+## CRITICAL RULES
+- NEVER give a final answer before using at least one tool
+- NEVER stop after just thinking — you MUST act
+- Use tools repeatedly until the task is 100% complete
+- Only use final_answer when ALL work is done and verified
+- Jika tool gagal, coba alternatif — jangan langsung final_answer
 
-    ## RESPONSE FORMAT — FOLLOW EXACTLY
-
-    To call a tool:
-    <thought>Your reasoning</thought>
-    <action>tool_call</action>
-    <tool>exact_tool_name</tool>
-    <args>{{"param": "value"}}</args>
-
-    When fully done:
-    <thought>Task complete because...</thought>
-    <action>final_answer</action>
-    <answer>Your complete answer</answer>
-
-    ## Available Tools
-    {tools_list}
-
-    ## Steps remaining: {state.steps_remaining}{plan_section}"""
+## STEPS
+- Current step: {state.current_step + 1}
+- Steps remaining: {state.steps_remaining}
+- Max steps: {self.max_steps}{plan_section}"""
