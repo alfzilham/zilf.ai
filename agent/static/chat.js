@@ -658,8 +658,37 @@ async function sendChat(text, model) {
 
     } catch (err) {
         removeTyping();
-        appendMsg('ai', `⚠️ **Error:** ${err.message}`);
-        showToast(err.message);
+        const isNetwork = err.message.includes('fetch') || err.message.includes('network');
+        const isTimeout = err.message.includes('timeout') || err.message.includes('Timeout');
+        const isServer = err.message.includes('500');
+        const isAuth = err.message.includes('401') || err.message.includes('403');
+
+        let icon = '⚠️';
+        let title = 'Error';
+        let hint = '';
+
+        if (isNetwork) { icon = '🌐'; title = 'Connection Error'; hint = 'Periksa koneksi internet kamu.'; }
+        else if (isTimeout) { icon = '⏱️'; title = 'Request Timeout'; hint = 'Server terlalu lama merespons.'; }
+        else if (isServer) { icon = '🔧'; title = 'Server Error'; hint = 'Ada masalah di server, coba beberapa saat lagi.'; }
+        else if (isAuth) { icon = '🔑'; title = 'Auth Error'; hint = 'API key tidak valid.'; }
+
+        const errId = 'err-' + Date.now();
+        appendMsg('ai', `${icon} **${title}**\n\n${err.message}${hint ? '\n\n> ' + hint : ''}`);
+
+        // Retry button
+        const lastRow = document.getElementById('chatBox').lastElementChild;
+        if (lastRow) {
+            const retryBtn = document.createElement('button');
+            retryBtn.className = 'retry-btn';
+            retryBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Coba Lagi';
+            retryBtn.onclick = () => {
+                retryBtn.remove();
+                sendMessage(text);
+            };
+            lastRow.querySelector('.bubble')?.appendChild(retryBtn);
+        }
+
+        showToast(`${icon} ${title}: ${err.message}`);
     }
 }
 
