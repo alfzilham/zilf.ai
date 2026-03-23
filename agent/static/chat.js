@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initOrb3DLight();
 
+    initProfile();
+
     // Search input
     document.getElementById('searchInput')?.addEventListener('input', e => {
         const q = e.target.value.toLowerCase();
@@ -1296,4 +1298,179 @@ document.addEventListener('DOMContentLoaded', () => {
 // Keyboard shortcut — Escape
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeHistoryModal();
+});
+
+// ═══════════════════════════════════════════════
+// PROFILE SYSTEM
+// ═══════════════════════════════════════════════
+const USER_KEY = 'hams_user';
+
+function loadUser() {
+    try {
+        return JSON.parse(localStorage.getItem(USER_KEY) || '{}');
+    } catch { return {}; }
+}
+
+function saveUser(data) {
+    localStorage.setItem(USER_KEY, JSON.stringify(data));
+}
+
+function initProfile() {
+    const user = loadUser();
+    const name = user.name || 'HAMS User';
+    const email = user.email || 'hams@user.local';
+    document.getElementById('profileName').textContent = name;
+    document.getElementById('profileAvatar').textContent = name.slice(0,2).toUpperCase();
+    document.getElementById('pdropEmail').textContent = email;
+}
+
+// ── Profile Dropdown ──
+let profileDropOpen = false;
+
+function toggleProfileDropdown(e) {
+    e.stopPropagation();
+    profileDropOpen = !profileDropOpen;
+    document.getElementById('profileDropdown').classList.toggle('open', profileDropOpen);
+}
+
+function closeProfileDropdown() {
+    profileDropOpen = false;
+    document.getElementById('profileDropdown').classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+    if (!document.getElementById('profileDropdown')?.contains(e.target)) {
+        closeProfileDropdown();
+    }
+});
+
+// ── Settings Modal ──
+function openSettings() {
+    const user = loadUser();
+    const input = document.getElementById('settingsName');
+    if (input) input.value = user.name || '';
+    const theme = localStorage.getItem('hams_theme') || 'dark';
+    setThemeOpt(theme, false);
+    document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('open');
+}
+
+function setThemeOpt(t, apply = true) {
+    document.getElementById('themeOptDark')?.classList.toggle('active', t === 'dark');
+    document.getElementById('themeOptLight')?.classList.toggle('active', t === 'light');
+    if (apply) applyTheme(t);
+}
+
+function saveSettings() {
+    const name = document.getElementById('settingsName').value.trim() || 'HAMS User';
+    const user = loadUser();
+    user.name = name;
+    saveUser(user);
+    initProfile();
+    closeSettings();
+    showToast('✅ Settings saved!');
+}
+
+// ── Get Help / FAQ ──
+const FAQ_DATA = [
+    {
+        q: 'Bagaimana cara menggunakan HAMS CLI?',
+        a: 'Install dengan <code>npm install -g @hams-ai/cli</code>, lalu jalankan <code>hams</code> dari terminal. Pastikan Python 3.14+ dan repository hams-ai sudah ter-clone. Lihat halaman <b>Code</b> untuk panduan lengkap.'
+    },
+    {
+        q: 'Model AI apa saja yang tersedia?',
+        a: 'HAMS AI mendukung 12+ model: HAMS-MAX (Groq + NVIDIA), Gemini 2.5 Flash/Pro, LLaMA 3.3 70B, DeepSeek V3, Qwen, Mistral, Kimi, dan lainnya. Pilih dari dropdown model di topbar.'
+    },
+    {
+        q: 'Apa itu Agent mode?',
+        a: 'Agent mode memungkinkan HAMS AI bekerja secara otonom — mencari informasi, menjalankan kode, membuat file, dan menyelesaikan task kompleks langkah demi langkah. Aktifkan via tombol <b>Agent</b> di topbar.'
+    },
+    {
+        q: 'Bagaimana cara menggunakan Extended Thinking?',
+        a: 'Klik toggle <b>Extended</b> di topbar sebelum mengirim pesan. AI akan menampilkan proses berpikirnya sebelum memberikan jawaban final. Cocok untuk soal logika kompleks dan debugging.'
+    },
+    {
+        q: 'Data chat saya disimpan di mana?',
+        a: 'Semua riwayat chat disimpan secara lokal di <code>localStorage</code> browser kamu. Data tidak dikirim ke server eksternal. Maksimal 50 percakapan tersimpan secara otomatis.'
+    },
+    {
+        q: 'Bagaimana cara menghapus riwayat chat?',
+        a: 'Buka History (sidebar atau nav item), lalu klik ikon <b>trash</b> di sebelah kanan setiap item chat. Atau buka DevTools browser → Application → Local Storage → hapus key <code>hams_chat_history</code>.'
+    },
+    {
+        q: 'Apakah HAMS AI bisa membaca file atau gambar?',
+        a: 'Fitur upload file dan analisis gambar sedang dalam pengembangan. Untuk saat ini, kamu bisa paste konten teks langsung ke input chat, atau gunakan Agent mode untuk task yang melibatkan file sistem lokal.'
+    },
+    {
+        q: 'Kenapa response AI lambat?',
+        a: 'Kecepatan response bergantung pada model yang dipilih dan koneksi internet. Model NVIDIA cenderung lebih lambat dari Groq. Coba pilih <b>HAMS-MAX</b> atau <b>Gemini 2.5 Flash-Lite</b> untuk response tercepat.'
+    },
+    {
+        q: 'Bagaimana cara menggunakan Live Preview?',
+        a: 'Saat AI menghasilkan kode HTML/CSS/JS, klik tombol <b>Preview</b> di pojok kanan code block. Kode akan langsung dirender di iframe preview. Cocok untuk melihat hasil website atau animasi secara real-time.'
+    },
+    {
+        q: 'Apa perbedaan Free plan dan Pro plan?',
+        a: 'Free plan memberikan akses ke semua model dasar dengan batas penggunaan harian. Pro plan memberikan akses prioritas, model premium (Gemini 2.5 Pro, NVIDIA Nemotron), dan batas yang lebih tinggi. Upgrade plan segera hadir.'
+    },
+];
+
+function openHelp() {
+    renderFAQ('');
+    document.getElementById('helpModal').classList.add('open');
+}
+
+function closeHelp() {
+    document.getElementById('helpModal').classList.remove('open');
+}
+
+function filterFAQ(q) {
+    renderFAQ(q.toLowerCase());
+}
+
+function renderFAQ(query = '') {
+    const container = document.getElementById('faqList');
+    if (!container) return;
+    const filtered = FAQ_DATA.filter(f =>
+        !query || f.q.toLowerCase().includes(query) || f.a.toLowerCase().includes(query)
+    );
+    if (!filtered.length) {
+        container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-3);font-size:0.82rem;">
+            <i class="bi bi-search" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4"></i>
+            Tidak ada hasil untuk "${query}"
+        </div>`;
+        return;
+    }
+    container.innerHTML = filtered.map((f, i) => `
+        <div class="faq-item" id="faq-${i}">
+            <div class="faq-q" onclick="toggleFAQ(${i})">
+                <span>${f.q}</span>
+                <i class="bi bi-chevron-down faq-chevron"></i>
+            </div>
+            <div class="faq-a">${f.a}</div>
+        </div>
+    `).join('');
+}
+
+function toggleFAQ(i) {
+    const item = document.getElementById('faq-' + i);
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(f => f.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+}
+
+// ── Log out placeholder ──
+function confirmLogout() {
+    closeProfileDropdown();
+    showToast('🔐 Auth system coming soon!');
+}
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', e => {
+    const mod = navigator.platform.toUpperCase().includes('MAC') ? e.metaKey : e.ctrlKey;
+    if (mod && e.shiftKey && e.key === ',') { e.preventDefault(); openSettings(); }
+    if (e.key === 'Escape') { closeSettings(); closeHelp(); closeProfileDropdown(); }
 });

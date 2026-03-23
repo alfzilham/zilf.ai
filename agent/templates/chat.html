@@ -96,10 +96,10 @@
                 <span class="sidebar-label">Theme</span>
             </div>
             <div class="sidebar-divider"></div>
-            <div class="sidebar-profile">
-                <div class="profile-avatar">AI</div>
+            <div class="sidebar-profile" onclick="toggleProfileDropdown(event)">
+                <div class="profile-avatar" id="profileAvatar">AI</div>
                 <div class="profile-info sidebar-label">
-                    <div class="profile-name">HAMS User</div>
+                    <div class="profile-name" id="profileName">HAMS User</div>
                     <div class="profile-plan">Free plan</div>
                 </div>
                 <button class="profile-menu-btn sidebar-label" title="Menu">
@@ -369,6 +369,89 @@
                     oninput="filterHistoryModal(this.value)" />
             </div>
             <div class="hmodal-list" id="hmList"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal">
+        <div class="smodal-box">
+            <div class="smodal-head">
+                <div class="smodal-title">
+                    <i class="bi bi-gear" style="color:var(--accent)"></i>
+                    Settings
+                </div>
+                <button class="smodal-close" onclick="closeSettings()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="smodal-body">
+                <div class="smodal-section-label">Profile</div>
+                <div class="smodal-field">
+                    <label class="smodal-label">Display Name</label>
+                    <div class="smodal-input-wrap">
+                        <i class="bi bi-person"></i>
+                        <input type="text" id="settingsName" placeholder="Enter your name..." maxlength="32" />
+                    </div>
+                    <div class="smodal-hint">Shown in chat interface and profile.</div>
+                </div>
+                <div class="smodal-section-label" style="margin-top:24px;">Appearance</div>
+                <div class="smodal-field">
+                    <label class="smodal-label">Theme</label>
+                    <div class="smodal-theme-row">
+                        <div class="smodal-theme-opt" id="themeOptDark" onclick="setThemeOpt('dark')">
+                            <div class="theme-preview dark-preview"></div>
+                            <span>Dark</span>
+                        </div>
+                        <div class="smodal-theme-opt" id="themeOptLight" onclick="setThemeOpt('light')">
+                            <div class="theme-preview light-preview"></div>
+                            <span>Light</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="smodal-footer">
+                <button class="smodal-cancel" onclick="closeSettings()">Cancel</button>
+                <button class="smodal-save" onclick="saveSettings()">
+                    <i class="bi bi-check-lg"></i> Save changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Get Help Modal -->
+    <div id="helpModal">
+        <div class="hpmodal-box">
+            <div class="smodal-head">
+                <div class="smodal-title">
+                    <i class="bi bi-question-circle" style="color:var(--accent)"></i>
+                    Get Help
+                </div>
+                <button class="smodal-close" onclick="closeHelp()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="hpmodal-search">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Cari pertanyaan..." oninput="filterFAQ(this.value)" />
+            </div>
+            <div class="hpmodal-body" id="faqList"></div>
+        </div>
+    </div>
+
+    <!-- Profile Dropdown -->
+    <div id="profileDropdown">
+        <div class="pdrop-email" id="pdropEmail">hams@user.local</div>
+        <div class="pdrop-divider"></div>
+        <div class="pdrop-item" onclick="openSettings(); closeProfileDropdown()">
+            <i class="bi bi-gear"></i> Settings
+            <span class="pdrop-kbd">⇧+Ctrl+,</span>
+        </div>
+        <div class="pdrop-item" onclick="openHelp(); closeProfileDropdown()">
+            <i class="bi bi-question-circle"></i> Get help
+        </div>
+        <div class="pdrop-divider"></div>
+        <div class="pdrop-item pdrop-logout" onclick="confirmLogout()">
+            <i class="bi bi-box-arrow-right"></i> Log out
         </div>
     </div>
 
