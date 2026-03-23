@@ -28,18 +28,19 @@ from agent.core.state import ActionType, ToolCall
 # ── Model name mapping (frontend → Google API model ID) ───────────────────
 _MODEL_ALIASES: dict[str, str] = {
     # Gemini 2.5
-    "gemini-2.5-flash-lite":              "gemini-2.5-flash-lite",
-    "gemini-2.5-flash-lite-preview-06-17":"gemini-2.5-flash-lite",   # alias lama → normalize
-    "gemini-2.5-flash":                   "gemini-2.5-flash",
-    "gemini-2.5-flash-preview-05-20":     "gemini-2.5-flash",        # alias lama → normalize
-    "gemini-2.5-pro":                     "gemini-2.5-pro",
-    "gemini-2.5-pro-preview-05-06":       "gemini-2.5-pro",          # alias lama → normalize
+    "gemini-2.5-flash-lite":               "gemini-2.5-flash-lite",
+    "gemini-2.5-flash-lite-preview-06-17": "gemini-2.5-flash-lite",
+    "gemini-2.5-flash":                    "gemini-2.5-flash",
+    "gemini-2.5-flash-preview-05-20":      "gemini-2.5-flash",
+    "gemini-2.5-pro":                      "gemini-2.5-pro",
+    "gemini-2.5-pro-preview-05-06":        "gemini-2.5-pro",
+    "gemini-2.5-pro-preview-06-05":        "gemini-2.5-pro",   # ← fix tanggal
     # Gemini 2.0
-    "gemini-2.0-flash":                   "gemini-2.0-flash",
-    "gemini-2.0-flash-exp":               "gemini-2.0-flash",
+    "gemini-2.0-flash":                    "gemini-2.0-flash",
+    "gemini-2.0-flash-exp":                "gemini-2.0-flash",
     # Gemini 1.5 (legacy)
-    "gemini-1.5-flash":                   "gemini-1.5-flash",
-    "gemini-1.5-pro":                     "gemini-1.5-pro",
+    "gemini-1.5-flash":                    "gemini-1.5-flash",
+    "gemini-1.5-pro":                      "gemini-1.5-pro",
 }
 
 
