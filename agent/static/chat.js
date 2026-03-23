@@ -642,20 +642,32 @@ async function sendChat(text, model) {
 // ── Helper: buat bubble streaming kosong ──────────
 function appendMsgStreaming(role, text, id) {
     const wrap = document.createElement('div');
-    wrap.className = `msg ${role}`;
-    wrap.innerHTML = `
-        <div class="orb-small"></div>
-        <div class="bubble" id="${id}"></div>`;
+    wrap.className = `msg-row ${role}`;
+
+    const av = document.createElement('div');
+    av.className = `avatar ${role}`;
+    av.innerHTML = '<i class="bi bi-stars"></i>';
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${role}`;
+
+    const mdBody = document.createElement('div');
+    mdBody.className = 'md-body';
+    mdBody.id = id;
+    bubble.appendChild(mdBody);
+
+    wrap.appendChild(av);
+    wrap.appendChild(bubble);
     document.getElementById('chatBox').appendChild(wrap);
     wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
 // ── Helper: update bubble dengan teks terbaru ─────
 function updateStreamingBubble(id, text) {
-    const bubble = document.getElementById(id);
-    if (!bubble) return;
-    bubble.innerHTML = parseMarkdown(text);
-    bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const mdBody = document.getElementById(id);
+    if (!mdBody) return;
+    mdBody.innerHTML = parseMarkdown(text);
+    mdBody.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
 // ═══════════════════════════════════════════════
