@@ -646,7 +646,7 @@ function appendMsgStreaming(role, text, id) {
     wrap.innerHTML = `
         <div class="orb-small"></div>
         <div class="bubble" id="${id}"></div>`;
-    document.getElementById('messages').appendChild(wrap);
+    document.getElementById('chatBox').appendChild(wrap);
     wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
@@ -654,7 +654,6 @@ function appendMsgStreaming(role, text, id) {
 function updateStreamingBubble(id, text) {
     const bubble = document.getElementById(id);
     if (!bubble) return;
-    // Render markdown kalau ada fungsi renderMarkdown, fallback ke teks biasa
     bubble.innerHTML = typeof renderMarkdown === 'function'
         ? renderMarkdown(text)
         : text.replace(/\n/g, '<br>');
