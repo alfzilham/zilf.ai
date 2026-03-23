@@ -103,7 +103,7 @@
             <!-- Model selector -->
             <div class="model-dropdown" id="modelDropdown" onclick="toggleModelDropdown()">
                 <i class="bi bi-cpu model-icon"></i>
-                <span id="modelLabel">Llama 3 70B</span>
+                <span id="modelLabel">HAMS-MAX</span>
                 <i class="bi bi-chevron-down chevron-icon" id="modelChevron"></i>
 
                 <div class="model-panel" id="modelPanel">
@@ -136,37 +136,38 @@
                     </div>
                     <div class="model-group">
                         <div class="model-group-label">NVIDIA — Powerful</div>
+                        <div class="model-option" data-value="nvidia/qwen-3.5" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Qwen 3.5
+                        </div>
+                        <div class="model-option" data-value="nvidia/glm-5" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>GLM 5
+                        </div>
                         <div class="model-option" data-value="nvidia/minimax-m25" onclick="selectModel(this)">
                             <span class="model-badge nvidia">N</span>Minimax M25
+                        </div>
+                        <div class="model-option" data-value="nvidia/kimi-k2.5" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Kimi K2.5
+                        </div>
+                        <div class="model-option" data-value="nvidia/stepfun-step3.5" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Stepfun AI 3.5
                         </div>
                         <div class="model-option" data-value="nvidia/mistral-small-4" onclick="selectModel(this)">
                             <span class="model-badge nvidia">N</span>Mistral Small 4
                         </div>
+                        <div class="model-option" data-value="nvidia/qwen-397b" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Qwen 397B
+                        </div>
                         <div class="model-option" data-value="nvidia/deepseek-v3.2" onclick="selectModel(this)">
                             <span class="model-badge nvidia">N</span>DeepSeek v3.2
                         </div>
-                        <div class="model-option" data-value="nvidia/llama-3.3-nemotron-super-49b-v1"
-                            onclick="selectModel(this)">
-                            <span class="model-badge nvidia">N</span>Nemotron Super 49B
+                        <div class="model-option" data-value="nvidia/kimi-k2-thinking" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Kimi K2 Thinking
                         </div>
-                        <div class="model-option" data-value="nvidia/llama-3.1-nemotron-ultra-253b-v1"
-                            onclick="selectModel(this)">
-                            <span class="model-badge nvidia">N</span>Nemotron Ultra 253B
+                        <div class="model-option" data-value="nvidia/autogen" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>NVIDIABuild Autogen
                         </div>
-                    </div>
-                    <div class="model-group">
-                        <div class="model-group-label">Ollama — Local</div>
-                        <div class="model-option" data-value="ollama/llama3" onclick="selectModel(this)">
-                            <span class="model-badge ollama">O</span>Llama 3 (Local)
-                        </div>
-                        <div class="model-option" data-value="ollama/mistral" onclick="selectModel(this)">
-                            <span class="model-badge ollama">O</span>Mistral (Local)
-                        </div>
-                        <div class="model-option" data-value="ollama/codellama" onclick="selectModel(this)">
-                            <span class="model-badge ollama">O</span>CodeLlama (Local)
-                        </div>
-                        <div class="model-option" data-value="ollama/deepseek-coder" onclick="selectModel(this)">
-                            <span class="model-badge ollama">O</span>DeepSeek Coder (Local)
+                        <div class="model-option" data-value="nvidia/nemotron-super-3" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Nemotron Super 3
                         </div>
                     </div>
                 </div>

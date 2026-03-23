@@ -154,14 +154,6 @@ _MULTITASK_SYSTEM = """Kamu adalah HAMS.AI — asisten AI serba bisa yang powerf
 
 
 def _build_llm(model: str, extended: bool = False) -> Any:
-    # Ollama — local
-    if model.startswith("ollama/"):
-        try:
-            from agent.llm.ollama_provider import OllamaLLM
-            return OllamaLLM(model=model.replace("ollama/", ""))
-        except Exception:
-            pass
-
     # Google Gemini
     if model.startswith("gemini-"):
         google_key = os.environ.get("GOOGLE_API_KEY")
@@ -169,13 +161,13 @@ def _build_llm(model: str, extended: bool = False) -> Any:
             try:
                 from agent.llm.google_provider import GoogleLLM
                 return GoogleLLM(model=model)
-            except Exception:
-                pass
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Gemini error: {e}")
 
-    # Groq — langsung ke Groq API
+    # Groq langsung
     _GROQ_IDS = {
-        "llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it",
-        "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "compound-beta"
+        "llama-3.3-70b-versatile", "llama-3.1-8b-instant",
+        "llama3-8b-8192", "gemma2-9b-it", "compound-beta",
     }
     if model in _GROQ_IDS:
         groq_key = os.environ.get("GROQ_API_KEY")
@@ -183,11 +175,19 @@ def _build_llm(model: str, extended: bool = False) -> Any:
             try:
                 from agent.llm.groq_provider import GroqLLM
                 return GroqLLM(model=model)
-            except Exception:
-                pass
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Groq error: {e}")
 
-    # NVIDIA & hams-max — lewat HAMS-MAX API
-    if model.startswith("nvidia/") or model == "hams-max":
+    # NVIDIA — pakai provider baru dengan per-model API key
+    if model.startswith("nvidia/"):
+        try:
+            from agent.llm.nvidia_provider import NvidiaLLM
+            return NvidiaLLM(model=model)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"NVIDIA error: {e}")
+
+    # HAMS-MAX default (Flowise)
+    if model == "hams-max":
         hams_key = os.environ.get("HAMS_MAX_API_KEY")
         if hams_key:
             from agent.llm.hams_max_provider import HamsMaxLLM
