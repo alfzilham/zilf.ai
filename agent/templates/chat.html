@@ -39,7 +39,8 @@
         <!-- Logo -->
         <div class="sidebar-logo">
             <div class="logo-icon">
-                <img src="/static/image/logo.png" alt="HAMS.AI" style="width:22px;height:22px;border-radius:5px;object-fit:cover;background:transparent;" />
+                <img src="/static/image/logo.png" alt="HAMS.AI"
+                    style="width:22px;height:22px;border-radius:5px;object-fit:cover;background:transparent;" />
             </div>
             HAMS<span class="logo-dot">.AI</span>
         </div>
@@ -100,22 +101,78 @@
             </button>
 
             <!-- Model selector -->
-            <div class="model-dropdown">
+            <div class="model-dropdown" id="modelDropdown" onclick="toggleModelDropdown()">
                 <i class="bi bi-cpu model-icon"></i>
-                <select id="modelSelect">
-                    <optgroup label="Groq — Fast">
-                        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-                        <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
-                        <option value="gemma2-9b-it">Gemma 2 9B</option>
-                        <option value="compound-beta">Compound Beta</option>
-                    </optgroup>
-                    <optgroup label="NVIDIA — Powerful">
-                        <option value="nvidia/llama-3.3-nemotron-super-49b-v1">Nemotron Super 49B</option>
-                        <option value="nvidia/llama-3.1-nemotron-ultra-253b-v1">Nemotron Ultra 253B</option>
-                    </optgroup>
-                </select>
-                <i class="bi bi-chevron-down chevron-icon"></i>
+                <span id="modelLabel">Llama 3 70B</span>
+                <i class="bi bi-chevron-down chevron-icon" id="modelChevron"></i>
+
+                <div class="model-panel" id="modelPanel">
+                    <div class="model-group">
+                        <div class="model-group-label">HAMS-MAX — Custom</div>
+                        <div class="model-option" data-value="hams-max" onclick="selectModel(this)">
+                            <span class="model-badge hams">H</span>HAMS-MAX
+                        </div>
+                    </div>
+                    <div class="model-group">
+                        <div class="model-group-label">Groq — Fast</div>
+                        <div class="model-option" data-value="llama3-70b-8192" onclick="selectModel(this)">
+                            <span class="model-badge groq">G</span>Llama 3 70B
+                        </div>
+                        <div class="model-option" data-value="mixtral-8x7b-32768" onclick="selectModel(this)">
+                            <span class="model-badge groq">G</span>Mixtral 8x7B
+                        </div>
+                        <div class="model-option" data-value="gemma2-9b-it" onclick="selectModel(this)">
+                            <span class="model-badge groq">G</span>Gemma 2 9B
+                        </div>
+                    </div>
+                    <div class="model-group">
+                        <div class="model-group-label">Google — Gemini</div>
+                        <div class="model-option" data-value="gemini-1.5-flash" onclick="selectModel(this)">
+                            <span class="model-badge gemini">Ge</span>Gemini 1.5 Flash
+                        </div>
+                        <div class="model-option" data-value="gemini-1.5-pro" onclick="selectModel(this)">
+                            <span class="model-badge gemini">Ge</span>Gemini 1.5 Pro
+                        </div>
+                    </div>
+                    <div class="model-group">
+                        <div class="model-group-label">NVIDIA — Powerful</div>
+                        <div class="model-option" data-value="nvidia/minimax-m25" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Minimax M25
+                        </div>
+                        <div class="model-option" data-value="nvidia/mistral-small-4" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Mistral Small 4
+                        </div>
+                        <div class="model-option" data-value="nvidia/deepseek-v3.2" onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>DeepSeek v3.2
+                        </div>
+                        <div class="model-option" data-value="nvidia/llama-3.3-nemotron-super-49b-v1"
+                            onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Nemotron Super 49B
+                        </div>
+                        <div class="model-option" data-value="nvidia/llama-3.1-nemotron-ultra-253b-v1"
+                            onclick="selectModel(this)">
+                            <span class="model-badge nvidia">N</span>Nemotron Ultra 253B
+                        </div>
+                    </div>
+                    <div class="model-group">
+                        <div class="model-group-label">Ollama — Local</div>
+                        <div class="model-option" data-value="ollama/llama3" onclick="selectModel(this)">
+                            <span class="model-badge ollama">O</span>Llama 3 (Local)
+                        </div>
+                        <div class="model-option" data-value="ollama/mistral" onclick="selectModel(this)">
+                            <span class="model-badge ollama">O</span>Mistral (Local)
+                        </div>
+                        <div class="model-option" data-value="ollama/codellama" onclick="selectModel(this)">
+                            <span class="model-badge ollama">O</span>CodeLlama (Local)
+                        </div>
+                        <div class="model-option" data-value="ollama/deepseek-coder" onclick="selectModel(this)">
+                            <span class="model-badge ollama">O</span>DeepSeek Coder (Local)
+                        </div>
+                    </div>
+                </div>
             </div>
+            <!-- Hidden input untuk value -->
+            <input type="hidden" id="modelSelect" value="llama3-70b-8192" />
 
             <div class="topbar-spacer"></div>
 

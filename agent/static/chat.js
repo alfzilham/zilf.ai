@@ -776,6 +776,47 @@ function clearChat() {
 }
 
 // ═══════════════════════════════════════════════
+// MODEL DROPDOWN
+// ═══════════════════════════════════════════════
+let modelDropdownOpen = false;
+
+function toggleModelDropdown() {
+    const panel = document.getElementById('modelPanel');
+    const dropdown = document.getElementById('modelDropdown');
+    modelDropdownOpen = !modelDropdownOpen;
+    panel.classList.toggle('open', modelDropdownOpen);
+    dropdown.classList.toggle('open', modelDropdownOpen);
+}
+
+function selectModel(el) {
+    event.stopPropagation();
+    const value = el.dataset.value;
+    const label = el.textContent.trim();
+
+    document.getElementById('modelSelect').value = value;
+    document.getElementById('modelLabel').textContent = label;
+
+    // Update selected state
+    document.querySelectorAll('.model-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+
+    // Close dropdown
+    modelDropdownOpen = false;
+    document.getElementById('modelPanel').classList.remove('open');
+    document.getElementById('modelDropdown').classList.remove('open');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+    const dropdown = document.getElementById('modelDropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+        modelDropdownOpen = false;
+        document.getElementById('modelPanel')?.classList.remove('open');
+        dropdown.classList.remove('open');
+    }
+});
+
+// ═══════════════════════════════════════════════
 // UTILITIES
 // ═══════════════════════════════════════════════
 function escHtml(s) {

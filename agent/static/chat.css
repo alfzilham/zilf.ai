@@ -417,38 +417,32 @@ body>* {
     align-items: center;
     gap: 7px;
     padding: 6px 11px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border2);
     border-radius: 9px;
     cursor: pointer;
     position: relative;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 24px rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 1px 0 var(--glass-shine), 0 2px 8px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(8px);
     transition: border-color 0.15s, box-shadow 0.15s;
+    user-select: none;
 }
 
 .model-dropdown:hover {
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 24px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 12px rgba(0, 0, 0, 0.2);
 }
 
-.model-dropdown select {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: 'Sora', sans-serif;
+.model-dropdown.open {
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 16px rgba(0, 0, 0, 0.25);
+}
+
+.model-dropdown #modelLabel {
     font-size: 0.8rem;
     font-weight: 600;
-    cursor: pointer;
-    max-width: 170px;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-.model-dropdown select option {
-    background: #121212;
+    color: var(--text);
+    min-width: 100px;
 }
 
 .model-dropdown .model-icon {
@@ -460,6 +454,131 @@ body>* {
     color: var(--text-3);
     font-size: 0.72rem;
     pointer-events: none;
+    transition: transform 0.2s;
+}
+
+.model-dropdown.open .chevron-icon {
+    transform: rotate(180deg);
+}
+
+/* Dropdown panel */
+.model-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 240px;
+    background: linear-gradient(145deg, rgba(30, 30, 30, 0.95) 0%, rgba(15, 15, 15, 0.98) 100%);
+    border: 1px solid var(--glass-border2);
+    border-radius: 14px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    z-index: 200;
+    overflow: hidden;
+    padding: 6px;
+}
+
+.model-panel.open {
+    display: block;
+    animation: dropIn 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.model-group {
+    margin-bottom: 4px;
+}
+
+.model-group:last-child {
+    margin-bottom: 0;
+}
+
+.model-group-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 10px 3px;
+}
+
+.model-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.model-option:hover {
+    background: var(--glass-bg2);
+    color: var(--text);
+    box-shadow: inset 0 1px 0 var(--glass-shine);
+}
+
+.model-option.selected {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+    color: var(--accent);
+    border: 1px solid var(--glass-border2);
+}
+
+/* Provider badges */
+.model-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.model-badge.groq {
+    background: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.model-badge.gemini {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.model-badge.nvidia {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.model-badge.hams {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f0f0f0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.model-badge.ollama {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .topbar-spacer {
@@ -651,13 +770,13 @@ body>* {
     height: 130px;
     border-radius: 50%;
     background: radial-gradient(circle at 32% 28%,
-        #ffffff 0%, #f0f0f0 6%, #d8d8d8 16%,
-        #a0a0a0 35%, #606060 58%, #1a1a1a 100%);
+            #ffffff 0%, #f0f0f0 6%, #d8d8d8 16%,
+            #a0a0a0 35%, #606060 58%, #1a1a1a 100%);
     box-shadow:
-        0 0 60px rgba(255,255,255,0.18),
-        0 0 120px rgba(200,200,200,0.08),
-        inset 0 2px 4px rgba(255,255,255,0.5),
-        inset 0 0 40px rgba(0,0,0,0.4);
+        0 0 60px rgba(255, 255, 255, 0.18),
+        0 0 120px rgba(200, 200, 200, 0.08),
+        inset 0 2px 4px rgba(255, 255, 255, 0.5),
+        inset 0 0 40px rgba(0, 0, 0, 0.4);
     animation: orbFloat 6s ease-in-out infinite;
     position: relative;
     overflow: hidden;
@@ -665,9 +784,11 @@ body>* {
 
 .orb-highlight {
     position: absolute;
-    top: 8%; left: 12%;
-    width: 38%; height: 28%;
-    background: radial-gradient(ellipse, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.1) 60%, transparent 100%);
+    top: 8%;
+    left: 12%;
+    width: 38%;
+    height: 28%;
+    background: radial-gradient(ellipse, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.1) 60%, transparent 100%);
     border-radius: 50%;
     transform: rotate(-30deg);
     pointer-events: none;
@@ -678,7 +799,7 @@ body>* {
     position: absolute;
     inset: -18px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
     animation: orbGlow 4s ease-in-out infinite alternate;
 }
 
@@ -711,20 +832,10 @@ body>* {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #7a6ae8, #1a0a50);
+    background: radial-gradient(circle at 35% 35%, #0d0d0d, #000000);
     position: absolute;
     transition: transform 0.06s linear;
-    box-shadow: 0 0 4px rgba(155, 142, 248, 0.6);
-}
-
-.orb-pupil {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #555555, #000000);
-    position: absolute;
-    transition: transform 0.06s linear;
-    box-shadow: 0 0 4px rgba(255,255,255,0.2);
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
 }
 
 .orb-eye.blink {
