@@ -62,6 +62,276 @@
             overflow: hidden;
         }
 
+        /* ══════════════════════════════════════
+   CLI INTRO OVERLAY
+══════════════════════════════════════ */
+        #cliIntro {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: introIn 0.4s ease;
+        }
+
+        #cliIntro.closing {
+            animation: introOut 0.35s cubic-bezier(.4, 0, .2, 1) forwards;
+        }
+
+        @keyframes introIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes introOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: scale(1.03);
+            }
+        }
+
+        .intro-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+
+        .intro-close:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .intro-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .intro-title {
+            font-family: 'Sora', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 800;
+            color: #f3f3f3;
+            letter-spacing: -0.04em;
+            line-height: 1.12;
+            margin-bottom: 14px;
+        }
+
+        .intro-sub {
+            font-size: 1rem;
+            color: #888;
+            margin-bottom: 36px;
+            font-weight: 400;
+        }
+
+        /* ── Ticket ── */
+        .intro-ticket {
+            position: relative;
+            width: min(560px, 90vw);
+            background: #f5f0e8;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 32px;
+            overflow: visible;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .intro-ticket:hover {
+            transform: translateY(-4px) rotate(0.3deg);
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.6);
+        }
+
+        .ticket-top,
+        .ticket-bottom {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            color: #c8845a;
+            padding: 10px 20px;
+            text-align: center;
+            border-bottom: 1.5px dashed rgba(200, 132, 90, 0.3);
+        }
+
+        .ticket-bottom {
+            border-bottom: none;
+            border-top: 1.5px dashed rgba(200, 132, 90, 0.3);
+        }
+
+        .ticket-body {
+            display: flex;
+            align-items: stretch;
+            min-height: 200px;
+        }
+
+        .ticket-side {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.55rem;
+            letter-spacing: 0.2em;
+            color: #c8845a;
+            padding: 16px 10px;
+            border-right: 1.5px dashed rgba(200, 132, 90, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .ticket-side-right {
+            transform: rotate(0deg);
+            border-right: none;
+            border-left: 1.5px dashed rgba(200, 132, 90, 0.3);
+        }
+
+        .ticket-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 20px;
+            gap: 8px;
+        }
+
+        .ticket-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .ticket-logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .ticket-logo span {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #2a2a2a;
+            letter-spacing: -0.03em;
+        }
+
+        .ticket-access {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.1rem;
+            font-style: italic;
+            font-weight: 500;
+            color: #c8845a;
+        }
+
+        .ticket-robot {
+            margin-top: 8px;
+            font-size: 1.6rem;
+            color: #c8845a;
+        }
+
+        /* Perforation holes */
+        .ticket-perf {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        .ticket-perf-left {
+            left: -11px;
+        }
+
+        .ticket-perf-right {
+            right: -11px;
+        }
+
+        /* ── CTA ── */
+        .intro-cta {
+            background: #f3f3f3;
+            color: #1a1a1a;
+            border: none;
+            padding: 13px 32px;
+            border-radius: 10px;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 16px;
+        }
+
+        .intro-cta:hover {
+            background: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .intro-scroll-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #c8845a;
+            border: none;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+            animation: scrollBounce 2s ease-in-out infinite;
+        }
+
+        .intro-scroll-btn:hover {
+            background: #d4956e;
+        }
+
+        @keyframes scrollBounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(5px);
+            }
+        }
+
         /* ── Sidebar ── */
         #sidebar {
             width: var(--sidebar-w);
@@ -527,6 +797,58 @@
 
 <body>
 
+    <!-- ══════════════════════════════════════
+     CLI INTRO OVERLAY
+══════════════════════════════════════ -->
+    <div id="cliIntro">
+        <button class="intro-close" onclick="closeIntro()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+
+        <div class="intro-content">
+            <h1 class="intro-title">Your terminal,<br />now supercharged.</h1>
+            <p class="intro-sub">From idea to code — autonomously, from anywhere.</p>
+
+            <div class="intro-ticket" onclick="closeIntro()">
+                <div class="ticket-top">
+                    ADMIT ONE &nbsp;•&nbsp; VALID FOR: HAMS AI FREE & PRO
+                </div>
+                <div class="ticket-body">
+                    <div class="ticket-side">
+                        <span>C L I C K &nbsp; H E R E</span>
+                    </div>
+                    <div class="ticket-main">
+                        <div class="ticket-logo">
+                            <img src="/static/image/logo.png" alt="HAMS.AI" />
+                            <span>HAMS CLI</span>
+                        </div>
+                        <div class="ticket-access">Access now</div>
+                        <div class="ticket-robot">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                    </div>
+                    <div class="ticket-side ticket-side-right">
+                        <span>C L I C K &nbsp; H E R E</span>
+                    </div>
+                </div>
+                <div class="ticket-bottom">
+                    ORB FREE & PRO &nbsp;•&nbsp; VALID FOR: HAMS AI FREE & PRO &nbsp;•&nbsp; ORB FREE & PRO
+                </div>
+                <div class="ticket-perfs">
+                    <div class="ticket-perf ticket-perf-left"></div>
+                    <div class="ticket-perf ticket-perf-right"></div>
+                </div>
+            </div>
+
+            <button class="intro-cta" onclick="closeIntro()">
+                Get HAMS CLI
+            </button>
+            <button class="intro-scroll-btn" onclick="closeIntro()">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- Sidebar -->
     <div id="sidebar">
         <div class="sidebar-logo">
@@ -868,6 +1190,16 @@ curl -X POST http://localhost:8000/run \
         sections.forEach(id => {
             const el = document.getElementById(id);
             if (el) observer.observe(el);
+        });
+
+        function closeIntro() {
+            const intro = document.getElementById('cliIntro');
+            intro.classList.add('closing');
+            setTimeout(() => intro.remove(), 350);
+        }
+        // Tutup dengan Escape
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeIntro();
         });
     </script>
 </body>
