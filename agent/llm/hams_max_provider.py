@@ -222,8 +222,26 @@ class HamsMaxLLM(BaseLLM):
         user_message = ""
 
         for msg in messages:
-            if msg["role"] in ("user", "assistant"):
-                history.append({"role": msg["role"], "content": msg["content"]})
+            if msg["role"] not in ("user", "assistant"):
+                continue
+
+            # Flatten content kalau berupa list (tool call, tool result, dll)
+            content = msg["content"]
+            if isinstance(content, list):
+                parts = []
+                for block in content:
+                    if isinstance(block, dict):
+                        if block.get("type") == "text":
+                            parts.append(block["text"])
+                        elif block.get("type") == "tool_use":
+                            parts.append(f"[Tool: {block.get('name')}] {json.dumps(block.get('input', {}))}")
+                        elif block.get("type") == "tool_result":
+                            parts.append(f"[Result] {block.get('content', '')}")
+                    else:
+                        parts.append(str(block))
+                content = "\n".join(parts)
+
+            history.append({"role": msg["role"], "content": str(content)})
 
         if history and history[-1]["role"] == "user":
             user_message = history[-1]["content"]
