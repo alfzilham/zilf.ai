@@ -145,10 +145,20 @@ class HamsMaxAgentLLM(HamsMaxBase):
             raw=raw_text,
         )
 
-    async def generate_text(self, messages: list[dict[str, Any]], system: str | None = None, **kwargs: Any) -> str:
+    async def generate_text(
+        self,
+        messages: list[dict[str, Any]],
+        system: str | None = None,
+        **kwargs: Any,
+    ) -> str:
         payload = self._build_payload(messages, system=system)
-        return await self._call_api(payload)
+        return await self._call_api_with_fallback(payload)  # fix: was _call_api
 
-    async def stream(self, messages: list[dict[str, Any]], system: str | None = None, **kwargs: Any):
+    async def stream(
+        self,
+        messages: list[dict[str, Any]],
+        system: str | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
         result = await self.generate(messages, system=system)
         yield result.final_answer or ""

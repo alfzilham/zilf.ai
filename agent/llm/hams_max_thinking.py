@@ -11,9 +11,8 @@ from typing import Any, AsyncIterator
 
 from loguru import logger
 
-from agent.llm.hams_max_base import HamsMaxBase, HAMS_MAX_BASE_URL
+from agent.llm.hams_max_base import HamsMaxBase
 from agent.llm.base import LLMResponse
-import httpx
 
 _THINKING_PROMPT = """Before answering, think deeply inside <think>...</think> tags.
 Use this space to break down the problem, consider approaches, and plan your response.
@@ -82,22 +81,8 @@ class HamsMaxThinkingLLM(HamsMaxBase):
         system: str | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
-        # Stream answer saja (tanpa thinking block)
-        if self._provider != "groq":
-            result = await self.generate(messages, system=system)
-            yield result.final_answer or ""
-            return
-
-        full_system = _THINKING_PROMPT + (system or "")
-        payload = self._build_payload(messages, system=full_system)
-        async with httpx.AsyncClient(timeout=180.0) as client:
-            async with client.stream(
-                "POST",
-                f"{HAMS_MAX_BASE_URL}/v1/chat/stream",
-                headers=self._headers(),
-                json=payload,
-            ) as resp:
-                resp.raise_for_status()
-                async for chunk in resp.aiter_text():
-                    if chunk:
-                        yield chunk
+        # Selalu pakai generate() — dua alasan:
+        # 1. Setelah fallback, _provider bisa berubah sehingga cek groq tidak reliable
+        # 2. generate() sudah strip <think> tags dengan benar via _extract_thinking()
+        result = await self.generate(messages, system=system)
+        yield result.final_answer or ""
