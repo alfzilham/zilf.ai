@@ -73,7 +73,7 @@ class ChatRequest(BaseModel):
     session_id: str | None = None
     message: str
     history: list[ChatMessage] | None = []
-    model: str | None = Field(default="llama-3.3-70b-versatile")
+    model: str | None = Field(default="nvidia/nemotron-super-3")  # fix: was llama-3.3-70b-versatile
     extended: bool = Field(
         default=False,
         description="Aktifkan Extended Thinking — AI menampilkan proses berpikirnya sebelum menjawab"
@@ -90,7 +90,7 @@ class ChatResponse(BaseModel):
 
 class AgentRunRequest(BaseModel):
     task: str = Field(..., min_length=1)
-    model: str | None = Field(default="llama-3.3-70b-versatile")
+    model: str | None = Field(default="nvidia/nemotron-super-3")  # fix: was llama-3.3-70b-versatile
     max_steps: int = Field(15, ge=1, le=50)
     extended: bool = Field(default=False)
 
@@ -245,7 +245,7 @@ async def chat_ui() -> FileResponse:
 @app.post("/chat", response_model=ChatResponse, tags=["chat"])
 async def chat(req: ChatRequest) -> ChatResponse:
     session_id = req.session_id or str(uuid.uuid4())
-    model      = req.model or "llama-3.3-70b-versatile"
+    model      = req.model or "nvidia/nemotron-super-3"  # fix: was llama-3.3-70b-versatile
 
     context = ""
     for msg in (req.history or []):
@@ -292,7 +292,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
 
 @app.post("/chat/stream", tags=["chat"])
 async def chat_stream(req: ChatRequest) -> StreamingResponse:
-    model = req.model or "llama-3.3-70b-versatile"
+    model = req.model or "nvidia/nemotron-super-3"  # fix: was llama-3.3-70b-versatile
 
     context = ""
     for msg in (req.history or []):
@@ -325,7 +325,7 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
 
 @app.post("/agent/run", response_model=AgentRunResponse, tags=["agent"])
 async def agent_run(req: AgentRunRequest) -> AgentRunResponse:
-    model = req.model or "llama-3.3-70b-versatile"
+    model = req.model or "nvidia/nemotron-super-3"  # fix: was llama-3.3-70b-versatile
     t0    = time.perf_counter()
 
     try:
@@ -355,7 +355,7 @@ async def agent_run(req: AgentRunRequest) -> AgentRunResponse:
 
 @app.post("/agent/stream", tags=["agent"])
 async def agent_stream(req: AgentRunRequest) -> StreamingResponse:
-    model = req.model or "llama-3.3-70b-versatile"
+    model = req.model or "nvidia/nemotron-super-3"  # fix: was llama-3.3-70b-versatile
 
     async def event_stream() -> AsyncIterator[str]:
         queue: asyncio.Queue[dict] = asyncio.Queue()

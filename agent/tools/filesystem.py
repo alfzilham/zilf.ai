@@ -3,6 +3,7 @@ Filesystem Tools — read, write, list, search, and delete files in /workspace.
 
 Security rules enforced on every call:
   - All paths must resolve inside WORKSPACE_ROOT (no directory traversal)
+  - /workspace is accepted as an alias and mapped to WORKSPACE_ROOT automatically
   - File reads are capped at MAX_READ_BYTES to prevent memory exhaustion
   - Writes create parent directories automatically
   - Delete is restricted to /workspace and never removes the root itself
@@ -22,12 +23,44 @@ from loguru import logger
 from agent.tools.registry import ToolRegistry
 
 # ---------------------------------------------------------------------------
-# Workspace root (can be overridden via env for tests)
+# Workspace root
+#
+# Priority:
+#   1. AGENT_WORKSPACE env var (explicit override)
+#   2. /workspace jika sudah exist (Railway persistent volume)
+#   3. ./workspace sebagai fallback dev
 # ---------------------------------------------------------------------------
 
-WORKSPACE_ROOT = Path(os.environ.get("AGENT_WORKSPACE", "./workspace")).resolve()
-MAX_READ_BYTES = 1_000_000   # 1 MB cap per read
+def _resolve_workspace() -> Path:
+    env_ws = os.environ.get("AGENT_WORKSPACE")
+    if env_ws:
+        p = Path(env_ws).resolve()
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    # Gunakan /workspace kalau sudah exist (Railway volume mount)
+    system_ws = Path("/workspace")
+    if system_ws.exists() and system_ws.is_dir():
+        return system_ws
+
+    # Fallback: ./workspace relatif ke CWD
+    p = Path("./workspace").resolve()
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+WORKSPACE_ROOT = _resolve_workspace()
+
+# Alias absolut yang selalu diterima → di-remap ke WORKSPACE_ROOT
+_WORKSPACE_ALIASES: list[Path] = [
+    Path("/workspace"),
+    WORKSPACE_ROOT,
+]
+
+MAX_READ_BYTES   = 1_000_000   # 1 MB cap per read
 MAX_SEARCH_RESULTS = 200
+
+logger.info(f"[fs] WORKSPACE_ROOT = {WORKSPACE_ROOT}")
 
 
 # ---------------------------------------------------------------------------
@@ -37,17 +70,30 @@ MAX_SEARCH_RESULTS = 200
 
 def _safe_path(raw: str) -> Path:
     """
-    Resolve `raw` to an absolute path and verify it stays inside WORKSPACE_ROOT.
+    Resolve `raw` ke absolute path dan pastikan ada di dalam WORKSPACE_ROOT.
 
-    Raises ValueError for path traversal attempts.
+    FIX: /workspace/* sekarang di-remap ke WORKSPACE_ROOT/*
+    sehingga agent bisa pakai /workspace/file.py maupun file.py.
     """
-    # Accept both /workspace/... and relative paths
     p = Path(raw)
+
+    # Remap /workspace/... → WORKSPACE_ROOT/...
+    # Contoh: /workspace/backend.py → /app/workspace/backend.py
+    for alias in _WORKSPACE_ALIASES:
+        if alias == Path("/workspace") and alias != WORKSPACE_ROOT:
+            try:
+                rel = p.relative_to(alias)
+                p = WORKSPACE_ROOT / rel
+                break
+            except ValueError:
+                pass
+
     if not p.is_absolute():
         p = WORKSPACE_ROOT / p
+
     resolved = p.resolve()
 
-    # Ensure workspace root exists
+    # Pastikan WORKSPACE_ROOT ada
     WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
 
     if not str(resolved).startswith(str(WORKSPACE_ROOT)):
@@ -56,6 +102,11 @@ def _safe_path(raw: str) -> Path:
             f"allowed workspace '{WORKSPACE_ROOT}'. Directory traversal is not permitted."
         )
     return resolved
+
+
+def get_workspace_root() -> Path:
+    """Return WORKSPACE_ROOT — dipakai oleh terminal.py untuk sinkronisasi CWD."""
+    return WORKSPACE_ROOT
 
 
 # ---------------------------------------------------------------------------
@@ -76,11 +127,10 @@ async def read_file(
     Always call this before editing a file you have not yet read.
 
     Args:
-        path: Path to the file (absolute or relative to /workspace).
-        start_line: Optional first line to return (1-indexed). Omit to start from line 1.
-        end_line: Optional last line to return (1-indexed, inclusive). Omit for end of file.
+        path: Path to the file (absolute /workspace/... or relative).
+        start_line: Optional first line to return (1-indexed).
+        end_line: Optional last line to return (1-indexed, inclusive).
     """
-    # FIX: catch ValueError from _safe_path and return error string
     try:
         resolved = _safe_path(path)
     except ValueError as exc:
@@ -117,15 +167,14 @@ async def write_file(path: str, content: str, encoding: str = "utf-8") -> str:
     """
     Write text content to a file, creating it (and parent dirs) if needed.
 
-    Overwrites the file if it already exists. For targeted edits to an
-    existing file, prefer patch_file instead.
+    Overwrites the file if it already exists. Accepts both absolute paths
+    (/workspace/file.py) and relative paths (file.py).
 
     Args:
-        path: Destination path (absolute or relative to /workspace).
+        path: Destination path (absolute /workspace/... or relative).
         content: Raw text to write. Do NOT wrap in markdown code fences.
         encoding: File encoding — utf-8 (default), utf-8-sig, latin-1, ascii.
     """
-    # FIX: catch ValueError from _safe_path and return error string
     try:
         resolved = _safe_path(path)
     except ValueError as exc:
@@ -145,14 +194,14 @@ async def list_dir(directory: str = "/workspace", recursive: bool = False) -> st
     """
     List files and subdirectories at the given path.
 
-    Returns a formatted tree-like listing. Use recursive=True to walk
-    all subdirectories (capped at 500 entries to avoid overwhelming output).
-
     Args:
         directory: Directory to list (absolute or relative to /workspace).
         recursive: Whether to recurse into subdirectories. Default False.
     """
-    resolved = _safe_path(directory)
+    try:
+        resolved = _safe_path(directory)
+    except ValueError as exc:
+        return f"Error: {exc}"
 
     if not resolved.exists():
         return f"Error: directory not found: {directory}"
@@ -187,22 +236,21 @@ async def search_files(
     """
     Search for files matching a glob pattern, optionally filtering by content.
 
-    Returns a newline-separated list of matching file paths (relative to /workspace).
-    Use this to find files before reading them — do NOT use read_file just to check existence.
-
     Args:
-        pattern: Glob pattern for filenames, e.g. '*.py', '*config*', 'test_*.py'.
-        directory: Directory to search in. Defaults to /workspace (searches all).
-        contains: Optional text substring — only return files containing this string.
+        pattern: Glob pattern, e.g. '*.py', '*config*'.
+        directory: Directory to search in. Defaults to /workspace.
+        contains: Optional text substring — only return files containing this.
     """
-    resolved = _safe_path(directory)
+    try:
+        resolved = _safe_path(directory)
+    except ValueError as exc:
+        return f"Error: {exc}"
 
     if not resolved.exists():
         return f"Error: directory not found: {directory}"
 
     matches: list[str] = []
     for root, _dirs, files in os.walk(resolved):
-        # Skip hidden dirs
         _dirs[:] = [d for d in _dirs if not d.startswith(".")]
         for fname in fnmatch.filter(files, pattern):
             fpath = Path(root) / fname
@@ -234,18 +282,18 @@ async def delete_file(path: str) -> str:
     """
     Permanently delete a file from /workspace.
 
-    Cannot delete directories — use this only for individual files.
-    This action is irreversible.
-
     Args:
         path: Path of the file to delete (absolute or relative to /workspace).
     """
-    resolved = _safe_path(path)
+    try:
+        resolved = _safe_path(path)
+    except ValueError as exc:
+        return f"Error: {exc}"
 
     if not resolved.exists():
         return f"Error: file not found: {path}"
     if resolved.is_dir():
-        return f"Error: '{path}' is a directory. Use shell rmdir/rm -rf via run_command."
+        return f"Error: '{path}' is a directory. Use run_command with rm -rf."
     if resolved == WORKSPACE_ROOT:
         return "Error: cannot delete the workspace root."
 
@@ -258,7 +306,7 @@ async def delete_file(path: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Registration helper
+# Registration
 # ---------------------------------------------------------------------------
 
 

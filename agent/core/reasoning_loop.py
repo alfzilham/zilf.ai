@@ -87,7 +87,7 @@ class ReasoningLoop:
         self.tool_registry = tool_registry
         self.max_steps = max_steps
         self.verbose = verbose
-        self.step_callback = step_callback   # ← NEW: agentic streaming callback
+        self.step_callback = step_callback
 
     # -----------------------------------------------------------------------
     # Public API
@@ -200,9 +200,24 @@ class ReasoningLoop:
         """
         Build the message list for the next LLM call.
         First message = user task, then interleaved thought/action/observation history.
+
+        Fix: trim context jika terlalu panjang untuk mencegah 500 error di step 16+.
         """
         messages: list[dict] = [{"role": "user", "content": state.task}]
-        messages.extend(state.context_messages())
+        all_context = state.context_messages()
+
+        # Trim kalau total context terlalu panjang
+        MAX_CONTEXT_CHARS = 8000
+        total = sum(len(str(m.get("content", ""))) for m in all_context)
+
+        if total > MAX_CONTEXT_CHARS:
+            # Ambil 8 message terakhir saja (= 4 step terakhir: thought + observation)
+            all_context = all_context[-8:]
+            logger.debug(
+                f"[loop] Context trimmed: {total} chars → keeping last 8 messages"
+            )
+
+        messages.extend(all_context)
         return messages
 
     # -----------------------------------------------------------------------

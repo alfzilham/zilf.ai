@@ -129,9 +129,22 @@ class TaskPlanner:
     # -----------------------------------------------------------------------
 
     def _parse(self, raw: str) -> PlanSpec:
-        """Parse JSON from the LLM response, stripping any markdown fences."""
+        """
+        Parse JSON dari LLM response.
+
+        Fix: handle wrapper {"thinking": "", "answer": "..."} yang datang
+        dari HamsMaxThinkingLLM.generate_text() — unwrap dulu sebelum parse.
+        """
         import json
         import re
+
+        # Unwrap {"thinking": "", "answer": "..."} wrapper jika ada
+        try:
+            wrapper = json.loads(raw)
+            if isinstance(wrapper, dict) and "answer" in wrapper:
+                raw = wrapper["answer"]
+        except (json.JSONDecodeError, ValueError):
+            pass  # bukan JSON wrapper, lanjut parse biasa
 
         # Strip markdown fences
         clean = re.sub(r"```(?:json)?|```", "", raw).strip()
@@ -158,4 +171,4 @@ class TaskPlanner:
                 )
             ],
             estimated_steps=10,
-    )
+        )
