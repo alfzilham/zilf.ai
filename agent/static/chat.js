@@ -45,6 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// ── Auth Guard ──
+(function () {
+    const token = localStorage.getItem('hams_token');
+    if (!token) { window.location.href = '/login'; }
+})();
+
 // ═══════════════════════════════════════════════
 // HISTORY — localStorage helpers
 // ═══════════════════════════════════════════════
@@ -330,7 +336,7 @@ function initOrb3DLight() {
         // Primary specular highlight — small bright spot
         const hSize = 28 + Math.sin(angle * 1.3) * 6;
         const hLeft = (rx * 130) - hSize / 2;
-        const hTop  = (ry * 130) - hSize / 2;
+        const hTop = (ry * 130) - hSize / 2;
         shine.style.cssText = `
             position:absolute;
             width:${hSize}px;
@@ -345,7 +351,7 @@ function initOrb3DLight() {
                 rgba(255,255,255,0.4) 40%,
                 transparent 70%
             );
-            transform: rotate(${-30 + Math.sin(angle)*15}deg);
+            transform: rotate(${-30 + Math.sin(angle) * 15}deg);
         `;
 
         // Rim light — opposite side of light source
@@ -729,10 +735,10 @@ function showTypingWithTimer() {
         secs++;
         const el = document.getElementById('typingStatus');
         if (!el) { clearInterval(timer); return; }
-        if (secs < 5)       el.textContent = 'Connecting...';
+        if (secs < 5) el.textContent = 'Connecting...';
         else if (secs < 15) el.textContent = `Processing... (${secs}s)`;
         else if (secs < 30) el.textContent = `Model is thinking... (${secs}s)`;
-        else                el.textContent = `Almost done... (${secs}s)`;
+        else el.textContent = `Almost done... (${secs}s)`;
     }, 1000);
 
     // Simpan timer id di row agar bisa di-clear
@@ -829,14 +835,14 @@ async function sendChat(text, model) {
 
         const isNetwork = err.message.includes('fetch') || err.message.includes('network');
         const isTimeout = err.message.includes('timeout') || err.message.includes('Timeout');
-        const isServer  = err.message.includes('500');
-        const isAuth    = err.message.includes('401') || err.message.includes('403');
+        const isServer = err.message.includes('500');
+        const isAuth = err.message.includes('401') || err.message.includes('403');
 
         let icon = '⚠️', title = 'Error', hint = '';
         if (isNetwork) { icon = '🌐'; title = 'Connection Error'; hint = 'Periksa koneksi internet kamu.'; }
         else if (isTimeout) { icon = '⏱️'; title = 'Request Timeout'; hint = 'Server terlalu lama merespons.'; }
-        else if (isServer)  { icon = '🔧'; title = 'Server Error';    hint = 'Ada masalah di server, coba beberapa saat lagi.'; }
-        else if (isAuth)    { icon = '🔑'; title = 'Auth Error';      hint = 'API key tidak valid.'; }
+        else if (isServer) { icon = '🔧'; title = 'Server Error'; hint = 'Ada masalah di server, coba beberapa saat lagi.'; }
+        else if (isAuth) { icon = '🔑'; title = 'Auth Error'; hint = 'API key tidak valid.'; }
 
         appendMsg('ai', `${icon} **${title}**\n\n${err.message}${hint ? '\n\n> ' + hint : ''}`);
 
@@ -1149,8 +1155,8 @@ function shareMsg(btn) {
 // ═══════════════════════════════════════════════
 document.addEventListener('keydown', (e) => {
     const isMac = navigator.platform.toUpperCase().includes('MAC');
-    const mod   = isMac ? e.metaKey : e.ctrlKey;
-    const tag   = document.activeElement.tagName;
+    const mod = isMac ? e.metaKey : e.ctrlKey;
+    const tag = document.activeElement.tagName;
     const isTyping = tag === 'TEXTAREA' || tag === 'INPUT';
 
     if (mod && e.key === 'k') { e.preventDefault(); document.getElementById('searchInput')?.focus(); }
@@ -1263,7 +1269,7 @@ function renderHistoryModal(query = '') {
                     <div class="hmodal-item-meta">
                         <i class="bi bi-calendar3"></i> ${timeStr}
                         &nbsp;·&nbsp;
-                        <i class="bi bi-chat-text"></i> ${Math.floor(msgCount/2)} pesan
+                        <i class="bi bi-chat-text"></i> ${Math.floor(msgCount / 2)} pesan
                     </div>
                 </div>
                 <button class="hmodal-item-del" title="Hapus"
@@ -1319,9 +1325,10 @@ function initProfile() {
     const user = loadUser();
     const name = user.name || 'HAMS User';
     const email = user.email || 'hams@user.local';
+    const uname = user.username || '';
     document.getElementById('profileName').textContent = name;
-    document.getElementById('profileAvatar').textContent = name.slice(0,2).toUpperCase();
-    document.getElementById('pdropEmail').textContent = email;
+    document.getElementById('profileAvatar').textContent = name.slice(0, 2).toUpperCase();
+    document.getElementById('pdropEmail').textContent = uname ? `@${uname}` : email;
 }
 
 // ── Profile Dropdown ──
@@ -1364,8 +1371,23 @@ function setThemeOpt(t, apply = true) {
     if (apply) applyTheme(t);
 }
 
-function saveSettings() {
+async function saveSettings() {
     const name = document.getElementById('settingsName').value.trim() || 'HAMS User';
+    const token = localStorage.getItem('hams_token');
+
+    try {
+        if (token) {
+            await fetch('/auth/me', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name })
+            });
+        }
+    } catch { }
+
     const user = loadUser();
     user.name = name;
     saveUser(user);
@@ -1465,7 +1487,9 @@ function toggleFAQ(i) {
 // ── Log out placeholder ──
 function confirmLogout() {
     closeProfileDropdown();
-    showToast('🔐 Auth system coming soon!');
+    localStorage.removeItem('hams_token');
+    localStorage.removeItem('hams_user');
+    window.location.href = '/login';
 }
 
 // ── Keyboard shortcuts ──

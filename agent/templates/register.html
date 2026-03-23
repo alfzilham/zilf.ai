@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HAMS.AI — Register</title>
+    <link rel="icon" type="image/png" href="/static/favicon/apple-icon.png" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/auth.css" />
+    <style>
+        /* reuse login styles inline */
+        :root {
+            --bg: #07070d;
+            --surface: #0c0c0c;
+            --border: rgba(255, 255, 255, 0.08);
+            --border2: rgba(255, 255, 255, 0.12);
+            --text: #f3f3f3;
+            --text-2: #909090;
+            --text-3: #444;
+            --accent: #f3f3f3;
+            --red: #f87171;
+            --green: #4ade80;
+        }
+
+        [data-theme="light"] {
+            --bg: #e8e8e8;
+            --surface: rgba(255, 255, 255, 0.9);
+            --border: rgba(0, 0, 0, 0.08);
+            --border2: rgba(0, 0, 0, 0.14);
+            --text: #1a1a1a;
+            --text-2: #606060;
+            --text-3: #aaa;
+            --accent: #1a1a1a;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-wrap {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+
+        .auth-logo img {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            object-fit: cover;
+        }
+
+        .auth-logo span {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .auth-card {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .auth-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 6px;
+        }
+
+        .auth-sub {
+            font-size: 0.82rem;
+            color: var(--text-2);
+            margin-bottom: 28px;
+        }
+
+        .auth-field {
+            margin-bottom: 14px;
+        }
+
+        .auth-label {
+            display: block;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--text-2);
+            margin-bottom: 6px;
+        }
+
+        .auth-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border2);
+            border-radius: 11px;
+            padding: 11px 14px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .auth-input-wrap:focus-within {
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+        }
+
+        .auth-input-wrap.error {
+            border-color: rgba(248, 113, 113, 0.5);
+        }
+
+        .auth-input-wrap.success {
+            border-color: rgba(74, 222, 128, 0.4);
+        }
+
+        .auth-input-wrap i {
+            color: var(--text-3);
+            font-size: 0.88rem;
+        }
+
+        .auth-input-wrap input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: 'Sora', sans-serif;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .auth-input-wrap input::placeholder {
+            color: var(--text-3);
+        }
+
+        .auth-pw-toggle {
+            background: none;
+            border: none;
+            color: var(--text-3);
+            cursor: pointer;
+            font-size: 0.88rem;
+            padding: 0;
+            transition: color 0.15s;
+        }
+
+        .auth-pw-toggle:hover {
+            color: var(--text-2);
+        }
+
+        .auth-error {
+            display: none;
+            font-size: 0.72rem;
+            color: var(--red);
+            margin-top: 4px;
+            padding-left: 2px;
+        }
+
+        .auth-error.show {
+            display: block;
+        }
+
+        .auth-submit {
+            width: 100%;
+            padding: 13px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+            color: var(--accent);
+            font-family: 'Sora', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .auth-submit:hover {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.10) 100%);
+            transform: translateY(-1px);
+        }
+
+        .auth-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            font-size: 0.72rem;
+            color: var(--text-3);
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .auth-link {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-2);
+        }
+
+        .auth-link a {
+            color: var(--text);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .auth-link a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-global-error {
+            display: none;
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            color: var(--red);
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .auth-global-error.show {
+            display: flex;
+        }
+
+        .pw-strength {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .pw-bar {
+            flex: 1;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--border);
+            transition: background 0.3s;
+        }
+
+        .pw-bar.weak {
+            background: var(--red);
+        }
+
+        .pw-bar.medium {
+            background: #fbbf24;
+        }
+
+        .pw-bar.strong {
+            background: var(--green);
+        }
+
+        .pw-label {
+            font-size: 0.68rem;
+            color: var(--text-3);
+            margin-top: 3px;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--border2);
+            background: var(--surface);
+            color: var(--text-2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.88rem;
+            transition: all 0.15s;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="bi bi-sun" id="themeIcon"></i>
+    </button>
+
+    <div class="auth-wrap">
+        <div class="auth-logo">
+            <img src="/static/image/logo.png" alt="HAMS.AI" />
+            <span>HAMS<span style="opacity:0.5">AI</span></span>
+        </div>
+
+        <div class="auth-card">
+            <div class="auth-title">Buat akun baru</div>
+            <div class="auth-sub">Mulai gunakan HAMS AI secara gratis</div>
+
+            <div class="auth-global-error" id="globalError">
+                <i class="bi bi-exclamation-circle"></i>
+                <span id="globalErrorMsg"></span>
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label">Nama Lengkap</label>
+                <div class="auth-input-wrap" id="wrapName">
+                    <i class="bi bi-person"></i>
+                    <input type="text" id="inputName" placeholder="John Doe" autocomplete="name" />
+                </div>
+                <div class="auth-error" id="errName"></div>
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label">Username</label>
+                <div class="auth-input-wrap" id="wrapUsername">
+                    <i class="bi bi-at"></i>
+                    <input type="text" id="inputUsername" placeholder="johndoe" autocomplete="username"
+                        oninput="checkUsername()" />
+                </div>
+                <div class="auth-error" id="errUsername"></div>
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label">Email</label>
+                <div class="auth-input-wrap" id="wrapEmail">
+                    <i class="bi bi-envelope"></i>
+                    <input type="email" id="inputEmail" placeholder="nama@email.com" autocomplete="email" />
+                </div>
+                <div class="auth-error" id="errEmail"></div>
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label">Password</label>
+                <div class="auth-input-wrap" id="wrapPassword">
+                    <i class="bi bi-lock"></i>
+                    <input type="password" id="inputPassword" placeholder="Min. 8 karakter" autocomplete="new-password"
+                        oninput="checkPwStrength(this.value)" onkeydown="if(event.key==='Enter') doRegister()" />
+                    <button class="auth-pw-toggle" onclick="togglePw('inputPassword', this)">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div class="pw-strength">
+                    <div class="pw-bar" id="bar1"></div>
+                    <div class="pw-bar" id="bar2"></div>
+                    <div class="pw-bar" id="bar3"></div>
+                    <div class="pw-bar" id="bar4"></div>
+                </div>
+                <div class="pw-label" id="pwLabel"></div>
+                <div class="auth-error" id="errPassword"></div>
+            </div>
+
+            <button class="auth-submit" id="submitBtn" onclick="doRegister()">
+                <span>Buat Akun</span>
+            </button>
+
+            <div class="auth-divider">atau</div>
+
+            <div class="auth-link">
+                Sudah punya akun? <a href="/login">Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const saved = localStorage.getItem('hams_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+        document.getElementById('themeIcon').className = saved === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+
+        function toggleTheme() {
+            const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem('hams_theme', t);
+            document.getElementById('themeIcon').className = t === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        function togglePw(id, btn) {
+            const input = document.getElementById(id);
+            const isText = input.type === 'text';
+            input.type = isText ? 'password' : 'text';
+            btn.querySelector('i').className = isText ? 'bi bi-eye' : 'bi bi-eye-slash';
+        }
+
+        function setError(id, wrapId, msg) {
+            document.getElementById(id).textContent = msg;
+            document.getElementById(id).classList.toggle('show', !!msg);
+            document.getElementById(wrapId).classList.toggle('error', !!msg);
+        }
+
+        function showGlobalError(msg) {
+            document.getElementById('globalErrorMsg').textContent = msg;
+            document.getElementById('globalError').classList.add('show');
+        }
+
+        function checkPwStrength(pw) {
+            const bars = [1, 2, 3, 4].map(i => document.getElementById('bar' + i));
+            const label = document.getElementById('pwLabel');
+            bars.forEach(b => b.className = 'pw-bar');
+            if (!pw) { label.textContent = ''; return; }
+            let score = 0;
+            if (pw.length >= 8) score++;
+            if (/[A-Z]/.test(pw)) score++;
+            if (/[0-9]/.test(pw)) score++;
+            if (/[^a-zA-Z0-9]/.test(pw)) score++;
+            const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
+            const texts = ['', 'Lemah', 'Cukup', 'Kuat', 'Sangat kuat'];
+            for (let i = 0; i < score; i++) bars[i].classList.add(cls);
+            label.textContent = texts[score] || '';
+            label.style.color = cls === 'weak' ? 'var(--red)' : cls === 'medium' ? '#fbbf24' : 'var(--green)';
+        }
+
+        let usernameTimer;
+        function checkUsername() {
+            clearTimeout(usernameTimer);
+            const val = document.getElementById('inputUsername').value.trim();
+            if (!val) return;
+            usernameTimer = setTimeout(() => {
+                if (!/^[a-zA-Z0-9_]{3,30}$/.test(val)) {
+                    setError('errUsername', 'wrapUsername', 'Hanya huruf, angka, dan underscore (3-30 karakter)');
+                } else {
+                    setError('errUsername', 'wrapUsername', '');
+                }
+            }, 400);
+        }
+
+        async function doRegister() {
+            document.getElementById('globalError').classList.remove('show');
+            ['Name', 'Username', 'Email', 'Password'].forEach(f => setError('err' + f, 'wrap' + f, ''));
+
+            const name = document.getElementById('inputName').value.trim();
+            const username = document.getElementById('inputUsername').value.trim();
+            const email = document.getElementById('inputEmail').value.trim();
+            const password = document.getElementById('inputPassword').value;
+
+            let valid = true;
+            if (!name || name.length < 2) { setError('errName', 'wrapName', 'Nama minimal 2 karakter'); valid = false; }
+            if (!username || username.length < 3) { setError('errUsername', 'wrapUsername', 'Username minimal 3 karakter'); valid = false; }
+            else if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError('errUsername', 'wrapUsername', 'Hanya huruf, angka, underscore'); valid = false; }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('errEmail', 'wrapEmail', 'Email tidak valid'); valid = false; }
+            if (!password || password.length < 8) { setError('errPassword', 'wrapPassword', 'Password minimal 8 karakter'); valid = false; }
+            if (!valid) return;
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, username, email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) { showGlobalError(data.detail || 'Registrasi gagal'); return; }
+
+                localStorage.setItem('hams_token', data.token);
+                localStorage.setItem('hams_user', JSON.stringify({
+                    id: data.user_id, name: data.name,
+                    username: data.username, email: data.email
+                }));
+                window.location.href = '/chat-ui';
+            } catch {
+                showGlobalError('Koneksi gagal. Coba lagi.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Buat Akun</span>';
+            }
+        }
+
+        if (localStorage.getItem('hams_token')) window.location.href = '/chat-ui';
+    </script>
+</body>
+
+</html>

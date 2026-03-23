@@ -28,6 +28,12 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from agent.auth import (
+    init_db, create_user, get_user_by_email,
+    get_user_by_id, verify_password, create_token, decode_token,
+    update_user_name
+)
+
 # ---------------------------------------------------------------------------
 # App setup — urutan PENTING: buat app → middleware → mount static
 # ---------------------------------------------------------------------------
@@ -46,6 +52,7 @@ _STATIC_DIR    = os.path.join(os.path.dirname(__file__), "static")
 _TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
+init_db()
 
 # ---------------------------------------------------------------------------
 
@@ -132,6 +139,27 @@ class RunResponse(BaseModel):
     started_at: str = ""
     completed_at: str | None = None
 
+# ← LETAKKAN 4 CLASS BARU INI DI SINI
+class RegisterRequest(BaseModel):
+    name:     str = Field(..., min_length=2, max_length=50)
+    username: str = Field(..., min_length=3, max_length=30, pattern=r'^[a-zA-Z0-9_]+$')
+    email:    str = Field(..., min_length=5)
+    password: str = Field(..., min_length=8)
+
+class LoginRequest(BaseModel):
+    email:    str
+    password: str
+
+class AuthResponse(BaseModel):
+    token:    str
+    user_id:  int
+    name:     str
+    username: str
+    email:    str
+
+class UpdateNameRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=50)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -213,6 +241,18 @@ def _serialize_step(step: Any) -> AgentStepInfo:
         is_final=bool(step.final_answer),
     )
 
+def _get_current_user(request: Request) -> dict:
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    payload = decode_token(auth.split(" ", 1)[1])
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token expired or invalid")
+    user = get_user_by_id(int(payload["sub"]))
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
 
 # ---------------------------------------------------------------------------
 # Health
@@ -237,6 +277,56 @@ async def chat_ui() -> FileResponse:
     html_path = os.path.join(_TEMPLATES_DIR, "chat.html")
     return FileResponse(html_path, media_type="text/html")
 
+@app.get("/login", include_in_schema=False)
+async def login_page() -> FileResponse:
+    return FileResponse(os.path.join(_TEMPLATES_DIR, "login.html"), media_type="text/html")
+
+@app.get("/register", include_in_schema=False)
+async def register_page() -> FileResponse:
+    return FileResponse(os.path.join(_TEMPLATES_DIR, "register.html"), media_type="text/html")
+
+@app.post("/auth/register", response_model=AuthResponse, tags=["auth"])
+async def auth_register(req: RegisterRequest):
+    try:
+        user = create_user(req.name, req.username, req.email, req.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    token = create_token(user["id"], user["username"])
+    return AuthResponse(
+        token=token, user_id=user["id"],
+        name=user["name"], username=user["username"], email=user["email"]
+    )
+
+@app.post("/auth/login", response_model=AuthResponse, tags=["auth"])
+async def auth_login(req: LoginRequest):
+    user = get_user_by_email(req.email)
+    if not user or not verify_password(req.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Email atau password salah")
+    token = create_token(user["id"], user["username"])
+    return AuthResponse(
+        token=token, user_id=user["id"],
+        name=user["name"], username=user["username"], email=user["email"]
+    )
+
+@app.get("/auth/me", tags=["auth"])
+async def auth_me(request: Request):
+    user = _get_current_user(request)
+    return {
+        "user_id":  user["id"],
+        "name":     user["name"],
+        "username": user["username"],
+        "email":    user["email"],
+    }
+
+@app.patch("/auth/me", tags=["auth"])
+async def auth_update_name(req: UpdateNameRequest, request: Request):
+    user = _get_current_user(request)
+    update_user_name(user["id"], req.name)
+    return {"message": "Name updated", "name": req.name}
+
+@app.post("/auth/logout", tags=["auth"])
+async def auth_logout():
+    return {"message": "Logged out"}
 
 # ---------------------------------------------------------------------------
 # /chat — multitask dengan Extended Thinking

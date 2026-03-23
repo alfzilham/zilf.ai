@@ -1,0 +1,109 @@
+from __future__ import annotations
+import os
+import sqlite3
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Optional
+
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+
+# ── Config ──
+SECRET_KEY  = os.environ.get("SECRET_KEY", "hams-secret-key-change-in-production")
+ALGORITHM   = "HS256"
+TOKEN_EXPIRE = 60 * 24 * 7  # 7 hari
+
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# ── Database ──
+DB_PATH = Path(os.environ.get("HAMS_DB_PATH", "/app/data/hams.db"))
+
+def get_db():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT    NOT NULL,
+            username   TEXT    NOT NULL UNIQUE,
+            email      TEXT    NOT NULL UNIQUE,
+            password   TEXT    NOT NULL,
+            created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# ── Password ──
+def hash_password(password: str) -> str:
+    return pwd_ctx.hash(password)
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_ctx.verify(plain, hashed)
+
+# ── JWT ──
+def create_token(user_id: int, username: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRE)
+    return jwt.encode(
+        {"sub": str(user_id), "username": username, "exp": expire},
+        SECRET_KEY, algorithm=ALGORITHM
+    )
+
+def decode_token(token: str) -> Optional[dict]:
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        return None
+
+# ── User CRUD ──
+def create_user(name: str, username: str, email: str, password: str) -> dict:
+    conn = get_db()
+    try:
+        conn.execute(
+            "INSERT INTO users (name, username, email, password) VALUES (?, ?, ?, ?)",
+            (name, username.lower(), email.lower(), hash_password(password))
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT * FROM users WHERE username = ?", (username.lower(),)
+        ).fetchone()
+        return dict(row)
+    except sqlite3.IntegrityError as e:
+        if "username" in str(e):
+            raise ValueError("Username sudah digunakan")
+        if "email" in str(e):
+            raise ValueError("Email sudah terdaftar")
+        raise
+    finally:
+        conn.close()
+
+def get_user_by_email(email: str) -> Optional[dict]:
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM users WHERE email = ?", (email.lower(),)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_user_by_id(user_id: int) -> Optional[dict]:
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def update_user_name(user_id: int, name: str) -> None:
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET name = ?, updated_at = datetime('now') WHERE id = ?",
+        (name, user_id)
+    )
+    conn.commit()
+    conn.close()

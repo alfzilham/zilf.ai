@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HAMS.AI — Login</title>
+    <link rel="icon" type="image/png" href="/static/favicon/apple-icon.png" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #07070d;
+            --surface: #0c0c0c;
+            --border: rgba(255, 255, 255, 0.08);
+            --border2: rgba(255, 255, 255, 0.12);
+            --text: #f3f3f3;
+            --text-2: #909090;
+            --text-3: #444;
+            --accent: #f3f3f3;
+            --red: #f87171;
+            --green: #4ade80;
+        }
+
+        [data-theme="light"] {
+            --bg: #e8e8e8;
+            --surface: rgba(255, 255, 255, 0.9);
+            --border: rgba(0, 0, 0, 0.08);
+            --border2: rgba(0, 0, 0, 0.14);
+            --text: #1a1a1a;
+            --text-2: #606060;
+            --text-3: #aaa;
+            --accent: #1a1a1a;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-wrap {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+
+        .auth-logo img {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            object-fit: cover;
+        }
+
+        .auth-logo span {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .auth-card {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 20px;
+            padding: 32px;
+            backdrop-filter: blur(24px);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .auth-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 6px;
+        }
+
+        .auth-sub {
+            font-size: 0.82rem;
+            color: var(--text-2);
+            margin-bottom: 28px;
+        }
+
+        .auth-field {
+            margin-bottom: 16px;
+        }
+
+        .auth-label {
+            display: block;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--text-2);
+            margin-bottom: 6px;
+        }
+
+        .auth-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border2);
+            border-radius: 11px;
+            padding: 11px 14px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .auth-input-wrap:focus-within {
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+        }
+
+        .auth-input-wrap.error {
+            border-color: rgba(248, 113, 113, 0.5);
+        }
+
+        .auth-input-wrap i {
+            color: var(--text-3);
+            font-size: 0.88rem;
+        }
+
+        .auth-input-wrap input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: 'Sora', sans-serif;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .auth-input-wrap input::placeholder {
+            color: var(--text-3);
+        }
+
+        .auth-pw-toggle {
+            background: none;
+            border: none;
+            color: var(--text-3);
+            cursor: pointer;
+            font-size: 0.88rem;
+            padding: 0;
+            transition: color 0.15s;
+        }
+
+        .auth-pw-toggle:hover {
+            color: var(--text-2);
+        }
+
+        .auth-error {
+            display: none;
+            font-size: 0.75rem;
+            color: var(--red);
+            margin-top: 5px;
+            padding-left: 2px;
+        }
+
+        .auth-error.show {
+            display: block;
+        }
+
+        .auth-submit {
+            width: 100%;
+            padding: 13px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+            color: var(--accent);
+            font-family: 'Sora', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .auth-submit:hover {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.10) 100%);
+            transform: translateY(-1px);
+        }
+
+        .auth-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-submit .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            font-size: 0.72rem;
+            color: var(--text-3);
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .auth-link {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-2);
+        }
+
+        .auth-link a {
+            color: var(--text);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .auth-link a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-global-error {
+            display: none;
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            color: var(--red);
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .auth-global-error.show {
+            display: flex;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--border2);
+            background: var(--surface);
+            color: var(--text-2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.88rem;
+            transition: all 0.15s;
+        }
+
+        .theme-toggle:hover {
+            color: var(--text);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
+        <i class="bi bi-sun" id="themeIcon"></i>
+    </button>
+
+    <div class="auth-wrap">
+        <div class="auth-logo">
+            <img src="/static/image/logo.png" alt="HAMS.AI" />
+            <span>HAMS<span style="opacity:0.5">AI</span></span>
+        </div>
+
+        <div class="auth-card">
+            <div class="auth-title">Welcome back</div>
+            <div class="auth-sub">Login ke akun HAMS AI kamu</div>
+
+            <div class="auth-global-error" id="globalError">
+                <i class="bi bi-exclamation-circle"></i>
+                <span id="globalErrorMsg"></span>
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label">Email</label>
+                <div class="auth-input-wrap" id="wrapEmail">
+                    <i class="bi bi-envelope"></i>
+                    <input type="email" id="inputEmail" placeholder="nama@email.com" autocomplete="email" />
+                </div>
+                <div class="auth-error" id="errEmail"></div>
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label">Password</label>
+                <div class="auth-input-wrap" id="wrapPassword">
+                    <i class="bi bi-lock"></i>
+                    <input type="password" id="inputPassword" placeholder="••••••••" autocomplete="current-password"
+                        onkeydown="if(event.key==='Enter') doLogin()" />
+                    <button class="auth-pw-toggle" onclick="togglePw('inputPassword', this)">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div class="auth-error" id="errPassword"></div>
+            </div>
+
+            <button class="auth-submit" id="submitBtn" onclick="doLogin()">
+                <span>Login</span>
+            </button>
+
+            <div class="auth-divider">atau</div>
+
+            <div class="auth-link">
+                Belum punya akun? <a href="/register">Daftar sekarang</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme
+        const saved = localStorage.getItem('hams_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+        document.getElementById('themeIcon').className = saved === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+
+        function toggleTheme() {
+            const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem('hams_theme', t);
+            document.getElementById('themeIcon').className = t === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        function togglePw(id, btn) {
+            const input = document.getElementById(id);
+            const isText = input.type === 'text';
+            input.type = isText ? 'password' : 'text';
+            btn.querySelector('i').className = isText ? 'bi bi-eye' : 'bi bi-eye-slash';
+        }
+
+        function setError(id, wrapId, msg) {
+            const el = document.getElementById(id);
+            const wrap = document.getElementById(wrapId);
+            el.textContent = msg;
+            el.classList.toggle('show', !!msg);
+            wrap.classList.toggle('error', !!msg);
+        }
+
+        function showGlobalError(msg) {
+            document.getElementById('globalErrorMsg').textContent = msg;
+            document.getElementById('globalError').classList.add('show');
+        }
+
+        function hideGlobalError() {
+            document.getElementById('globalError').classList.remove('show');
+        }
+
+        async function doLogin() {
+            hideGlobalError();
+            setError('errEmail', 'wrapEmail', '');
+            setError('errPassword', 'wrapPassword', '');
+
+            const email = document.getElementById('inputEmail').value.trim();
+            const password = document.getElementById('inputPassword').value;
+
+            let valid = true;
+            if (!email) { setError('errEmail', 'wrapEmail', 'Email tidak boleh kosong'); valid = false; }
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('errEmail', 'wrapEmail', 'Format email tidak valid'); valid = false; }
+            if (!password) { setError('errPassword', 'wrapPassword', 'Password tidak boleh kosong'); valid = false; }
+            if (!valid) return;
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) { showGlobalError(data.detail || 'Login gagal'); return; }
+
+                localStorage.setItem('hams_token', data.token);
+                localStorage.setItem('hams_user', JSON.stringify({
+                    id: data.user_id, name: data.name,
+                    username: data.username, email: data.email
+                }));
+                window.location.href = '/chat-ui';
+            } catch {
+                showGlobalError('Koneksi gagal. Coba lagi.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Login</span>';
+            }
+        }
+
+        // Redirect kalau sudah login
+        if (localStorage.getItem('hams_token')) window.location.href = '/chat-ui';
+    </script>
+</body>
+
+</html>
