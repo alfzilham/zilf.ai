@@ -46,7 +46,7 @@ class HamsMaxThinkingLLM(HamsMaxBase):
     ) -> LLMResponse:
         full_system = _THINKING_PROMPT + (system or "")
         payload  = self._build_payload(messages, system=full_system)
-        raw_text = await self._call_api(payload)
+        raw_text = await self._call_api_with_fallback(payload)
 
         thinking, answer = _extract_thinking(raw_text)
         return LLMResponse(
@@ -67,7 +67,7 @@ class HamsMaxThinkingLLM(HamsMaxBase):
         """Return JSON string {"thinking": "...", "answer": "..."} untuk api.py."""
         full_system = _THINKING_PROMPT + (system or "")
         payload  = self._build_payload(messages, system=full_system)
-        raw_text = await self._call_api(payload)
+        raw_text = await self._call_api_with_fallback(payload)
 
         thinking, answer = _extract_thinking(raw_text)
         return json.dumps({

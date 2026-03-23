@@ -23,7 +23,7 @@ class HamsMaxChatLLM(HamsMaxBase):
         **kwargs: Any,
     ) -> LLMResponse:
         payload  = self._build_payload(messages, system=system)
-        raw_text = await self._call_api(payload)
+        raw_text = await self._call_api_with_fallback(payload)
         return LLMResponse(
             thought=raw_text,
             action_type="final_answer",

@@ -99,7 +99,7 @@ class HamsMaxAgentLLM(HamsMaxBase):
         if not tools:
             # Fallback ke simple generate kalau tidak ada tools
             payload  = self._build_payload(messages, system=system)
-            raw_text = await self._call_api(payload)
+            raw_text = await self._call_api_with_fallback(payload)
             return LLMResponse(
                 thought=raw_text,
                 action_type=ActionType.FINAL_ANSWER if hasattr(ActionType, 'FINAL_ANSWER') else "final_answer",
@@ -114,7 +114,7 @@ class HamsMaxAgentLLM(HamsMaxBase):
         )
 
         payload  = self._build_payload(messages, system=react_system)
-        raw_text = await self._call_api(payload)
+        raw_text = await self._call_api_with_fallback(payload)
 
         logger.debug(f"[hams-max/agent] Raw (first 300): {raw_text[:300]}")
 

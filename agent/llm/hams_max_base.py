@@ -62,6 +62,23 @@ _FRONTEND_TO_HAMSMAX: dict[str, tuple[str, str]] = {
     "hams-max":                ("llama-3.3-70b-versatile", "groq"),
 }
 
+FALLBACK_CHAIN: list[str] = [
+    "nvidia/nemotron-super-3",   # primary
+    "nvidia/deepseek-v3.2",
+    "nvidia/qwen-397b",
+    "nvidia/kimi-k2.5",
+    "nvidia/mistral-small-4",
+    "nvidia/qwen-3.5",
+    "nvidia/minimax-m25",
+    "nvidia/glm-5",
+    "nvidia/stepfun-step3.5",
+    "nvidia/kimi-k2-thinking",
+    "llama-3.3-70b-versatile",   # groq — rate limit prone, paling akhir
+    "compound-beta",
+    "gemma2-9b-it",
+    "llama-3.1-8b-instant",      # last resort
+]
+
 
 def resolve_model(model: str) -> tuple[str, str]:
     if model in _FRONTEND_TO_HAMSMAX:
@@ -84,9 +101,10 @@ class HamsMaxBase(BaseLLM):
     def __init__(self, model: str = "groq", max_tokens: int = 4096, temperature: float = 0.7) -> None:
         model_id, provider = resolve_model(model)
         super().__init__(model=model_id, max_tokens=max_tokens, temperature=temperature)
-        self._model_key = model_id
-        self._provider  = provider
-        self._api_key   = os.environ.get("HAMS_MAX_API_KEY", "")
+        self._model_key    = model_id
+        self._provider     = provider
+        self._active_model = model
+        self._api_key      = os.environ.get("HAMS_MAX_API_KEY", "")
         if not self._api_key:
             raise RuntimeError("HAMS_MAX_API_KEY environment variable is not set.")
         logger.info(f"[hams-max] provider={self._provider} model={self._model_key} mode={self.__class__.__name__}")
@@ -148,3 +166,40 @@ class HamsMaxBase(BaseLLM):
                 logger.error(f"[hams-max] {resp.status_code} — body: {resp.text[:1000]}")
             resp.raise_for_status()
             return resp.json().get("reply", "")
+
+    def _is_rate_limit_error(self, exc: Exception) -> bool:
+        msg = str(exc).lower()
+        return any(k in msg for k in [
+            "rate limit", "rate_limit", "ratelimit",
+            "429", "quota", "too many requests",
+            "tpd", "tpm", "capacity", "overloaded", "503",
+        ])
+
+    async def _call_api_with_fallback(self, payload: dict) -> str:
+        # Tentukan starting point di chain
+        if self._active_model in FALLBACK_CHAIN:
+            start_idx = FALLBACK_CHAIN.index(self._active_model)
+            queue = FALLBACK_CHAIN[start_idx:]
+        else:
+            queue = FALLBACK_CHAIN
+
+        last_error: Exception | None = None
+
+        for frontend_key in queue:
+            model_id, provider = resolve_model(frontend_key)
+            patched = {**payload, "model": model_id, "provider": provider}
+            try:
+                logger.info(f"[hams-max] trying: {frontend_key}")
+                result = await self._call_api(patched)
+                if frontend_key != self._active_model:
+                    logger.warning(f"[hams-max] fallback: {self._active_model} → {frontend_key}")
+                    self._active_model = frontend_key
+                return result
+            except Exception as exc:
+                last_error = exc
+                if self._is_rate_limit_error(exc):
+                    logger.warning(f"[hams-max] rate limit on {frontend_key}, next...")
+                    continue
+                raise   # error bukan rate limit → langsung raise, jangan lanjut
+
+        raise RuntimeError(f"Semua model fallback gagal. Error terakhir: {last_error}")
