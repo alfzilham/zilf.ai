@@ -582,15 +582,15 @@
                 <!-- TOC -->
                 <div class="toc">
                     <div class="toc-title">On this page</div>
-                    <a class="toc-item active" onclick="scrollTo('cli')">CLI via npm</a>
-                    <a class="toc-sub" onclick="scrollTo('prereq')">Prasyarat</a>
-                    <a class="toc-sub" onclick="scrollTo('install')">Instalasi</a>
-                    <a class="toc-sub" onclick="scrollTo('commands')">Perintah</a>
-                    <a class="toc-sub" onclick="scrollTo('session')">Contoh Sesi</a>
-                    <a class="toc-item" onclick="scrollTo('usage')">Penggunaan</a>
-                    <a class="toc-sub" onclick="scrollTo('agent')">Jalankan Agent</a>
-                    <a class="toc-sub" onclick="scrollTo('python')">Via CLI Python</a>
-                    <a class="toc-sub" onclick="scrollTo('api')">Via API</a>
+                    <a class="toc-item active" onclick="scrollToSection('cli', this)">CLI via npm</a>
+                    <a class="toc-sub" onclick="scrollToSection('prereq', this)">Prasyarat</a>
+                    <a class="toc-sub" onclick="scrollToSection('install', this)">Instalasi</a>
+                    <a class="toc-sub" onclick="scrollToSection('commands', this)">Perintah</a>
+                    <a class="toc-sub" onclick="scrollToSection('session', this)">Contoh Sesi</a>
+                    <a class="toc-item" onclick="scrollToSection('usage', this)">Penggunaan</a>
+                    <a class="toc-sub" onclick="scrollToSection('agent', this)">Jalankan Agent</a>
+                    <a class="toc-sub" onclick="scrollToSection('python', this)">Via CLI Python</a>
+                    <a class="toc-sub" onclick="scrollToSection('api', this)">Via API</a>
                 </div>
 
                 <!-- Doc Content -->
@@ -823,25 +823,52 @@ curl -X POST http://localhost:8000/run \
             localStorage.setItem('hams_theme', t);
             document.getElementById('themeIcon').className = t === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
         }
-        // Apply saved theme
         const saved = localStorage.getItem('hams_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', saved);
         document.getElementById('themeIcon').className = saved === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
 
-        function scrollTo(id) {
+        function scrollToSection(id, el) {
             document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            document.querySelectorAll('.toc-item').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.toc-item, .toc-sub').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
         }
 
         function copyCode(btn) {
             const pre = btn.closest('.code-wrap').querySelector('pre');
-            const text = pre.innerText;
-            navigator.clipboard.writeText(text).then(() => {
+            navigator.clipboard.writeText(pre.innerText).then(() => {
                 btn.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
                 setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy', 2000);
             });
         }
+
+        // Intersection Observer — auto highlight TOC saat scroll
+        const sections = ['cli', 'prereq', 'install', 'commands', 'session', 'usage', 'agent', 'python', 'api'];
+        const tocMap = {
+            'cli': document.querySelector('.toc-item:nth-child(2)'),
+            'prereq': document.querySelector('.toc-sub:nth-child(3)'),
+            'install': document.querySelector('.toc-sub:nth-child(4)'),
+            'commands': document.querySelector('.toc-sub:nth-child(5)'),
+            'session': document.querySelector('.toc-sub:nth-child(6)'),
+            'usage': document.querySelector('.toc-item:nth-child(7)'),
+            'agent': document.querySelector('.toc-sub:nth-child(8)'),
+            'python': document.querySelector('.toc-sub:nth-child(9)'),
+            'api': document.querySelector('.toc-sub:nth-child(10)'),
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    document.querySelectorAll('.toc-item, .toc-sub').forEach(t => t.classList.remove('active'));
+                    const el = tocMap[entry.target.id];
+                    if (el) el.classList.add('active');
+                }
+            });
+        }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+        sections.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) observer.observe(el);
+        });
     </script>
 </body>
 
