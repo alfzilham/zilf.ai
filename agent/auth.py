@@ -1,4 +1,6 @@
 from __future__ import annotations
+import hashlib
+import base64
 import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
@@ -13,7 +15,15 @@ SECRET_KEY  = os.environ.get("SECRET_KEY", "hams-secret-key-change-in-production
 ALGORITHM   = "HS256"
 TOKEN_EXPIRE = 60 * 24 * 7  # 7 hari
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12, truncate_error=False)
+# FIX: gunakan bcrypt__truncate_error (bukan truncate_error) agar benar-benar
+# diteruskan ke handler bcrypt. truncate_error tanpa prefix diabaikan oleh
+# CryptContext → bcrypt default ke truncate_error=True → raise error.
+pwd_ctx = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12,
+    bcrypt__truncate_error=False,   # ← FIX: prefix bcrypt__ wajib
+)
 
 # ── Database ──
 DB_PATH = Path(os.environ.get("HAMS_DB_PATH", "/app/data/hams.db"))
@@ -41,8 +51,16 @@ def init_db():
     conn.close()
 
 # ── Password ──
-def _prep(pw: str) -> str:
-    return pw.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+# FIX: ganti _prep (truncate bytes) dengan sha256 pre-hash.
+# sha256 → digest 32 bytes → base64 44 bytes, selalu < 72 byte limit bcrypt.
+# Tidak ada edge case multi-byte character yang bisa ditruncate di tengah.
+def _prep(pw: str) -> bytes:
+    """
+    Pre-hash password sebelum masuk bcrypt agar tidak pernah melebihi 72 byte.
+    sha256(utf-8) → 32 bytes → base64 → 44 bytes (selalu aman untuk bcrypt).
+    """
+    digest = hashlib.sha256(pw.encode("utf-8")).digest()
+    return base64.b64encode(digest)          # bytes, 44 chars, aman
 
 def hash_password(password: str) -> str:
     return pwd_ctx.hash(_prep(password))
