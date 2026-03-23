@@ -115,10 +115,12 @@
                     </div>
                     <div class="model-group">
                         <div class="model-group-label">Google — Gemini</div>
-                        <div class="model-option" data-value="gemini-2.5-flash-lite-preview-06-17" onclick="selectModel(this)">
+                        <div class="model-option" data-value="gemini-2.5-flash-lite-preview-06-17"
+                            onclick="selectModel(this)">
                             <span class="model-badge gemini">Ge</span>Gemini 2.5 Flash-Lite
                         </div>
-                        <div class="model-option" data-value="gemini-2.5-flash-preview-05-20" onclick="selectModel(this)">
+                        <div class="model-option" data-value="gemini-2.5-flash-preview-05-20"
+                            onclick="selectModel(this)">
                             <span class="model-badge gemini">Ge</span>Gemini 2.5 Flash
                         </div>
                         <div class="model-option" data-value="gemini-2.5-pro-preview-06-05" onclick="selectModel(this)">
@@ -247,6 +249,14 @@
                         <i class="bi bi-arrow-up"></i>
                     </button>
                 </div>
+            </div>
+            <!-- Agent Max Steps Slider -->
+            <div id="agentSlider" style="display:none" class="agent-slider-wrap">
+                <i class="bi bi-list-ol"></i>
+                <span>Max steps:</span>
+                <input type="range" min="1" max="30" value="15" id="maxStepsRange"
+                    oninput="document.getElementById('maxStepsVal').textContent = this.value">
+                <span id="maxStepsVal">15</span>
             </div>
             <div class="input-hint">
                 Enter kirim &nbsp;·&nbsp; Shift+Enter baris baru &nbsp;·&nbsp;

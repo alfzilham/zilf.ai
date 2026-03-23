@@ -292,6 +292,10 @@ function setMode(m) {
     if (input) input.placeholder =
         m === 'agent' ? 'Describe your task for the agent...' : 'Message AI Chat...';
 
+    // ← tambah ini
+    const slider = document.getElementById('agentSlider');
+    if (slider) slider.style.display = m === 'agent' ? 'flex' : 'none';
+
     updateFeatureCards(m);
 
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -751,7 +755,7 @@ async function sendAgent(text, model) {
         const res = await fetch('/agent/stream', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ task: text, model, max_steps: 15, extended })
+            body: JSON.stringify({ task: text, model, max_steps: parseInt(document.getElementById('maxStepsRange')?.value || 15), extended })
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 

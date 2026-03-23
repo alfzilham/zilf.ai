@@ -2131,3 +2131,49 @@ body>* {
     border-color: rgba(255,255,255,0.2);
     color: var(--text);
 }
+
+/* ── Agent Max Steps Slider ── */
+.agent-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px 0;
+    font-size: 0.76rem;
+    color: var(--text-2);
+    font-weight: 500;
+}
+
+.agent-slider-wrap i {
+    color: var(--accent);
+    font-size: 0.85rem;
+}
+
+.agent-slider-wrap input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 130px;
+    height: 3px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.12);
+    outline: none;
+    cursor: pointer;
+}
+
+.agent-slider-wrap input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 0 6px rgba(255,255,255,0.2);
+    cursor: pointer;
+}
+
+#maxStepsVal {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 700;
+    min-width: 20px;
+}
