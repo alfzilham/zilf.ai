@@ -92,14 +92,29 @@ Be thorough in your thinking — more thinking leads to better answers.
 
 
 def _resolve_model(model: str) -> tuple[str, str]:
+    # Shorthand alias
     if model in HAMS_MAX_MODELS:
         model_id = HAMS_MAX_MODELS[model]
         provider = "groq" if (model == "groq" or model_id in _GROQ_MODELS) else "nvidia"
         return model_id, provider
+
+    # NVIDIA explicit prefix
     if model.startswith("nvidia/"):
         return model, "nvidia"
+
+    # Groq model set
     if model in _GROQ_MODELS:
         return model, "groq"
+
+    # Groq shorthand IDs (tanpa prefix)
+    if model in {"llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it"}:
+        return model, "groq"
+
+    # hams-max sendiri → pakai groq default
+    if model == "hams-max":
+        return "llama-3.3-70b-versatile", "groq"
+
+    # Default groq
     return model, "groq"
 
 

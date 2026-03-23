@@ -154,10 +154,31 @@ _MULTITASK_SYSTEM = """Kamu adalah HAMS.AI — asisten AI serba bisa yang powerf
 
 
 def _build_llm(model: str, extended: bool = False) -> Any:
+    # Ollama — selalu local, tidak butuh API key
+    if model.startswith("ollama/"):
+        try:
+            from agent.llm.ollama_provider import OllamaLLM
+            return OllamaLLM(model=model.replace("ollama/", ""))
+        except Exception:
+            pass
+
+    # Google Gemini
+    if model.startswith("gemini-"):
+        google_key = os.environ.get("GOOGLE_API_KEY")
+        if google_key:
+            try:
+                from agent.llm.google_provider import GoogleLLM
+                return GoogleLLM(model=model)
+            except Exception:
+                pass
+
+    # HAMS-MAX — handle Groq, NVIDIA, dan hams-max sendiri
     hams_key = os.environ.get("HAMS_MAX_API_KEY")
     if hams_key:
         from agent.llm.hams_max_provider import HamsMaxLLM
         return HamsMaxLLM(model=model, extended=extended)
+
+    # Fallback ke router
     from agent.llm.router import LLMRouter
     return LLMRouter.from_env()
 
