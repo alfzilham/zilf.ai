@@ -766,7 +766,7 @@ body>* {
     width: 130px;
     height: 130px;
     margin-bottom: 28px;
-    cursor: none;
+    cursor: pointer;
 }
 
 .orb {
@@ -784,6 +784,11 @@ body>* {
     animation: orbFloat 6s ease-in-out infinite;
     position: relative;
     overflow: hidden;
+    transition: transform 0.3s cubic-bezier(.4, 0, .2, 1);
+}
+
+.orb:active {
+    transform: scale(0.94);
 }
 
 .orb-highlight {
@@ -792,10 +797,14 @@ body>* {
     left: 12%;
     width: 38%;
     height: 28%;
-    background: radial-gradient(ellipse, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.1) 60%, transparent 100%);
+    background: radial-gradient(ellipse,
+            rgba(255, 255, 255, 0.75) 0%,
+            rgba(255, 255, 255, 0.1) 60%,
+            transparent 100%);
     border-radius: 50%;
     transform: rotate(-30deg);
     pointer-events: none;
+    z-index: 10;
 }
 
 .orb::after {
@@ -807,6 +816,30 @@ body>* {
     animation: orbGlow 4s ease-in-out infinite alternate;
 }
 
+/* ── Alis ── */
+.orb-brow {
+    position: absolute;
+    width: 22px;
+    height: 4px;
+    background: rgba(60, 40, 30, 0.75);
+    border-radius: 4px;
+    top: 28%;
+    z-index: 5;
+    transition: transform 0.25s ease, top 0.25s ease, opacity 0.25s ease, border-radius 0.25s ease;
+    pointer-events: none;
+}
+
+.orb-brow-left {
+    left: 26%;
+    transform-origin: right center;
+}
+
+.orb-brow-right {
+    right: 26%;
+    transform-origin: left center;
+}
+
+/* ── Mata ── */
 .orb-eyes {
     position: absolute;
     top: 50%;
@@ -816,43 +849,262 @@ body>* {
     gap: 22px;
     margin-top: -4px;
     pointer-events: none;
+    z-index: 5;
+    transition: gap 0.25s ease, margin-top 0.25s ease;
 }
 
 .orb-eye {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
-    background: radial-gradient(circle at 40% 35%, #0a0a0a, #000000);
-    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    background: radial-gradient(circle at 40% 35%, #0a0a0a, #000);
+    border: 2px solid rgba(255, 255, 255, 0.35);
     box-shadow:
         inset 0 1px 3px rgba(0, 0, 0, 0.9),
-        0 0 10px rgba(255, 255, 255, 0.12);
+        0 0 14px rgba(255, 255, 255, 0.18);
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    transition: width 0.25s ease, height 0.25s ease, border-radius 0.25s ease, transform 0.25s ease;
+}
+
+.orb-eye-shine-big {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    width: 10px;
+    height: 8px;
+    background: radial-gradient(ellipse,
+            rgba(255, 255, 255, 0.85) 0%,
+            rgba(255, 255, 255, 0.2) 60%,
+            transparent 100%);
+    border-radius: 50%;
+    z-index: 3;
+    pointer-events: none;
 }
 
 .orb-pupil {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: radial-gradient(circle at 30% 30%,
-            #4a4a6a 0%,
-            #1a1a2e 40%,
-            #000000 100%);
+            #4a4a6a 0%, #1a1a2e 40%, #000 100%);
     box-shadow:
-        0 0 6px rgba(150, 140, 255, 0.3),
+        0 0 8px rgba(150, 140, 255, 0.35),
         inset 0 1px 2px rgba(255, 255, 255, 0.1);
     position: absolute;
-    transition: transform 0.06s linear;
+    transition: transform 0.06s linear, width 0.25s ease, height 0.25s ease;
+    z-index: 2;
+}
+
+.orb-pupil-shine {
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    width: 4px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
 }
 
 .orb-eye.blink {
     animation: eyeBlink 0.15s ease-in-out;
 }
 
+/* ── Mulut ── */
+.orb-mouth {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 5;
+    transition: all 0.3s ease;
+}
+
+.orb-lips {
+    width: 28px;
+    height: 12px;
+    border: 2.5px solid rgba(180, 60, 60, 0.8);
+    border-top: none;
+    border-radius: 0 0 28px 28px;
+    box-shadow:
+        0 2px 6px rgba(180, 60, 60, 0.25),
+        inset 0 -2px 4px rgba(220, 80, 80, 0.15);
+    background: transparent;
+    transition: all 0.3s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ════════════════════
+   EKSPRESI
+════════════════════ */
+
+/* IDLE — default */
+.orb[data-expr="idle"] .orb-brow-left {
+    transform: rotate(0deg);
+    top: 28%;
+}
+
+.orb[data-expr="idle"] .orb-brow-right {
+    transform: rotate(0deg);
+    top: 28%;
+}
+
+.orb[data-expr="idle"] .orb-eye {
+    width: 26px;
+    height: 26px;
+}
+
+.orb[data-expr="idle"] .orb-lips {
+    width: 28px;
+    height: 12px;
+    border-radius: 0 0 28px 28px;
+    border-color: rgba(180, 60, 60, 0.7);
+    border-top: none;
+}
+
+/* HAPPY — senyum lebar, mata melengkung */
+.orb[data-expr="happy"] .orb-brow-left {
+    transform: rotate(-8deg) translateY(-3px);
+}
+
+.orb[data-expr="happy"] .orb-brow-right {
+    transform: rotate(8deg) translateY(-3px);
+}
+
+.orb[data-expr="happy"] .orb-eye {
+    height: 14px;
+    border-radius: 50% 50% 0 0;
+    transform: scaleY(0.7);
+}
+
+.orb[data-expr="happy"] .orb-lips {
+    width: 38px;
+    height: 18px;
+    border-radius: 0 0 38px 38px;
+    border-color: rgba(200, 60, 60, 0.9);
+    border-width: 3px;
+    box-shadow: 0 3px 10px rgba(200, 60, 60, 0.4);
+}
+
+/* SURPRISED — mata besar, mulut O */
+.orb[data-expr="surprised"] .orb-brow-left {
+    transform: rotate(-12deg) translateY(-6px);
+    top: 22%;
+}
+
+.orb[data-expr="surprised"] .orb-brow-right {
+    transform: rotate(12deg) translateY(-6px);
+    top: 22%;
+}
+
+.orb[data-expr="surprised"] .orb-eye {
+    width: 32px;
+    height: 32px;
+}
+
+.orb[data-expr="surprised"] .orb-pupil {
+    width: 14px;
+    height: 14px;
+}
+
+.orb[data-expr="surprised"] .orb-lips {
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(180, 60, 60, 0.85);
+    border-radius: 50%;
+    border-top: 2.5px solid rgba(180, 60, 60, 0.85);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* THINKING — satu alis naik, mulut monyong */
+.orb[data-expr="thinking"] .orb-brow-left {
+    transform: rotate(15deg) translateY(-4px);
+}
+
+.orb[data-expr="thinking"] .orb-brow-right {
+    transform: rotate(-4deg);
+}
+
+.orb[data-expr="thinking"] .orb-eye {
+    width: 26px;
+    height: 26px;
+}
+
+.orb[data-expr="thinking"] #eyeRight {
+    transform: scaleY(0.75);
+}
+
+.orb[data-expr="thinking"] .orb-lips {
+    width: 16px;
+    height: 16px;
+    border: 2.5px solid rgba(180, 60, 60, 0.75);
+    border-radius: 50%;
+    border-top: 2.5px solid rgba(180, 60, 60, 0.75);
+    transform: translateX(4px);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+/* WINK — satu mata nutup */
+.orb[data-expr="wink"] .orb-brow-left {
+    transform: rotate(-10deg) translateY(-2px);
+}
+
+.orb[data-expr="wink"] .orb-brow-right {
+    transform: rotate(4deg);
+}
+
+.orb[data-expr="wink"] #eyeRight {
+    height: 3px;
+    border-radius: 50%;
+    transform: scaleY(0.15);
+}
+
+.orb[data-expr="wink"] .orb-lips {
+    width: 32px;
+    height: 14px;
+    border-radius: 0 0 32px 32px;
+    border-color: rgba(200, 60, 60, 0.85);
+    transform: translateX(3px);
+}
+
+/* SLEEPY — mata setengah tutup */
+.orb[data-expr="sleepy"] .orb-brow-left {
+    transform: rotate(6deg) translateY(2px);
+    opacity: 0.5;
+}
+
+.orb[data-expr="sleepy"] .orb-brow-right {
+    transform: rotate(-6deg) translateY(2px);
+    opacity: 0.5;
+}
+
+.orb[data-expr="sleepy"] .orb-eye {
+    height: 13px;
+    border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+    overflow: hidden;
+}
+
+.orb[data-expr="sleepy"] .orb-pupil {
+    transform: translateY(4px);
+}
+
+.orb[data-expr="sleepy"] .orb-lips {
+    width: 20px;
+    height: 8px;
+    border-radius: 0 0 20px 20px;
+    border-color: rgba(160, 50, 50, 0.5);
+    border-width: 2px;
+}
+
+/* ── Animasi dasar ── */
 @keyframes eyeBlink {
 
     0%,
@@ -861,7 +1113,7 @@ body>* {
     }
 
     50% {
-        transform: scaleY(0.08);
+        transform: scaleY(0.06);
     }
 }
 
@@ -887,31 +1139,6 @@ body>* {
         opacity: 1;
         transform: scale(1.04);
     }
-}
-
-.orb-mouth {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 32px;
-    height: 14px;
-    pointer-events: none;
-}
-
-.orb-smile {
-    width: 28px;
-    height: 14px;
-    border: 2.5px solid rgba(0, 0, 0, 0.55);
-    border-top: none;
-    border-radius: 0 0 28px 28px;
-    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
-    animation: smileBreath 4s ease-in-out infinite;
-}
-
-@keyframes smileBreath {
-    0%, 100% { transform: scaleX(1); opacity: 0.55; }
-    50% { transform: scaleX(1.08); opacity: 0.75; }
 }
 
 .welcome-greeting {

@@ -204,19 +204,38 @@ function closeSidebar() {
 }
 
 // ═══════════════════════════════════════════════
-// INTERACTIVE ORB EYES
+// ORB EXPRESSION SYSTEM
 // ═══════════════════════════════════════════════
+let currentExpr = 'idle';
+let idleTimer = null;
+let winkTimeout = null;
+
+function setOrbExpr(expr) {
+    const orb = document.getElementById('orb');
+    if (!orb || currentExpr === expr) return;
+    currentExpr = expr;
+    orb.setAttribute('data-expr', expr);
+}
+
+function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+        if (!isLoading) setOrbExpr('sleepy');
+    }, 30000);
+}
+
 function initOrbEyes() {
     const orbWrap = document.querySelector('.orb-wrap');
-    if (!orbWrap) return;
+    const orb = document.getElementById('orb');
+    if (!orbWrap || !orb) return;
+
+    orb.setAttribute('data-expr', 'idle');
 
     const pupils = document.querySelectorAll('.orb-pupil');
     const eyes = document.querySelectorAll('.orb-eye');
-    if (!pupils.length) return;
+    const MAX_PUPIL = 3, MAX_EYE = 2;
 
-    const MAX_PUPIL = 3;
-    const MAX_EYE = 2;
-
+    // ── Cursor tracking + ekspresi berdasarkan jarak ──
     function trackCursor(e) {
         const orbRect = orbWrap.getBoundingClientRect();
         const cx = orbRect.left + orbRect.width / 2;
@@ -230,21 +249,44 @@ function initOrbEyes() {
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         const norm = Math.min(dist / 200, 1);
 
+        // Pupil movement
         const ex = (dx / dist) * norm * MAX_EYE;
         const ey = (dy / dist) * norm * MAX_EYE;
         eyes.forEach(eye => {
-            eye.style.transform = `translate(${ex}px, ${ey}px)`;
+            if (!eye.classList.contains('blink'))
+                eye.style.transform = `translate(${ex}px,${ey}px)`;
         });
-
         const px = (dx / dist) * norm * MAX_PUPIL;
         const py = (dy / dist) * norm * MAX_PUPIL;
         pupils.forEach(p => {
-            p.style.transform = `translate(${px}px, ${py}px)`;
+            p.style.transform = `translate(${px}px,${py}px)`;
         });
+
+        // Ekspresi berdasarkan jarak cursor ke orb
+        if (!isLoading && currentExpr !== 'wink') {
+            if (dist < 80) setOrbExpr('surprised');
+            else if (dist < 200) setOrbExpr('idle');
+            else setOrbExpr('idle');
+        }
+
+        resetIdleTimer();
     }
 
     document.addEventListener('mousemove', trackCursor);
     document.addEventListener('touchmove', e => trackCursor(e.touches[0]), { passive: true });
+
+    // ── Klik orb → wink ──
+    orb.addEventListener('click', () => {
+        setOrbExpr('wink');
+        clearTimeout(winkTimeout);
+        winkTimeout = setTimeout(() => setOrbExpr('idle'), 1200);
+    });
+
+    // ── Reset idle timer saat ada aktivitas ──
+    document.addEventListener('keydown', resetIdleTimer);
+    document.addEventListener('click', resetIdleTimer);
+
+    resetIdleTimer();
 }
 
 // ── Blink ──
@@ -254,6 +296,7 @@ function scheduleNextBlink() {
     blinkTimeout = setTimeout(doBlink, delay);
 }
 function doBlink() {
+    if (currentExpr === 'sleepy') { scheduleNextBlink(); return; }
     const eyes = document.querySelectorAll('.orb-eye');
     eyes.forEach(e => {
         e.classList.add('blink');
@@ -587,6 +630,7 @@ function showTyping(withThink) {
 
 // ── Typing indicator dengan counter waktu ──────
 function showTypingWithTimer() {
+    setOrbExpr('thinking');
     const box = showContent();
     const row = document.createElement('div');
     row.className = 'msg-row ai';
@@ -615,10 +659,10 @@ function showTypingWithTimer() {
         secs++;
         const el = document.getElementById('typingStatus');
         if (!el) { clearInterval(timer); return; }
-        if (secs < 5)       el.textContent = 'Connecting...';
+        if (secs < 5) el.textContent = 'Connecting...';
         else if (secs < 15) el.textContent = `Processing... (${secs}s)`;
         else if (secs < 30) el.textContent = `Model is thinking... (${secs}s)`;
-        else                el.textContent = `Almost done... (${secs}s)`;
+        else el.textContent = `Almost done... (${secs}s)`;
     }, 1000);
 
     // Simpan timer id di row agar bisa di-clear
@@ -631,6 +675,9 @@ function removeTyping() {
         if (row._typingTimer) clearInterval(row._typingTimer);
         row.remove();
     }
+
+    setOrbExpr('happy');
+    setTimeout(() => setOrbExpr('idle'), 2500);
 }
 
 // ═══════════════════════════════════════════════
@@ -715,14 +762,14 @@ async function sendChat(text, model) {
 
         const isNetwork = err.message.includes('fetch') || err.message.includes('network');
         const isTimeout = err.message.includes('timeout') || err.message.includes('Timeout');
-        const isServer  = err.message.includes('500');
-        const isAuth    = err.message.includes('401') || err.message.includes('403');
+        const isServer = err.message.includes('500');
+        const isAuth = err.message.includes('401') || err.message.includes('403');
 
         let icon = '⚠️', title = 'Error', hint = '';
         if (isNetwork) { icon = '🌐'; title = 'Connection Error'; hint = 'Periksa koneksi internet kamu.'; }
         else if (isTimeout) { icon = '⏱️'; title = 'Request Timeout'; hint = 'Server terlalu lama merespons.'; }
-        else if (isServer)  { icon = '🔧'; title = 'Server Error';    hint = 'Ada masalah di server, coba beberapa saat lagi.'; }
-        else if (isAuth)    { icon = '🔑'; title = 'Auth Error';      hint = 'API key tidak valid.'; }
+        else if (isServer) { icon = '🔧'; title = 'Server Error'; hint = 'Ada masalah di server, coba beberapa saat lagi.'; }
+        else if (isAuth) { icon = '🔑'; title = 'Auth Error'; hint = 'API key tidak valid.'; }
 
         appendMsg('ai', `${icon} **${title}**\n\n${err.message}${hint ? '\n\n> ' + hint : ''}`);
 
@@ -1041,8 +1088,8 @@ function shareMsg(btn) {
 // ═══════════════════════════════════════════════
 document.addEventListener('keydown', (e) => {
     const isMac = navigator.platform.toUpperCase().includes('MAC');
-    const mod   = isMac ? e.metaKey : e.ctrlKey;
-    const tag   = document.activeElement.tagName;
+    const mod = isMac ? e.metaKey : e.ctrlKey;
+    const tag = document.activeElement.tagName;
     const isTyping = tag === 'TEXTAREA' || tag === 'INPUT';
 
     if (mod && e.key === 'k') { e.preventDefault(); document.getElementById('searchInput')?.focus(); }
