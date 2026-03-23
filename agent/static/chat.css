@@ -682,21 +682,39 @@ body>* {
     animation: orbGlow 4s ease-in-out infinite alternate;
 }
 
+.orb-eyes {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    gap: 22px;
+    margin-top: -4px;
+    pointer-events: none;
+}
+
 .orb-eye {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: radial-gradient(circle at 40% 35%, #1a1a2e, #000000);
-    border: 1.5px solid rgba(255,255,255,0.3);
+    background: rgba(10, 8, 30, 0.85);
+    border: 2px solid rgba(200, 190, 255, 0.25);
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    box-shadow:
-        inset 0 1px 3px rgba(0,0,0,0.8),
-        0 0 8px rgba(255,255,255,0.15);
-    transition: transform 0.08s linear;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.orb-pupil {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #7a6ae8, #1a0a50);
+    position: absolute;
+    transition: transform 0.06s linear;
+    box-shadow: 0 0 4px rgba(155, 142, 248, 0.6);
 }
 
 .orb-pupil {
@@ -707,17 +725,6 @@ body>* {
     position: absolute;
     transition: transform 0.06s linear;
     box-shadow: 0 0 4px rgba(255,255,255,0.2);
-}
-
-.orb-pupil-shine {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.85);
-    position: absolute;
-    top: 2px;
-    left: 6px;
-    pointer-events: none;
 }
 
 .orb-eye.blink {
