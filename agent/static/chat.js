@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load sidebar history
     renderHistoryList();
 
+    initOrb3DLight();
+
     // Search input
     document.getElementById('searchInput')?.addEventListener('input', e => {
         const q = e.target.value.toLowerCase();
