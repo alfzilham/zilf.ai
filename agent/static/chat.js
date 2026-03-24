@@ -1055,8 +1055,30 @@ function escHtml(s) {
 function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
+
+    // Apply colors according to success/error
+    t.style.fontWeight = '500';
+    if (msg.includes('Gagal') || msg.includes('Error') || msg.includes('❌') || msg.includes('⚠️')) {
+        t.style.backgroundColor = '#ef4444'; // Red for errors
+        t.style.color = '#ffffff';
+        t.style.border = '1px solid #dc2626';
+    } else if (msg.includes('berhasil') || msg.includes('✅') || msg.includes('🖼️') || msg.includes('📄') || msg.includes('📝') || msg.includes('📎')) {
+        t.style.backgroundColor = '#10b981'; // Green for success
+        t.style.color = '#ffffff';
+        t.style.border = '1px solid #059669';
+    } else {
+        t.style.backgroundColor = 'var(--surface2)'; // Default
+        t.style.color = 'var(--text)';
+        t.style.border = '1px solid var(--border2)';
+    }
+
     t.style.display = 'block';
-    setTimeout(() => t.style.display = 'none', 3500);
+    setTimeout(() => {
+        t.style.display = 'none';
+        t.style.backgroundColor = '';
+        t.style.color = '';
+        t.style.border = '';
+    }, 3500);
 }
 
 // ═══════════════════════════════════════════════
@@ -2177,53 +2199,45 @@ async function processFile(file) {
 
     const ext = file.name.split('.').pop().toLowerCase();
 
-    // Text files
     if (['txt', 'js', 'py', 'html', 'css', 'json', 'md'].includes(ext)) {
         await processTextFile(file);
-    }
-    // PDF
-    else if (ext === 'pdf') {
+    } else if (ext === 'pdf') {
         await processPDF(file);
-    }
-    // DOCX
-    else if (ext === 'docx' || ext === 'doc') {
+    } else if (ext === 'docx' || ext === 'doc') {
         await processDOCX(file);
-    }
-    // IMAGE
-    else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+    } else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
         await processImage(file);
-    }
-    // Video (nanti)
-    else if (['mp4', 'mov', 'webm'].includes(ext)) {
+    } else if (['mp4', 'mov', 'webm'].includes(ext)) {
         showToast(`🎥 Video support belum di-support model API untuk saat ini`);
-    }
-    else {
+    } else {
         showToast(`⚠️ Format belum didukung: .${ext}`);
     }
 }
 
 async function processImage(file) {
-    const loadingChipIndex = attachedFiles.length;
-    attachedFiles.push({ type: 'image', name: file.name, size: file.size, loading: true });
+    const fileId = Date.now().toString() + Math.random().toString();
+    attachedFiles.push({ id: fileId, type: 'image', name: file.name, size: file.size, loading: true });
     renderAttachmentChips();
 
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            attachedFiles[loadingChipIndex] = {
-                type: 'image',
-                name: file.name,
-                size: file.size,
-                base64: e.target.result,
-                loading: false
-            };
-            renderAttachmentChips();
-            showToast(`🖼️ ${file.name} berhasil di-attach`);
+            const idx = attachedFiles.findIndex(f => f.id === fileId);
+            if (idx !== -1) {
+                attachedFiles[idx] = { id: fileId, type: 'image', name: file.name, size: file.size, base64: e.target.result, loading: false };
+                renderAttachmentChips();
+                showToast(`🖼️ ${file.name} berhasil di-attach`);
+            }
             resolve();
         };
         reader.onerror = () => {
-            attachedFiles[loadingChipIndex] = { type: 'image', name: file.name, size: file.size, error: true, loading: false };
-            renderAttachmentChips();
+            const idx = attachedFiles.findIndex(f => f.id === fileId);
+            if (idx !== -1) {
+                attachedFiles[idx].error = true;
+                attachedFiles[idx].loading = false;
+                renderAttachmentChips();
+                showToast(`❌ Gagal render gambar: ${file.name}`);
+            }
             resolve();
         };
         reader.readAsDataURL(file);
@@ -2231,22 +2245,19 @@ async function processImage(file) {
 }
 
 async function processTextFile(file) {
-    const loadingChipIndex = attachedFiles.length;
-    attachedFiles.push({ type: 'text', name: file.name, size: file.size, loading: true });
+    const fileId = Date.now().toString() + Math.random().toString();
+    attachedFiles.push({ id: fileId, type: 'text', name: file.name, size: file.size, loading: true });
     renderAttachmentChips();
 
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            attachedFiles[loadingChipIndex] = {
-                type: 'text',
-                name: file.name,
-                size: file.size,
-                content: e.target.result,
-                loading: false
-            };
-            renderAttachmentChips();
-            showToast(`📎 ${file.name} berhasil di-attach`);
+            const idx = attachedFiles.findIndex(f => f.id === fileId);
+            if (idx !== -1) {
+                attachedFiles[idx] = { id: fileId, type: 'text', name: file.name, size: file.size, content: e.target.result, loading: false };
+                renderAttachmentChips();
+                showToast(`📎 ${file.name} berhasil di-attach`);
+            }
             resolve();
         };
         reader.readAsText(file);
@@ -2254,8 +2265,8 @@ async function processTextFile(file) {
 }
 
 async function processPDF(file) {
-    const loadingChipIndex = attachedFiles.length;
-    attachedFiles.push({ type: 'pdf', name: file.name, size: file.size, content: '', loading: true });
+    const fileId = Date.now().toString() + Math.random().toString();
+    attachedFiles.push({ id: fileId, type: 'pdf', name: file.name, size: file.size, content: '', loading: true });
     renderAttachmentChips();
 
     try {
@@ -2269,44 +2280,47 @@ async function processPDF(file) {
             fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
         }
 
-        attachedFiles[loadingChipIndex] = {
-            type: 'pdf',
-            name: file.name,
-            size: file.size,
-            content: fullText.trim(),
-            loading: false
-        };
+        const idx = attachedFiles.findIndex(f => f.id === fileId);
+        if (idx !== -1) {
+            attachedFiles[idx] = { id: fileId, type: 'pdf', name: file.name, size: file.size, content: fullText.trim(), loading: false };
+            renderAttachmentChips();
+            showToast(`📄 ${file.name} berhasil di-attach`);
+        }
     } catch (err) {
-        attachedFiles[loadingChipIndex] = { type: 'pdf', name: file.name, size: file.size, content: '', error: true, loading: false };
-        showToast(`❌ Gagal baca PDF: ${file.name}`);
+        const idx = attachedFiles.findIndex(f => f.id === fileId);
+        if (idx !== -1) {
+            attachedFiles[idx].error = true;
+            attachedFiles[idx].loading = false;
+            renderAttachmentChips();
+            showToast(`❌ Gagal baca PDF: ${file.name}`);
+        }
     }
-
-    renderAttachmentChips();
-    showToast(`📄 ${file.name} berhasil di-attach`);
 }
 
 async function processDOCX(file) {
-    const loadingChipIndex = attachedFiles.length;
-    attachedFiles.push({ type: 'docx', name: file.name, size: file.size, content: '', loading: true });
+    const fileId = Date.now().toString() + Math.random().toString();
+    attachedFiles.push({ id: fileId, type: 'docx', name: file.name, size: file.size, content: '', loading: true });
     renderAttachmentChips();
 
     try {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
-        attachedFiles[loadingChipIndex] = {
-            type: 'docx',
-            name: file.name,
-            size: file.size,
-            content: result.value.trim(),
-            loading: false
-        };
+        
+        const idx = attachedFiles.findIndex(f => f.id === fileId);
+        if (idx !== -1) {
+            attachedFiles[idx] = { id: fileId, type: 'docx', name: file.name, size: file.size, content: result.value.trim(), loading: false };
+            renderAttachmentChips();
+            showToast(`📝 ${file.name} berhasil di-attach`);
+        }
     } catch (err) {
-        attachedFiles[loadingChipIndex] = { type: 'docx', name: file.name, size: file.size, content: '', error: true, loading: false };
-        showToast(`❌ Gagal baca DOCX: ${file.name}`);
+        const idx = attachedFiles.findIndex(f => f.id === fileId);
+        if (idx !== -1) {
+            attachedFiles[idx].error = true;
+            attachedFiles[idx].loading = false;
+            renderAttachmentChips();
+            showToast(`❌ Gagal baca DOCX: ${file.name}`);
+        }
     }
-
-    renderAttachmentChips();
-    showToast(`📝 ${file.name} berhasil di-attach`);
 }
 
 // Render chips
@@ -2343,15 +2357,18 @@ function renderAttachmentChips() {
                 <div class="chip-name">${f.name}</div>
                 <div class="chip-size">${(f.size / 1024).toFixed(1)} KB</div>
             </div>
-            <button class="chip-remove" onclick="removeAttachment(${i}); event.stopImmediatePropagation();">×</button>
+            <button class="chip-remove" onclick="removeAttachment('${f.id}'); event.stopImmediatePropagation();">×</button>
         `;
         chipsContainer.appendChild(chip);
     });
 }
 
-window.removeAttachment = function (index) {
-    attachedFiles.splice(index, 1);
-    renderAttachmentChips();
+window.removeAttachment = function (id) {
+    const idx = attachedFiles.findIndex(f => f.id === id);
+    if (idx !== -1) {
+        attachedFiles.splice(idx, 1);
+        renderAttachmentChips();
+    }
 };
 
 // ═══════════════════════════════════════════════
