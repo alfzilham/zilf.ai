@@ -237,6 +237,15 @@ def update_user_google_id(user_id: int, google_id: str) -> None:
     conn.commit()
     conn.close()
 
+def update_user_avatar(user_id: int, avatar_url: str) -> None:
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET avatar_url = ?, updated_at = datetime('now') WHERE id = ?",
+        (avatar_url, user_id),
+    )
+    conn.commit()
+    conn.close()
+
 
 def set_reset_token(user_id: int, token: str, expires_minutes: int = 30) -> None:
     expires = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
@@ -374,6 +383,7 @@ def _user_response(user: dict, token: str) -> dict:
         "name": user["name"],
         "username": user["username"],
         "email": user["email"],
+        "avatar_url": user.get("avatar_url", ""),
     }
 
 
@@ -673,6 +683,11 @@ async def google_callback(code: str = "", error: str = ""):
                     google_id=google_id,
                 )
 
+        # Simpan/update avatar dari Google (setelah semua kondisi di atas)
+        if picture:
+            update_user_avatar(user["id"], picture)
+            user = get_user_by_id(user["id"])  # refresh data
+
         # Generate JWT
         token = create_token(user["id"], user["username"], user["email"])
 
@@ -686,6 +701,7 @@ async def google_callback(code: str = "", error: str = ""):
             "name": user["name"],
             "username": user["username"],
             "email": user["email"],
+            "avatar_url": user.get("avatar_url") or "",
         }))
 
         return RedirectResponse(

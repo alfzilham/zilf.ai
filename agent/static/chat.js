@@ -23,6 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (greetEl) greetEl.textContent =
         hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
 
+    // isi nama dari localStorage
+    const user = JSON.parse(localStorage.getItem('hams_user') || '{}');
+    const greetName = document.getElementById('greetingName');
+    if (greetName && user.name) greetName.textContent = user.name;
+
     // Theme
     applyTheme(localStorage.getItem('hams_theme') || 'dark');
 
@@ -1635,9 +1640,20 @@ function renderHistoryModal(query = '') {
 // SETTINGS MODAL
 // ═══════════════════════════════════════════════
 function openSettings() {
+    // Isi nama dari localStorage
+    const user = JSON.parse(localStorage.getItem('hams_user') || '{}');
+    const nameInput = document.getElementById('settingsName');
+    if (nameInput) nameInput.value = user.name || '';
+
+    // Tandai theme yang aktif
+    const currentTheme = localStorage.getItem('hams_theme') || 'dark';
+    document.getElementById('themeOptDark')?.classList.toggle('active', currentTheme === 'dark');
+    document.getElementById('themeOptLight')?.classList.toggle('active', currentTheme === 'light');
+
     document.getElementById('settingsModal').classList.add('open');
     closeSidebar();
 }
+
 function closeSettings() {
     document.getElementById('settingsModal').classList.remove('open');
 }
@@ -1938,4 +1954,43 @@ function deleteAllHistory() {
     renderHistoryList();
     renderHistoryModal('');
     showToast('🗑️ Semua riwayat dihapus');
+}
+
+// ═══════════════════════════════════════════════
+// SETTINGS — Theme option & Save
+// ═══════════════════════════════════════════════
+function setThemeOpt(t) {
+    document.getElementById('themeOptDark')?.classList.toggle('active', t === 'dark');
+    document.getElementById('themeOptLight')?.classList.toggle('active', t === 'light');
+    applyTheme(t);
+}
+
+function saveSettings() {
+    const nameInput = document.getElementById('settingsName');
+    const newName = nameInput?.value.trim();
+
+    if (newName && newName.length >= 2) {
+        const user = JSON.parse(localStorage.getItem('hams_user') || '{}');
+        user.name = newName;
+        localStorage.setItem('hams_user', JSON.stringify(user));
+
+        const nameEl = document.getElementById('profileName');
+        if (nameEl) nameEl.textContent = newName;
+
+        // Sync ke server juga
+        const token = localStorage.getItem('hams_token');
+        if (token) {
+            fetch('/auth/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name: newName })
+            }).catch(() => {}); // silent fail
+        }
+    }
+
+    closeSettings();
+    showToast('✅ Settings saved!');
 }
