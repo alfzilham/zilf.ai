@@ -1096,7 +1096,7 @@ body>* {
 }
 
 .greeting-name {
-    color: var(--accent);
+    color: rgb(223, 234, 255);
 }
 
 .welcome-sub {
