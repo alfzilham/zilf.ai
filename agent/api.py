@@ -34,7 +34,7 @@ from agent.auth import router as auth_router, decode_token, get_user_by_id
 # App setup
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="Hams AI", version="0.3.0")
+app = FastAPI(title="Hams AI", version="0.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,13 +44,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_STATIC_DIR    = os.path.join(os.path.dirname(__file__), "static")
+_STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 _TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 app.include_router(auth_router)
-
-# ---------------------------------------------------------------------------
 
 _tasks: dict[str, dict[str, Any]] = {}
 _start_time = time.time()
@@ -74,13 +72,10 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     session_id: str | None = None
-    message: str
+    message: Any = Field(...)                    # Bisa string atau list[dict] untuk multimodal
     history: list[ChatMessage] | None = []
-    model: str | None = Field(default="hams-max")  # B3 FIX
-    extended: bool = Field(
-        default=False,
-        description="Aktifkan Extended Thinking — AI menampilkan proses berpikirnya sebelum menjawab"
-    )
+    model: str | None = Field(default="hams-max")
+    extended: bool = Field(default=False)
 
 
 class ChatResponse(BaseModel):
@@ -93,7 +88,7 @@ class ChatResponse(BaseModel):
 
 class AgentRunRequest(BaseModel):
     task: str = Field(..., min_length=1)
-    model: str | None = Field(default="hams-max")  # B3 FIX
+    model: str | None = Field(default="hams-max")
     max_steps: int = Field(15, ge=1, le=50)
     extended: bool = Field(default=False)
 
@@ -144,6 +139,8 @@ _MULTITASK_SYSTEM = """Kamu adalah HAMS.AI — asisten AI serba bisa yang powerf
 
 ## KEMAMPUAN UTAMA
 1. **Website & UI** — HTML/CSS/JS lengkap, landing page, dashboard, game web, animasi
+    - Jika ada gambar, deskripsikan dengan detail dan jawab pertanyaan tentang gambar tersebut.
+    - Ikuti bahasa pengguna (Indonesia atau Inggris).
 2. **Kode Program** — Python, JS, SQL, Bash, API, algoritma, lengkap dengan komentar
 3. **Konten** — Artikel, blog, copywriting, esai, email profesional
 4. **Analisis** — Perbandingan teknologi, strategi, tabel, breakdown konsep kompleks
@@ -156,26 +153,40 @@ _MULTITASK_SYSTEM = """Kamu adalah HAMS.AI — asisten AI serba bisa yang powerf
 - Langsung berikan hasilnya"""
 
 
-def _build_llm(model: str = "hams-max", extended: bool = False):
-    """
-    Build LLM instance berdasarkan model string dari frontend.
+def _build_llm(model: str = "hams-max", extended: bool = False, has_images: bool = False):
+    """Build LLM dengan dukungan multimodal."""
+    # Jika ada gambar → pakai Gemini Vision
+    if has_images:
+        from agent.llm.google_provider import GoogleLLM
+        vision_model = "gemini-1.5-flash" if "flash" in model.lower() else "gemini-1.5-pro"
+        print(f"[Multimodal] Detected images → forcing {vision_model}")
+        return GoogleLLM(model=vision_model)
 
-    B3 FIX: Default model = "hams-max" agar konsisten dengan:
-    - Frontend modelSelect default = "hams-max"
-    - _FRONTEND_TO_HAMSMAX["hams-max"] = ("llama-3.3-70b-versatile", "groq")
-    """
-    # Gemini models → langsung pakai GoogleLLM
+    # Gemini biasa
     if model.startswith("gemini-"):
         from agent.llm.google_provider import GoogleLLM
         return GoogleLLM(model=model)
 
-    # Semua model lain → HamsMax routing
+    # HamsMax routing
     if extended:
         from agent.llm.hams_max_thinking import HamsMaxThinkingLLM
         return HamsMaxThinkingLLM(model=model)
     else:
         from agent.llm.hams_max_chat import HamsMaxChatLLM
         return HamsMaxChatLLM(model=model)
+
+
+def _get_current_user(request: Request) -> dict:
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    payload = decode_token(auth.split(" ", 1)[1])
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token expired or invalid")
+    user = get_user_by_id(int(payload["sub"]))
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
 
 
 def _build_agent(
@@ -253,10 +264,16 @@ def _get_current_user(request: Request) -> dict:
 async def health() -> HealthResponse:
     return HealthResponse(
         status="ok",
-        version="0.3.0",
+        version="0.4.0",
         timestamp=datetime.now(timezone.utc).isoformat(),
         uptime_seconds=round(time.time() - _start_time, 1),
     )
+
+
+@app.get("/chat-ui", tags=["chat"], include_in_schema=False)
+async def chat_ui() -> FileResponse:
+    html_path = os.path.join(_TEMPLATES_DIR, "chat.html")
+    return FileResponse(html_path, media_type="text/html")
 
 
 # ---------------------------------------------------------------------------
@@ -346,37 +363,114 @@ async def chat(req: ChatRequest) -> ChatResponse:
     )
 
 
-# ══════════════════════════════════════════════════════════════
-# /chat/stream juga perlu A2 FIX yang sama
-# ══════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
+# /chat — Multimodal Support
+# ---------------------------------------------------------------------------
 
-@app.post("/chat/stream", tags=["chat"])
-async def chat_stream(req: ChatRequest) -> StreamingResponse:
+@app.post("/chat", response_model=ChatResponse, tags=["chat"])
+async def chat(req: ChatRequest) -> ChatResponse:
+    session_id = req.session_id or str(uuid.uuid4())
     model = req.model or "hams-max"
 
-    # A2 FIX: Proper message list
-    messages: list[dict[str, str]] = []
+    # Deteksi apakah ada gambar
+    has_images = False
+    messages: list[dict] = []
+
+    # History
     for msg in (req.history or []):
         messages.append({"role": msg.role, "content": msg.content})
-    messages.append({"role": "user", "content": req.message})
 
-    async def event_stream() -> AsyncIterator[str]:
+    # Message (bisa string atau list multimodal)
+    if isinstance(req.message, list):
+        for part in req.message:
+            if isinstance(part, dict) and part.get("type") == "image_url":
+                has_images = True
+            messages.append(part)
+    else:
+        messages.append({"role": "user", "content": req.message})
+
+    try:
+        llm = _build_llm(model, extended=req.extended, has_images=has_images)
+
+        raw = await llm.generate_text(
+            messages=messages,
+            system=_MULTITASK_SYSTEM,
+            max_tokens=4096,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    thinking: str | None = None
+    response_text: str = raw
+
+    if req.extended:
         try:
-            llm = _build_llm(model)
-            async for chunk in llm.stream(
-                messages=messages,
-                system=_MULTITASK_SYSTEM,
-            ):
-                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-        finally:
-            yield "data: [DONE]\n\n"
+            parsed = json.loads(raw)
+            thinking = parsed.get("thinking")
+            response_text = parsed.get("answer", raw)
+        except:
+            pass
 
-    return StreamingResponse(
-        event_stream(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    return ChatResponse(
+        session_id=session_id,
+        response=response_text.strip(),
+        thinking=thinking,
+        model_used=model,
+        extended=req.extended,
+    )# ---------------------------------------------------------------------------
+# /chat — Multimodal Support
+# ---------------------------------------------------------------------------
+
+@app.post("/chat", response_model=ChatResponse, tags=["chat"])
+async def chat(req: ChatRequest) -> ChatResponse:
+    session_id = req.session_id or str(uuid.uuid4())
+    model = req.model or "hams-max"
+
+    # Deteksi apakah ada gambar
+    has_images = False
+    messages: list[dict] = []
+
+    # History
+    for msg in (req.history or []):
+        messages.append({"role": msg.role, "content": msg.content})
+
+    # Message (bisa string atau list multimodal)
+    if isinstance(req.message, list):
+        for part in req.message:
+            if isinstance(part, dict) and part.get("type") == "image_url":
+                has_images = True
+            messages.append(part)
+    else:
+        messages.append({"role": "user", "content": req.message})
+
+    try:
+        llm = _build_llm(model, extended=req.extended, has_images=has_images)
+
+        raw = await llm.generate_text(
+            messages=messages,
+            system=_MULTITASK_SYSTEM,
+            max_tokens=4096,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    thinking: str | None = None
+    response_text: str = raw
+
+    if req.extended:
+        try:
+            parsed = json.loads(raw)
+            thinking = parsed.get("thinking")
+            response_text = parsed.get("answer", raw)
+        except:
+            pass
+
+    return ChatResponse(
+        session_id=session_id,
+        response=response_text.strip(),
+        thinking=thinking,
+        model_used=model,
+        extended=req.extended,
     )
 
 

@@ -623,9 +623,8 @@ function removeTyping() {
 // ═══════════════════════════════════════════════
 // SEND — CHAT mode (streaming)
 // ═══════════════════════════════════════════════
-async function sendChat(text, model) {
+async function sendChat(content, model) {   // content bisa string atau array
     showTypingWithTimer();
-
     const bubbleId = 'bubble-' + Date.now();
     let firstChunk = true;
 
@@ -634,8 +633,11 @@ async function sendChat(text, model) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                session_id: sessionId, message: text,
-                history, model, extended
+                session_id: sessionId,
+                message: content,        // ← sekarang array untuk multimodal
+                history,
+                model,
+                extended
             })
         });
 
@@ -2374,7 +2376,7 @@ function renderAttachmentChips() {
     });
 }
 
-window.removeAttachment = function(index) {
+window.removeAttachment = function (index) {
     attachedFiles.splice(index, 1);
     renderAttachmentChips();
 };
@@ -2621,9 +2623,9 @@ async function sendMessage(overrideText) {
             showToast(`❌ File terlalu besar: ${file.name} (max 10MB)`);
             return;
         }
-    
+
         const ext = file.name.split('.').pop().toLowerCase();
-    
+
         // Text files
         if (['txt', 'js', 'py', 'html', 'css', 'json', 'md'].includes(ext)) {
             await processTextFile(file);
@@ -2751,36 +2753,36 @@ async function sendMessage(overrideText) {
         const area = document.getElementById('attachmentArea');
         const chipsContainer = document.getElementById('attachmentChips');
         if (!area || !chipsContainer) return;
-    
+
         chipsContainer.innerHTML = '';
         if (attachedFiles.length === 0) {
             area.classList.remove('has-files');
             return;
         }
         area.classList.add('has-files');
-    
+
         attachedFiles.forEach((f, i) => {
             const chip = document.createElement('div');
             chip.className = `attachment-chip chip-${f.type} ${f.loading ? 'loading' : ''} ${f.error ? 'error' : ''}`;
-    
+
             let iconHTML = '';
-    
+
             if (f.type === 'image' && f.base64) {
                 iconHTML = `
                     <div class="chip-icon" style="width:32px;height:32px;overflow:hidden;border-radius:6px;border:1px solid rgba(255,255,255,0.15);">
                         <img src="${f.base64}" alt="${f.name}" style="width:100%;height:100%;object-fit:cover;">
                     </div>`;
-            } 
+            }
             else if (f.type === 'pdf') {
                 iconHTML = `<i class="bi bi-file-earmark-pdf chip-icon"></i>`;
-            } 
+            }
             else if (f.type === 'docx') {
                 iconHTML = `<i class="bi bi-file-earmark-word chip-icon"></i>`;
-            } 
+            }
             else {
                 iconHTML = `<i class="bi bi-file-earmark-text chip-icon"></i>`;
             }
-    
+
             chip.innerHTML = `
                 ${iconHTML}
                 <div class="chip-content">
@@ -2789,7 +2791,7 @@ async function sendMessage(overrideText) {
                 </div>
                 <button class="chip-remove" onclick="removeAttachment(${i}); event.stopImmediatePropagation();">×</button>
             `;
-    
+
             chipsContainer.appendChild(chip);
         });
     }
@@ -2804,11 +2806,14 @@ async function sendMessage(overrideText) {
     // ═══════════════════════════════════════════════
 
     // Cari fungsi sendMessage() yang lama, lalu GANTI seluruh fungsinya dengan ini:
+    // ═══════════════════════════════════════════════
+    // PHASE 3 — MULTIMODAL SEND MESSAGE (Text + Image)
+    // ═══════════════════════════════════════════════
     async function sendMessage(overrideText) {
         const input = document.getElementById('userInput');
-        let text = overrideText || input.value.trim();
+        let userText = overrideText || input.value.trim();
 
-        if ((!text && attachedFiles.length === 0) || isLoading) return;
+        if ((!userText && attachedFiles.length === 0) || isLoading) return;
 
         showContent();
         input.value = '';
@@ -2816,26 +2821,43 @@ async function sendMessage(overrideText) {
         isLoading = true;
         document.getElementById('sendBtn').disabled = true;
 
-        // Inject attached text files ke prompt
-        if (attachedFiles.length > 0) {
-            let attachmentPrompt = '\n\n📎 **Attached Files:**\n';
-            attachedFiles.forEach((f, i) => {
-                if (f.content) {
-                    attachmentPrompt += `\n**${f.name}**\n\`\`\`\n${f.content}\n\`\`\`\n`;
-                }
-            });
-            text = text ? text + attachmentPrompt : attachmentPrompt.trim();
+        // Build multimodal content array
+        const contentArray = [];
+
+        if (userText) {
+            contentArray.push({ type: "text", text: userText });
         }
 
-        appendMsg('user', text);
+        attachedFiles.forEach(f => {
+            if (f.type === 'image' && f.base64) {
+                contentArray.push({
+                    type: "image_url",
+                    image_url: { url: f.base64 }
+                });
+            } else if (f.content) {
+                contentArray.push({
+                    type: "text",
+                    text: `**Attached File:** ${f.name}\n\`\`\`\n${f.content}\n\`\`\``
+                });
+            }
+        });
+
+        // Tampilan di chat (hanya preview)
+        let displayText = userText || '';
+        if (attachedFiles.some(f => f.type === 'image')) displayText += ' 🖼️';
+        if (attachedFiles.some(f => f.type !== 'image')) displayText += ' 📎';
+        appendMsg('user', displayText || '📎 Attached files');
 
         const model = document.getElementById('modelSelect').value;
 
         try {
-            if (mode === 'agent') await sendAgent(text, model);
-            else await sendChat(text, model);
+            if (mode === 'agent') {
+                // Agent masih text-only untuk sekarang
+                await sendAgent(userText || "[Files attached]", model);
+            } else {
+                await sendChat(contentArray, model);   // Kirim array
+            }
         } finally {
-            // Clear attachments setelah berhasil kirim
             attachedFiles = [];
             renderAttachmentChips();
             isLoading = false;
