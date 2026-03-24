@@ -42,29 +42,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.querySelector('.history-title')?.textContent.toLowerCase().includes(q)
                     ? '' : 'none';
         });
-
-        // === FILE ATTACHMENT (Fase 1 + 2) ===
-        const attachBtn = document.getElementById('attachBtn');
-        const fileInput = document.getElementById('fileInput');
-
-        if (attachBtn && fileInput) {
-            attachBtn.addEventListener('click', () => {
-                fileInput.click();
-            });
-
-            fileInput.addEventListener('change', async (e) => {
-                const files = Array.from(e.target.files);
-                if (!files.length) return;
-
-                for (const file of files) {
-                    await processFile(file);
-                }
-
-                // Reset input agar bisa upload file yang sama lagi
-                fileInput.value = '';
-            });
-        }
     });
+
+    // === FILE ATTACHMENT (Fase 1 + 2) ===
+    const attachBtn = document.getElementById('attachBtn');
+    const fileInput = document.getElementById('fileInput');
+
+    if (attachBtn && fileInput) {
+        attachBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+
+            for (const file of files) {
+                await processFile(file);
+            }
+            fileInput.value = ''; // reset agar bisa upload ulang file yang sama
+        });
+    }
 });
 
 // ── Auth Guard + Google OAuth Token Extraction ──
@@ -2021,41 +2017,41 @@ function logout() {
 // ═══════════════════════════════════════════════
 // FILE UPLOAD (placeholder)
 // ═══════════════════════════════════════════════
-function triggerFileUpload() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.txt,.py,.js,.html,.css,.json,.md,.csv';
-    fileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const content = ev.target.result;
-            const input = document.getElementById('userInput');
-            input.value += `\n\n📎 File: ${file.name}\n\`\`\`\n${content}\n\`\`\``;
-            autoResize(input);
-            input.focus();
-            showToast(`📎 ${file.name} attached`);
-        };
-        reader.readAsText(file);
-    };
-    fileInput.click();
-}
+// function triggerFileUpload() {
+//     const fileInput = document.createElement('input');
+//     fileInput.type = 'file';
+//     fileInput.accept = '.txt,.py,.js,.html,.css,.json,.md,.csv';
+//     fileInput.onchange = (e) => {
+//         const file = e.target.files[0];
+//         if (!file) return;
+//         const reader = new FileReader();
+//         reader.onload = (ev) => {
+//             const content = ev.target.result;
+//             const input = document.getElementById('userInput');
+//             input.value += `\n\n📎 File: ${file.name}\n\`\`\`\n${content}\n\`\`\``;
+//             autoResize(input);
+//             input.focus();
+//             showToast(`📎 ${file.name} attached`);
+//         };
+//         reader.readAsText(file);
+//     };
+//     fileInput.click();
+// }
 
 // ═══════════════════════════════════════════════
 // IMAGE UPLOAD (placeholder)
 // ═══════════════════════════════════════════════
-function triggerImageUpload() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    fileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        showToast(`🖼️ Image upload coming soon: ${file.name}`);
-    };
-    fileInput.click();
-}
+// function triggerImageUpload() {
+//     const fileInput = document.createElement('input');
+//     fileInput.type = 'file';
+//     fileInput.accept = 'image/*';
+//     fileInput.onchange = (e) => {
+//         const file = e.target.files[0];
+//         if (!file) return;
+//         showToast(`🖼️ Image upload coming soon: ${file.name}`);
+//     };
+//     fileInput.click();
+// }
 
 // ═══════════════════════════════════════════════
 // AGENT SLIDER (max steps)
@@ -2204,34 +2200,126 @@ function setThemeOpt(t) {
     applyTheme(t);
 }
 
-function saveSettings() {
-    const nameInput = document.getElementById('settingsName');
-    const newName = nameInput?.value.trim();
+// ═══════════════════════════════════════════════
+// FILE ATTACHMENT SYSTEM — Fase 1 + 2 (Text Files)
+// ═══════════════════════════════════════════════
 
-    if (newName && newName.length >= 2) {
-        const user = JSON.parse(localStorage.getItem('hams_user') || '{}');
-        user.name = newName;
-        localStorage.setItem('hams_user', JSON.stringify(user));
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-        const nameEl = document.getElementById('profileName');
-        if (nameEl) nameEl.textContent = newName;
-
-        const token = localStorage.getItem('hams_token');
-        if (token) {
-            fetch('/auth/profile', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ name: newName })
-            }).catch(() => { });
-        }
+async function processFile(file) {
+    if (file.size > MAX_FILE_SIZE) {
+        showToast(`❌ File terlalu besar: ${file.name} (max 10MB)`);
+        return;
     }
 
-    closeSettings();
-    showToast('✅ Settings saved!');
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if (['txt', 'js', 'py', 'html', 'css', 'json', 'md'].includes(ext)) {
+        await processTextFile(file);
+    } else if (ext === 'pdf') {
+        await processPDF(file);
+    } else if (ext === 'docx' || ext === 'doc') {
+        await processDOCX(file);
+    } else {
+        showToast(`⚠️ Format belum didukung: .${ext}`);
+    }
 }
+
+async function processTextFile(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            attachedFiles.push({
+                type: 'text',
+                name: file.name,
+                size: file.size,
+                content: e.target.result
+            });
+            renderAttachmentChips();
+            showToast(`📎 ${file.name} berhasil di-attach`);
+            resolve();
+        };
+        reader.readAsText(file);
+    });
+}
+
+async function processPDF(file) {
+    const idx = attachedFiles.length;
+    attachedFiles.push({ type: 'pdf', name: file.name, size: file.size, content: '', loading: true });
+    renderAttachmentChips();
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(item => item.str).join(' ') + '\n\n';
+        }
+        attachedFiles[idx] = { type: 'pdf', name: file.name, size: file.size, content: text.trim() };
+    } catch (err) {
+        attachedFiles[idx].error = true;
+        showToast(`❌ Gagal baca PDF: ${file.name}`);
+    }
+    renderAttachmentChips();
+    showToast(`📄 ${file.name} berhasil di-attach`);
+}
+
+async function processDOCX(file) {
+    const idx = attachedFiles.length;
+    attachedFiles.push({ type: 'docx', name: file.name, size: file.size, content: '', loading: true });
+    renderAttachmentChips();
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        attachedFiles[idx] = { type: 'docx', name: file.name, size: file.size, content: result.value.trim() };
+    } catch (err) {
+        attachedFiles[idx].error = true;
+        showToast(`❌ Gagal baca DOCX: ${file.name}`);
+    }
+    renderAttachmentChips();
+    showToast(`📝 ${file.name} berhasil di-attach`);
+}
+
+function renderAttachmentChips() {
+    const area = document.getElementById('attachmentArea');
+    const chips = document.getElementById('attachmentChips');
+    if (!area || !chips) return;
+
+    chips.innerHTML = '';
+    if (attachedFiles.length === 0) {
+        area.classList.remove('has-files');
+        return;
+    }
+    area.classList.add('has-files');
+
+    attachedFiles.forEach((f, i) => {
+        const chip = document.createElement('div');
+        chip.className = `attachment-chip chip-${f.type} ${f.loading ? 'loading' : ''} ${f.error ? 'error' : ''}`;
+
+        let icon = '';
+        if (f.type === 'pdf') icon = `<i class="bi bi-file-earmark-pdf chip-icon"></i>`;
+        else if (f.type === 'docx') icon = `<i class="bi bi-file-earmark-word chip-icon"></i>`;
+        else icon = `<i class="bi bi-file-earmark-text chip-icon"></i>`;
+
+        chip.innerHTML = `
+            ${icon}
+            <div class="chip-content">
+                <div class="chip-name">${f.name}</div>
+                <div class="chip-size">${(f.size / 1024).toFixed(1)} KB</div>
+            </div>
+            <button class="chip-remove" onclick="removeAttachment(${i}); event.stopImmediatePropagation();">×</button>
+        `;
+        chips.appendChild(chip);
+    });
+}
+
+window.removeAttachment = function(index) {
+    attachedFiles.splice(index, 1);
+    renderAttachmentChips();
+};
 
 // ═══════════════════════════════════════════════
 // 3D ORB & INTERACTIVE EYES — UPDATED
