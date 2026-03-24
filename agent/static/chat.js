@@ -2226,17 +2226,36 @@ async function processFile(file) {
 }
 
 async function processTextFile(file) {
+    const idx = attachedFiles.length;   // simpan index dulu
+
+    // Tambahkan dulu sebagai loading
+    attachedFiles.push({
+        type: 'text',
+        name: file.name,
+        size: file.size,
+        content: '',
+        loading: true
+    });
+    renderAttachmentChips();   // ← tampilkan loading state
+
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            attachedFiles.push({
+            attachedFiles[idx] = {
                 type: 'text',
                 name: file.name,
                 size: file.size,
                 content: e.target.result
-            });
-            renderAttachmentChips();
+            };
+            renderAttachmentChips();   // ← penting! re-render setelah selesai
             showToast(`📎 ${file.name} berhasil di-attach`);
+            resolve();
+        };
+        reader.onerror = () => {
+            attachedFiles[idx].error = true;
+            attachedFiles[idx].loading = false;
+            renderAttachmentChips();
+            showToast(`❌ Gagal membaca file: ${file.name}`);
             resolve();
         };
         reader.readAsText(file);
@@ -2298,6 +2317,11 @@ function renderAttachmentChips() {
     attachedFiles.forEach((f, i) => {
         const chip = document.createElement('div');
         chip.className = `attachment-chip chip-${f.type} ${f.loading ? 'loading' : ''} ${f.error ? 'error' : ''}`;
+        
+        // Tambahkan teks "Processing..." saat loading
+        if (f.loading) {
+            chip.style.opacity = '0.75';
+        }
 
         let icon = '';
         if (f.type === 'pdf') icon = `<i class="bi bi-file-earmark-pdf chip-icon"></i>`;
