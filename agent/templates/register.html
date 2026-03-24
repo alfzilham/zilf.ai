@@ -153,29 +153,29 @@
         /* Garis Vertikal Mata (Base Style) */
         .orb-eye-line {
             position: absolute;
-            top: 50%;
-            width: 2px;
-            height: 18px;
+            top: 30%;
+            width: 20px;
+            height: 88px;
             /* Panjang garis */
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 1px;
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.9), 0 0 16px rgba(255, 255, 255, 0.4);
+            background: rgba(0, 0, 0, 0.95);
+            border-radius:20px;
+            box-shadow: 0 0 8px rgba(30, 30, 30, 0.9), 0 0 16px rgba(255, 255, 255, 0.4);
             transform: translate(-50%, -50%);
             /* Center default */
-            transition: transform 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.06s linear;
             /* Smooth follow */
         }
 
         /* Posisi Default Kiri & Kanan (Dalam container 240px visual side) */
         #loginEyeLeft,
         #registerEyeLeft {
-            left: calc(50% - 12px);
+            left: calc(50% - 52px);
             /* Jarak dari tengah */
         }
 
         #loginEyeRight,
         #registerEyeRight {
-            left: calc(50% + 12px);
+            left: calc(50% + 52px);
             /* Jarak dari tengah */
         }
 
@@ -844,6 +844,7 @@
         function setError(id, wrapId, msg) {
             const el = document.getElementById(id);
             const wrap = document.getElementById(wrapId);
+            if (!el || !wrap) return;
             el.textContent = msg;
             el.classList.toggle('show', !!msg);
             wrap.classList.toggle('error', !!msg);
@@ -852,17 +853,21 @@
 
         function setSuccess(wrapId) {
             const wrap = document.getElementById(wrapId);
+            if (!wrap) return;
             wrap.classList.remove('error');
             wrap.classList.add('success');
         }
 
         function showGlobalError(msg) {
-            document.getElementById('globalErrorMsg').textContent = msg;
-            document.getElementById('globalError').classList.add('show');
+            const el = document.getElementById('globalErrorMsg');
+            const box = document.getElementById('globalError');
+            if (el) el.textContent = msg;
+            if (box) box.classList.add('show');
         }
 
         function hideGlobalError() {
-            document.getElementById('globalError').classList.remove('show');
+            const box = document.getElementById('globalError');
+            if (box) box.classList.remove('show');
         }
 
         // ═══════════════════════════════════════
@@ -886,7 +891,6 @@
                     return;
                 }
 
-                // Real-time availability check (if endpoint exists)
                 try {
                     const res = await fetch(`/auth/check-username?username=${encodeURIComponent(val)}`);
                     const data = await res.json();
@@ -897,7 +901,6 @@
                         setError('errUsername', 'wrapUsername', 'Username already taken');
                     }
                 } catch {
-                    // If endpoint doesn't exist, just validate format
                     setError('errUsername', 'wrapUsername', '');
                     setSuccess('wrapUsername');
                 }
@@ -909,10 +912,9 @@
         // ═══════════════════════════════════════
         async function doRegister() {
             hideGlobalError();
-            ['Name', 'Username', 'Email'].forEach(f =>
-                setError('err' + f, 'wrap' + f, '')
-            );
-            document.getElementById('errTerms').classList.remove('show');
+            ['Name', 'Username', 'Email'].forEach(f => setError('err' + f, 'wrap' + f, ''));
+            const errTermsEl = document.getElementById('errTerms');
+            if(errTermsEl) errTermsEl.classList.remove('show');
 
             const name = document.getElementById('inputName').value.trim();
             const username = document.getElementById('inputUsername').value.trim();
@@ -921,28 +923,17 @@
 
             let valid = true;
 
-            if (!name || name.length < 2) {
-                setError('errName', 'wrapName', 'Name must be at least 2 characters');
-                valid = false;
-            }
-
-            if (!username || username.length < 3) {
-                setError('errUsername', 'wrapUsername', 'Username must be at least 3 characters');
-                valid = false;
-            } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-                setError('errUsername', 'wrapUsername', 'Only letters, numbers, and underscore');
-                valid = false;
-            }
-
-            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                setError('errEmail', 'wrapEmail', 'Please enter a valid email');
-                valid = false;
-            }
-
+            if (!name || name.length < 2) { setError('errName', 'wrapName', 'Name must be at least 2 characters'); valid = false; }
+            if (!username || username.length < 3) { setError('errUsername', 'wrapUsername', 'Username must be at least 3 characters'); valid = false; }
+            else if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError('errUsername', 'wrapUsername', 'Only letters, numbers, and underscore'); valid = false; }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('errEmail', 'wrapEmail', 'Please enter a valid email'); valid = false; }
+            
             if (!agreeTerms) {
                 const errTerms = document.getElementById('errTerms');
-                errTerms.textContent = 'You must agree to the Terms & Conditions';
-                errTerms.classList.add('show');
+                if(errTerms){
+                    errTerms.textContent = 'You must agree to the Terms & Conditions';
+                    errTerms.classList.add('show');
+                }
                 valid = false;
             }
 
@@ -956,16 +947,19 @@
                 const res = await fetch('/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // Kirim tanpa field password
                     body: JSON.stringify({ name, username, email })
                 });
-                const data = await res.json();
-
+                
+                // Jika status bukan 200/201, anggap error
                 if (!res.ok) {
-                    showGlobalError(data.detail || 'Registration failed. Please try again.');
-                    return;
+                    let errMsg = 'Registration failed. Please try again.';
+                    try { const d = await res.json(); errMsg = d.detail || errMsg; } catch (e) {}
+                    throw new Error(errMsg);
                 }
 
+                const data = await res.json();
+
+                // Simpan token
                 localStorage.setItem('hams_token', data.token);
                 localStorage.setItem('hams_user', JSON.stringify({
                     id: data.user_id,
@@ -973,9 +967,13 @@
                     username: data.username,
                     email: data.email
                 }));
+
+                // REDIRECT PENTING KE ONBOARDING
+                console.log("Register success, redirecting to onboarding...");
                 window.location.href = '/onboarding/topics';
+
             } catch (err) {
-                showGlobalError('Connection failed. Please try again.');
+                showGlobalError(err.message || 'Connection failed. Please try again.');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<span>Create Account</span>';
@@ -983,7 +981,7 @@
         }
 
         // ═══════════════════════════════════════
-        // GOOGLE REGISTER (scaffold)
+        // GOOGLE REGISTER
         // ═══════════════════════════════════════
         function googleRegister() {
             window.location.href = '/auth/google';
