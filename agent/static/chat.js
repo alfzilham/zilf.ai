@@ -1062,14 +1062,17 @@ function showToast(msg) {
         t.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)'; // Red for errors
         t.style.color = '#ffffff';
         t.style.border = '1px solid #b91c1c';
+        t.style.boxShadow = '0 4px 16px rgba(239, 68, 68, 0.4)';
     } else if (msg.includes('berhasil') || msg.includes('✅') || msg.includes('🖼️') || msg.includes('📄') || msg.includes('📝') || msg.includes('📎')) {
         t.style.background = 'linear-gradient(135deg, #10b981, #059669)'; // Green for success
         t.style.color = '#ffffff';
         t.style.border = '1px solid #047857';
+        t.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.4)';
     } else {
         t.style.background = 'var(--surface2)'; // Default
         t.style.color = 'var(--text)';
         t.style.border = '1px solid var(--border2)';
+        t.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.3)';
     }
 
     t.style.display = 'block';
@@ -1078,6 +1081,7 @@ function showToast(msg) {
         t.style.background = '';
         t.style.color = '';
         t.style.border = '';
+        t.style.boxShadow = '';
     }, 3500);
 }
 
@@ -2338,7 +2342,7 @@ function renderAttachmentChips() {
 
     attachedFiles.forEach((f, i) => {
         const chip = document.createElement('div');
-        chip.className = `attachment-chip chip-${f.type} ${f.loading ? 'loading' : ''} ${f.error ? 'error' : ''}`;
+        chip.className = `attachment-chip chip-${f.type} ${f.error ? 'error' : ''}`;
 
         let iconHTML = '';
         if (f.type === 'image' && f.base64) {
