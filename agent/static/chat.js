@@ -714,10 +714,11 @@ async function sendChat(content, model) {   // content bisa string atau array
         }
 
         const reply = fullReply || 'Tidak ada respons.';
-        history.push({ role: 'user', content: text });
+        let userTextForHistory = typeof content === 'string' ? content : (Array.isArray(content) ? content.find(c => c.type === 'text')?.text || '📎 Attached files' : '📎 Attached files');
+        history.push({ role: 'user', content: userTextForHistory });
         history.push({ role: 'assistant', content: reply });
 
-        const title = history.find(m => m.role === 'user')?.content?.slice(0, 50) || text.slice(0, 50);
+        const title = history.find(m => m.role === 'user')?.content?.slice(0, 50) || userTextForHistory.slice(0, 50);
         saveChatToHistory(title, history);
 
     } catch (err) {
@@ -741,7 +742,8 @@ async function sendChat(content, model) {   // content bisa string atau array
             const retryBtn = document.createElement('button');
             retryBtn.className = 'retry-btn';
             retryBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Coba Lagi';
-            retryBtn.onclick = () => { retryBtn.remove(); sendMessage(text); };
+            let retryText = typeof content === 'string' ? content : (Array.isArray(content) ? content.find(c => c.type === 'text')?.text || '' : '');
+            retryBtn.onclick = () => { retryBtn.remove(); sendMessage(retryText); };
             lastRow.querySelector('.bubble')?.appendChild(retryBtn);
         }
 
@@ -919,53 +921,6 @@ function handleAgentEvent(ev, block, statusBanner, taskText) {
             `<i class="bi bi-x-circle" style="color:var(--red)"></i> ${escHtml(ev.message)}`;
         showToast(ev.message);
     }
-}
-
-// ═══════════════════════════════════════════════
-// MAIN SEND DISPATCH
-// ═══════════════════════════════════════════════
-async function sendMessage(overrideText) {
-    const input = document.getElementById('userInput');
-    const text = overrideText || input.value.trim();
-    if (!text || isLoading) return;
-
-    showContent();
-    input.value = '';
-    input.style.height = 'auto';
-    isLoading = true;
-    document.getElementById('sendBtn').disabled = true;
-    appendMsg('user', text);
-
-    const model = document.getElementById('modelSelect').value;
-    try {
-        if (mode === 'agent') await sendAgent(text, model);
-        else await sendChat(text, model);
-    } finally {
-        isLoading = false;
-        document.getElementById('sendBtn').disabled = false;
-        input.focus();
-    }
-}
-
-function sendSuggestion(text) {
-    const input = document.getElementById('userInput');
-    input.value = text;
-    autoResize(input);
-    sendMessage();
-}
-
-function clearChat() {
-    history = [];
-    sessionId = null;
-    currentChatId = null;
-    const box = document.getElementById('chatBox');
-    box.innerHTML = '';
-    box.classList.remove('active');
-    document.getElementById('welcome').style.display = 'flex';
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('navHome')?.classList.add('active');
-    renderHistoryList();
-    closeSidebar();
 }
 
 // ═══════════════════════════════════════════════
@@ -2202,15 +2157,13 @@ function setThemeOpt(t) {
     applyTheme(t);
 }
 
+
 // ═══════════════════════════════════════════════
-// PHASE 3 — STATE MANAGEMENT + CONTEXT INJECTION
+// FILE ATTACHMENT SYSTEM — Fase 1 + 2 (Text Files)
 // ═══════════════════════════════════════════════
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-// Global state sudah ada di atas: let attachedFiles = [];
-
-// Process File Router
 async function processFile(file) {
     if (file.size > MAX_FILE_SIZE) {
         showToast(`❌ File terlalu besar: ${file.name} (max 10MB)`);
@@ -2219,130 +2172,135 @@ async function processFile(file) {
 
     const ext = file.name.split('.').pop().toLowerCase();
 
+    // Text files
     if (['txt', 'js', 'py', 'html', 'css', 'json', 'md'].includes(ext)) {
         await processTextFile(file);
-    } else if (ext === 'pdf') {
+    }
+    // PDF
+    else if (ext === 'pdf') {
         await processPDF(file);
-    } else if (ext === 'docx' || ext === 'doc') {
+    }
+    // DOCX
+    else if (ext === 'docx' || ext === 'doc') {
         await processDOCX(file);
-    } else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+    }
+    // IMAGE — Phase 2
+    else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
         await processImage(file);
-    } else if (['mp4', 'mov', 'webm'].includes(ext)) {
-        showToast(`🎥 Video support akan ditambahkan nanti`);
-    } else {
+    }
+    // Video (nanti)
+    else if (['mp4', 'mov', 'webm'].includes(ext)) {
+        showToast(`🎥 Video support akan ditambahkan di tahap berikutnya`);
+    }
+    else {
         showToast(`⚠️ Format belum didukung: .${ext}`);
     }
 }
 
-// Text File Processor
 async function processTextFile(file) {
-    const idx = attachedFiles.length;
-    attachedFiles.push({ type: 'text', name: file.name, size: file.size, content: '', loading: true });
-    renderAttachmentChips();
-
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            attachedFiles[idx] = {
+            const content = e.target.result;
+            attachedFiles.push({
                 type: 'text',
                 name: file.name,
                 size: file.size,
-                content: e.target.result
-            };
+                content: content
+            });
             renderAttachmentChips();
             showToast(`📎 ${file.name} berhasil di-attach`);
-            resolve();
-        };
-        reader.onerror = () => {
-            attachedFiles[idx].error = true;
-            attachedFiles[idx].loading = false;
-            renderAttachmentChips();
-            showToast(`❌ Gagal membaca file: ${file.name}`);
             resolve();
         };
         reader.readAsText(file);
     });
 }
 
-// PDF Processor
 async function processPDF(file) {
-    const idx = attachedFiles.length;
-    attachedFiles.push({ type: 'pdf', name: file.name, size: file.size, content: '', loading: true });
+    const loadingChipIndex = attachedFiles.length;
+    attachedFiles.push({
+        type: 'pdf',
+        name: file.name,
+        size: file.size,
+        content: '',
+        loading: true
+    });
     renderAttachmentChips();
 
     try {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let text = '';
+        let fullText = '';
+
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            text += content.items.map(item => item.str).join(' ') + '\n\n';
+            const textContent = await page.getTextContent();
+            fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
         }
-        attachedFiles[idx] = { type: 'pdf', name: file.name, size: file.size, content: text.trim() };
-        showToast(`📄 ${file.name} berhasil di-attach`);
+
+        attachedFiles[loadingChipIndex] = {
+            type: 'pdf',
+            name: file.name,
+            size: file.size,
+            content: fullText.trim()
+        };
     } catch (err) {
-        attachedFiles[idx].error = true;
+        attachedFiles[loadingChipIndex] = {
+            type: 'pdf',
+            name: file.name,
+            size: file.size,
+            content: '',
+            error: true
+        };
         showToast(`❌ Gagal baca PDF: ${file.name}`);
     }
+
     renderAttachmentChips();
+    showToast(`📄 ${file.name} berhasil di-attach`);
 }
 
-// DOCX Processor
 async function processDOCX(file) {
-    const idx = attachedFiles.length;
-    attachedFiles.push({ type: 'docx', name: file.name, size: file.size, content: '', loading: true });
+    const loadingChipIndex = attachedFiles.length;
+    attachedFiles.push({
+        type: 'docx',
+        name: file.name,
+        size: file.size,
+        content: '',
+        loading: true
+    });
     renderAttachmentChips();
 
     try {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
-        attachedFiles[idx] = { type: 'docx', name: file.name, size: file.size, content: result.value.trim() };
-        showToast(`📝 ${file.name} berhasil di-attach`);
+        attachedFiles[loadingChipIndex] = {
+            type: 'docx',
+            name: file.name,
+            size: file.size,
+            content: result.value.trim()
+        };
     } catch (err) {
-        attachedFiles[idx].error = true;
+        attachedFiles[loadingChipIndex] = {
+            type: 'docx',
+            name: file.name,
+            size: file.size,
+            content: '',
+            error: true
+        };
         showToast(`❌ Gagal baca DOCX: ${file.name}`);
     }
+
     renderAttachmentChips();
+    showToast(`📝 ${file.name} berhasil di-attach`);
 }
 
-// Image Processor (dengan thumbnail)
-async function processImage(file) {
-    const idx = attachedFiles.length;
-    attachedFiles.push({ type: 'image', name: file.name, size: file.size, base64: '', loading: true });
-    renderAttachmentChips();
-
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            attachedFiles[idx] = {
-                type: 'image',
-                name: file.name,
-                size: file.size,
-                base64: e.target.result
-            };
-            renderAttachmentChips();
-            showToast(`🖼️ ${file.name} berhasil di-attach`);
-            resolve();
-        };
-        reader.onerror = () => {
-            attachedFiles[idx].error = true;
-            attachedFiles[idx].loading = false;
-            renderAttachmentChips();
-            showToast(`❌ Gagal memproses gambar: ${file.name}`);
-            resolve();
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-// Render Chips dengan support Image Thumbnail
+// Render chips
 function renderAttachmentChips() {
     const area = document.getElementById('attachmentArea');
-    const chips = document.getElementById('attachmentChips');
-    if (!area || !chips) return;
+    const chipsContainer = document.getElementById('attachmentChips');
+    if (!area || !chipsContainer) return;
 
-    chips.innerHTML = '';
+    chipsContainer.innerHTML = '';
     if (attachedFiles.length === 0) {
         area.classList.remove('has-files');
         return;
@@ -2354,13 +2312,20 @@ function renderAttachmentChips() {
         chip.className = `attachment-chip chip-${f.type} ${f.loading ? 'loading' : ''} ${f.error ? 'error' : ''}`;
 
         let iconHTML = '';
+
         if (f.type === 'image' && f.base64) {
-            iconHTML = `<div class="chip-icon"><img src="${f.base64}" style="width:100%;height:100%;object-fit:cover;border-radius:5px;"></div>`;
-        } else if (f.type === 'pdf') {
+            iconHTML = `
+                <div class="chip-icon" style="width:32px;height:32px;overflow:hidden;border-radius:6px;border:1px solid rgba(255,255,255,0.15);">
+                    <img src="${f.base64}" alt="${f.name}" style="width:100%;height:100%;object-fit:cover;">
+                </div>`;
+        }
+        else if (f.type === 'pdf') {
             iconHTML = `<i class="bi bi-file-earmark-pdf chip-icon"></i>`;
-        } else if (f.type === 'docx') {
+        }
+        else if (f.type === 'docx') {
             iconHTML = `<i class="bi bi-file-earmark-word chip-icon"></i>`;
-        } else {
+        }
+        else {
             iconHTML = `<i class="bi bi-file-earmark-text chip-icon"></i>`;
         }
 
@@ -2372,7 +2337,8 @@ function renderAttachmentChips() {
             </div>
             <button class="chip-remove" onclick="removeAttachment(${i}); event.stopImmediatePropagation();">×</button>
         `;
-        chips.appendChild(chip);
+
+        chipsContainer.appendChild(chip);
     });
 }
 
@@ -2382,13 +2348,18 @@ window.removeAttachment = function (index) {
 };
 
 // ═══════════════════════════════════════════════
-// PHASE 3 — INJECT ATTACHMENTS KE PROMPT
+// MODIFY sendMessage() — Inject attachments (Fase 3)
+// ═══════════════════════════════════════════════
+
+// Cari fungsi sendMessage() yang lama, lalu GANTI seluruh fungsinya dengan ini:
+// ═══════════════════════════════════════════════
+// PHASE 3 — MULTIMODAL SEND MESSAGE (Text + Image)
 // ═══════════════════════════════════════════════
 async function sendMessage(overrideText) {
     const input = document.getElementById('userInput');
-    let text = overrideText || input.value.trim();
+    let userText = overrideText || input.value.trim();
 
-    if ((!text && attachedFiles.length === 0) || isLoading) return;
+    if ((!userText && attachedFiles.length === 0) || isLoading) return;
 
     showContent();
     input.value = '';
@@ -2396,34 +2367,43 @@ async function sendMessage(overrideText) {
     isLoading = true;
     document.getElementById('sendBtn').disabled = true;
 
-    // === INJECTION LOGIC ===
-    let finalText = text;
+    // Build multimodal content array
+    const contentArray = [];
 
-    if (attachedFiles.length > 0) {
-        let attachmentPrompt = '\n\n📎 **Attached Files:**\n';
-
-        attachedFiles.forEach(f => {
-            if (f.type === 'image' && f.base64) {
-                // Untuk image, kita hanya beri tahu dulu (backend multimodal nanti)
-                attachmentPrompt += `\n**${f.name}** (Image attached - will be sent as base64)\n`;
-            } else if (f.content) {
-                // Text, PDF, DOCX
-                attachmentPrompt += `\n**${f.name}**\n\`\`\`\n${f.content}\n\`\`\`\n`;
-            }
-        });
-
-        finalText = text ? text + attachmentPrompt : attachmentPrompt.trim();
+    if (userText) {
+        contentArray.push({ type: "text", text: userText });
     }
 
-    appendMsg('user', finalText);
+    attachedFiles.forEach(f => {
+        if (f.type === 'image' && f.base64) {
+            contentArray.push({
+                type: "image_url",
+                image_url: { url: f.base64 }
+            });
+        } else if (f.content) {
+            contentArray.push({
+                type: "text",
+                text: `**Attached File:** ${f.name}\n\`\`\`\n${f.content}\n\`\`\``
+            });
+        }
+    });
+
+    // Tampilan di chat (hanya preview)
+    let displayText = userText || '';
+    if (attachedFiles.some(f => f.type === 'image')) displayText += ' 🖼️';
+    if (attachedFiles.some(f => f.type !== 'image')) displayText += ' 📎';
+    appendMsg('user', displayText || '📎 Attached files');
 
     const model = document.getElementById('modelSelect').value;
 
     try {
-        if (mode === 'agent') await sendAgent(finalText, model);
-        else await sendChat(finalText, model);
+        if (mode === 'agent') {
+            // Agent masih text-only untuk sekarang
+            await sendAgent(userText || "[Files attached]", model);
+        } else {
+            await sendChat(contentArray, model);   // Kirim array
+        }
     } finally {
-        // Clear attachments setelah kirim
         attachedFiles = [];
         renderAttachmentChips();
         isLoading = false;
@@ -2431,6 +2411,8 @@ async function sendMessage(overrideText) {
         input.focus();
     }
 }
+
+
 
 // ═══════════════════════════════════════════════
 // 3D ORB & INTERACTIVE EYES — UPDATED
@@ -2612,258 +2594,5 @@ async function sendMessage(overrideText) {
         renderer.setSize(newSize, newSize);
     });
 
-    // ═══════════════════════════════════════════════
-    // FILE ATTACHMENT SYSTEM — Fase 1 + 2 (Text Files)
-    // ═══════════════════════════════════════════════
-
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-
-    async function processFile(file) {
-        if (file.size > MAX_FILE_SIZE) {
-            showToast(`❌ File terlalu besar: ${file.name} (max 10MB)`);
-            return;
-        }
-
-        const ext = file.name.split('.').pop().toLowerCase();
-
-        // Text files
-        if (['txt', 'js', 'py', 'html', 'css', 'json', 'md'].includes(ext)) {
-            await processTextFile(file);
-        }
-        // PDF
-        else if (ext === 'pdf') {
-            await processPDF(file);
-        }
-        // DOCX
-        else if (ext === 'docx' || ext === 'doc') {
-            await processDOCX(file);
-        }
-        // IMAGE — Phase 2
-        else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
-            await processImage(file);
-        }
-        // Video (nanti)
-        else if (['mp4', 'mov', 'webm'].includes(ext)) {
-            showToast(`🎥 Video support akan ditambahkan di tahap berikutnya`);
-        }
-        else {
-            showToast(`⚠️ Format belum didukung: .${ext}`);
-        }
-    }
-
-    async function processTextFile(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target.result;
-                attachedFiles.push({
-                    type: 'text',
-                    name: file.name,
-                    size: file.size,
-                    content: content
-                });
-                renderAttachmentChips();
-                showToast(`📎 ${file.name} berhasil di-attach`);
-                resolve();
-            };
-            reader.readAsText(file);
-        });
-    }
-
-    async function processPDF(file) {
-        const loadingChipIndex = attachedFiles.length;
-        attachedFiles.push({
-            type: 'pdf',
-            name: file.name,
-            size: file.size,
-            content: '',
-            loading: true
-        });
-        renderAttachmentChips();
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            let fullText = '';
-
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
-            }
-
-            attachedFiles[loadingChipIndex] = {
-                type: 'pdf',
-                name: file.name,
-                size: file.size,
-                content: fullText.trim()
-            };
-        } catch (err) {
-            attachedFiles[loadingChipIndex] = {
-                type: 'pdf',
-                name: file.name,
-                size: file.size,
-                content: '',
-                error: true
-            };
-            showToast(`❌ Gagal baca PDF: ${file.name}`);
-        }
-
-        renderAttachmentChips();
-        showToast(`📄 ${file.name} berhasil di-attach`);
-    }
-
-    async function processDOCX(file) {
-        const loadingChipIndex = attachedFiles.length;
-        attachedFiles.push({
-            type: 'docx',
-            name: file.name,
-            size: file.size,
-            content: '',
-            loading: true
-        });
-        renderAttachmentChips();
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const result = await mammoth.extractRawText({ arrayBuffer });
-            attachedFiles[loadingChipIndex] = {
-                type: 'docx',
-                name: file.name,
-                size: file.size,
-                content: result.value.trim()
-            };
-        } catch (err) {
-            attachedFiles[loadingChipIndex] = {
-                type: 'docx',
-                name: file.name,
-                size: file.size,
-                content: '',
-                error: true
-            };
-            showToast(`❌ Gagal baca DOCX: ${file.name}`);
-        }
-
-        renderAttachmentChips();
-        showToast(`📝 ${file.name} berhasil di-attach`);
-    }
-
-    // Render chips
-    function renderAttachmentChips() {
-        const area = document.getElementById('attachmentArea');
-        const chipsContainer = document.getElementById('attachmentChips');
-        if (!area || !chipsContainer) return;
-
-        chipsContainer.innerHTML = '';
-        if (attachedFiles.length === 0) {
-            area.classList.remove('has-files');
-            return;
-        }
-        area.classList.add('has-files');
-
-        attachedFiles.forEach((f, i) => {
-            const chip = document.createElement('div');
-            chip.className = `attachment-chip chip-${f.type} ${f.loading ? 'loading' : ''} ${f.error ? 'error' : ''}`;
-
-            let iconHTML = '';
-
-            if (f.type === 'image' && f.base64) {
-                iconHTML = `
-                    <div class="chip-icon" style="width:32px;height:32px;overflow:hidden;border-radius:6px;border:1px solid rgba(255,255,255,0.15);">
-                        <img src="${f.base64}" alt="${f.name}" style="width:100%;height:100%;object-fit:cover;">
-                    </div>`;
-            }
-            else if (f.type === 'pdf') {
-                iconHTML = `<i class="bi bi-file-earmark-pdf chip-icon"></i>`;
-            }
-            else if (f.type === 'docx') {
-                iconHTML = `<i class="bi bi-file-earmark-word chip-icon"></i>`;
-            }
-            else {
-                iconHTML = `<i class="bi bi-file-earmark-text chip-icon"></i>`;
-            }
-
-            chip.innerHTML = `
-                ${iconHTML}
-                <div class="chip-content">
-                    <div class="chip-name">${f.name}</div>
-                    <div class="chip-size">${(f.size / 1024).toFixed(1)} KB</div>
-                </div>
-                <button class="chip-remove" onclick="removeAttachment(${i}); event.stopImmediatePropagation();">×</button>
-            `;
-
-            chipsContainer.appendChild(chip);
-        });
-    }
-
-    window.removeAttachment = function (index) {
-        attachedFiles.splice(index, 1);
-        renderAttachmentChips();
-    };
-
-    // ═══════════════════════════════════════════════
-    // MODIFY sendMessage() — Inject attachments (Fase 3)
-    // ═══════════════════════════════════════════════
-
-    // Cari fungsi sendMessage() yang lama, lalu GANTI seluruh fungsinya dengan ini:
-    // ═══════════════════════════════════════════════
-    // PHASE 3 — MULTIMODAL SEND MESSAGE (Text + Image)
-    // ═══════════════════════════════════════════════
-    async function sendMessage(overrideText) {
-        const input = document.getElementById('userInput');
-        let userText = overrideText || input.value.trim();
-
-        if ((!userText && attachedFiles.length === 0) || isLoading) return;
-
-        showContent();
-        input.value = '';
-        input.style.height = 'auto';
-        isLoading = true;
-        document.getElementById('sendBtn').disabled = true;
-
-        // Build multimodal content array
-        const contentArray = [];
-
-        if (userText) {
-            contentArray.push({ type: "text", text: userText });
-        }
-
-        attachedFiles.forEach(f => {
-            if (f.type === 'image' && f.base64) {
-                contentArray.push({
-                    type: "image_url",
-                    image_url: { url: f.base64 }
-                });
-            } else if (f.content) {
-                contentArray.push({
-                    type: "text",
-                    text: `**Attached File:** ${f.name}\n\`\`\`\n${f.content}\n\`\`\``
-                });
-            }
-        });
-
-        // Tampilan di chat (hanya preview)
-        let displayText = userText || '';
-        if (attachedFiles.some(f => f.type === 'image')) displayText += ' 🖼️';
-        if (attachedFiles.some(f => f.type !== 'image')) displayText += ' 📎';
-        appendMsg('user', displayText || '📎 Attached files');
-
-        const model = document.getElementById('modelSelect').value;
-
-        try {
-            if (mode === 'agent') {
-                // Agent masih text-only untuk sekarang
-                await sendAgent(userText || "[Files attached]", model);
-            } else {
-                await sendChat(contentArray, model);   // Kirim array
-            }
-        } finally {
-            attachedFiles = [];
-            renderAttachmentChips();
-            isLoading = false;
-            document.getElementById('sendBtn').disabled = false;
-            input.focus();
-        }
-    }
 
 })();
