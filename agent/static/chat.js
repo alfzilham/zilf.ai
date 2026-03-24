@@ -2302,45 +2302,81 @@ async function processDOCX(file) {
     showToast(`📝 ${file.name} berhasil di-attach`);
 }
 
-function renderAttachmentChips() {
-    const area = document.getElementById('attachmentArea');
-    const chips = document.getElementById('attachmentChips');
-    if (!area || !chips) return;
+async function processImage(file) {
+    const idx = attachedFiles.length;
 
-    chips.innerHTML = '';
-    if (attachedFiles.length === 0) {
-        area.classList.remove('has-files');
-        return;
-    }
-    area.classList.add('has-files');
+    // Tampilkan loading state dulu
+    attachedFiles.push({
+        type: 'image',
+        name: file.name,
+        size: file.size,
+        base64: '',
+        loading: true
+    });
+    renderAttachmentChips();
 
-    attachedFiles.forEach((f, i) => {
-        const chip = document.createElement('div');
-        chip.className = `attachment-chip chip-${f.type} ${f.loading ? 'loading' : ''} ${f.error ? 'error' : ''}`;
-        
-        // Tambahkan teks "Processing..." saat loading
-        if (f.loading) {
-            chip.style.opacity = '0.75';
-        }
-
-        let icon = '';
-        if (f.type === 'pdf') icon = `<i class="bi bi-file-earmark-pdf chip-icon"></i>`;
-        else if (f.type === 'docx') icon = `<i class="bi bi-file-earmark-word chip-icon"></i>`;
-        else icon = `<i class="bi bi-file-earmark-text chip-icon"></i>`;
-
-        chip.innerHTML = `
-            ${icon}
-            <div class="chip-content">
-                <div class="chip-name">${f.name}</div>
-                <div class="chip-size">${(f.size / 1024).toFixed(1)} KB</div>
-            </div>
-            <button class="chip-remove" onclick="removeAttachment(${i}); event.stopImmediatePropagation();">×</button>
-        `;
-        chips.appendChild(chip);
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            attachedFiles[idx] = {
+                type: 'image',
+                name: file.name,
+                size: file.size,
+                base64: e.target.result   // base64 string
+            };
+            renderAttachmentChips();
+            showToast(`🖼️ ${file.name} berhasil di-attach`);
+            resolve();
+        };
+        reader.onerror = () => {
+            attachedFiles[idx].error = true;
+            attachedFiles[idx].loading = false;
+            renderAttachmentChips();
+            showToast(`❌ Gagal memproses gambar: ${file.name}`);
+            resolve();
+        };
+        reader.readAsDataURL(file);   // penting untuk preview
     });
 }
 
-window.removeAttachment = function(index) {
+async function processImage(file) {
+    const idx = attachedFiles.length;
+
+    // Tampilkan loading state dulu
+    attachedFiles.push({
+        type: 'image',
+        name: file.name,
+        size: file.size,
+        base64: '',
+        loading: true
+    });
+    renderAttachmentChips();
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            attachedFiles[idx] = {
+                type: 'image',
+                name: file.name,
+                size: file.size,
+                base64: e.target.result   // base64 string
+            };
+            renderAttachmentChips();
+            showToast(`🖼️ ${file.name} berhasil di-attach`);
+            resolve();
+        };
+        reader.onerror = () => {
+            attachedFiles[idx].error = true;
+            attachedFiles[idx].loading = false;
+            renderAttachmentChips();
+            showToast(`❌ Gagal memproses gambar: ${file.name}`);
+            resolve();
+        };
+        reader.readAsDataURL(file);   // penting untuk preview
+    });
+}
+
+window.removeAttachment = function (index) {
     attachedFiles.splice(index, 1);
     renderAttachmentChips();
 };
@@ -2539,7 +2575,7 @@ window.removeAttachment = function(index) {
 
         const ext = file.name.split('.').pop().toLowerCase();
 
-        // Text-based files
+        // Text files
         if (['txt', 'js', 'py', 'html', 'css', 'json', 'md'].includes(ext)) {
             await processTextFile(file);
         }
@@ -2551,7 +2587,14 @@ window.removeAttachment = function(index) {
         else if (ext === 'docx' || ext === 'doc') {
             await processDOCX(file);
         }
-        // Unsupported untuk Fase 2 (image/video nanti)
+        // IMAGE (Phase 2)
+        else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+            await processImage(file);
+        }
+        // Video (belum diimplementasikan)
+        else if (['mp4', 'mov', 'webm'].includes(ext)) {
+            showToast(`🎥 Video support akan ditambahkan di tahap berikutnya`);
+        }
         else {
             showToast(`⚠️ Format belum didukung: .${ext}`);
         }
