@@ -34,7 +34,7 @@ from agent.auth import router as auth_router, decode_token, get_user_by_id
 # App setup
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="Hams AI", version="0.4.0")
+app = FastAPI(title="Hams AI", version="0.3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,11 +44,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+_STATIC_DIR    = os.path.join(os.path.dirname(__file__), "static")
 _TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 app.include_router(auth_router)
+
+# ---------------------------------------------------------------------------
 
 _tasks: dict[str, dict[str, Any]] = {}
 _start_time = time.time()
@@ -72,10 +74,13 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     session_id: str | None = None
-    message: Any = Field(...)                    # Bisa string atau list[dict] untuk multimodal
+    message: str
     history: list[ChatMessage] | None = []
-    model: str | None = Field(default="hams-max")
-    extended: bool = Field(default=False)
+    model: str | None = Field(default="hams-max")  # B3 FIX
+    extended: bool = Field(
+        default=False,
+        description="Aktifkan Extended Thinking — AI menampilkan proses berpikirnya sebelum menjawab"
+    )
 
 
 class ChatResponse(BaseModel):
@@ -88,7 +93,7 @@ class ChatResponse(BaseModel):
 
 class AgentRunRequest(BaseModel):
     task: str = Field(..., min_length=1)
-    model: str | None = Field(default="hams-max")
+    model: str | None = Field(default="hams-max")  # B3 FIX
     max_steps: int = Field(15, ge=1, le=50)
     extended: bool = Field(default=False)
 
@@ -139,8 +144,6 @@ _MULTITASK_SYSTEM = """Kamu adalah HAMS.AI — asisten AI serba bisa yang powerf
 
 ## KEMAMPUAN UTAMA
 1. **Website & UI** — HTML/CSS/JS lengkap, landing page, dashboard, game web, animasi
-    - Jika ada gambar, deskripsikan dengan detail dan jawab pertanyaan tentang gambar tersebut.
-    - Ikuti bahasa pengguna (Indonesia atau Inggris).
 2. **Kode Program** — Python, JS, SQL, Bash, API, algoritma, lengkap dengan komentar
 3. **Konten** — Artikel, blog, copywriting, esai, email profesional
 4. **Analisis** — Perbandingan teknologi, strategi, tabel, breakdown konsep kompleks
