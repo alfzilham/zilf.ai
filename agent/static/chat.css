@@ -3534,3 +3534,190 @@ body>* {
         max-width: 280px;
     }
 }
+
+/* ════════════════════════════════════
+   ATTACHMENT CHIPS SYSTEM (Fase 1)
+════════════════════════════════════ */
+#attachmentArea {
+    padding: 12px 20px 0;
+    display: none;                    /* disembunyikan jika tidak ada file */
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 48px;
+}
+
+#attachmentArea.has-files {
+    display: flex;
+}
+
+.attachment-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+/* Chip Umum */
+.attachment-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 100%);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 6px 10px 6px 6px;
+    font-size: 0.78rem;
+    color: var(--text);
+    max-width: 240px;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.2);
+    transition: all 0.15s ease;
+    position: relative;
+    user-select: none;
+}
+
+.attachment-chip:hover {
+    border-color: rgba(255,255,255,0.25);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
+}
+
+/* Icon di dalam chip */
+.attachment-chip .chip-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+}
+
+/* Nama file + ukuran */
+.chip-content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.chip-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.76rem;
+}
+
+.chip-size {
+    font-size: 0.68rem;
+    color: var(--text-3);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Tombol Remove */
+.chip-remove {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.chip-remove:hover {
+    background: var(--red);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Varian Chip */
+
+/* Text-based files */
+.chip-text .chip-icon {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+}
+
+/* PDF */
+.chip-pdf .chip-icon {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+}
+
+/* Image */
+.chip-image {
+    padding: 4px;
+}
+
+.chip-image .chip-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.chip-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+/* Video */
+.chip-video .chip-icon {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+/* Loading state */
+.attachment-chip.loading {
+    opacity: 0.75;
+    pointer-events: none;
+}
+
+.attachment-chip.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    animation: chipLoading 1.5s linear infinite;
+    border-radius: 10px;
+}
+
+@keyframes chipLoading {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+}
+
+/* Error state */
+.attachment-chip.error {
+    border-color: var(--red);
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.attachment-chip.error .chip-name {
+    color: var(--red);
+}
+
+/* Responsive adjustment untuk chip */
+@media (max-width: 640px) {
+    .attachment-chip {
+        max-width: 180px;
+    }
+    
+    #attachmentArea {
+        padding: 10px 14px 0;
+    }
+}

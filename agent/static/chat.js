@@ -9,6 +9,7 @@ let isLoading = false;
 let mode = 'chat';
 let extended = false;
 let currentChatId = null;
+let attachedFiles = [];
 
 // ── Init ────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -41,6 +42,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.querySelector('.history-title')?.textContent.toLowerCase().includes(q)
                     ? '' : 'none';
         });
+
+        // === FILE ATTACHMENT (Fase 1 + 2) ===
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('fileInput');
+
+        if (attachBtn && fileInput) {
+            attachBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', async (e) => {
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+
+                for (const file of files) {
+                    await processFile(file);
+                }
+
+                // Reset input agar bisa upload file yang sama lagi
+                fileInput.value = '';
+            });
+        }
     });
 });
 
@@ -1185,7 +1208,7 @@ const LANGUAGES = [
     { code: 'ja-JP', label: '日本語 (日本)', flag: '🇯🇵' },
     { code: 'ko-KR', label: '한국어 (대한민국)', flag: '🇰🇷' },
     { code: 'pt-BR', label: 'Português (Brasil)', flag: '🇧🇷' },
-    { code: 'es-419', label: 'Español (Latinoamérica)', flag: '🌎' },
+    { code: 'es-419', label: 'Español (Latinoamérica)', flag: '🇪🇸' },
     { code: 'es-ES', label: 'Español (España)', flag: '🇪🇸' },
 ];
 
@@ -2389,5 +2412,222 @@ function saveSettings() {
         const newSize = container.offsetWidth || 130;
         renderer.setSize(newSize, newSize);
     });
+
+    // ═══════════════════════════════════════════════
+    // FILE ATTACHMENT SYSTEM — Fase 1 + 2 (Text Files)
+    // ═══════════════════════════════════════════════
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+    async function processFile(file) {
+        if (file.size > MAX_FILE_SIZE) {
+            showToast(`❌ File terlalu besar: ${file.name} (max 10MB)`);
+            return;
+        }
+
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        // Text-based files
+        if (['txt', 'js', 'py', 'html', 'css', 'json', 'md'].includes(ext)) {
+            await processTextFile(file);
+        }
+        // PDF
+        else if (ext === 'pdf') {
+            await processPDF(file);
+        }
+        // DOCX
+        else if (ext === 'docx' || ext === 'doc') {
+            await processDOCX(file);
+        }
+        // Unsupported untuk Fase 2 (image/video nanti)
+        else {
+            showToast(`⚠️ Format belum didukung: .${ext}`);
+        }
+    }
+
+    async function processTextFile(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                attachedFiles.push({
+                    type: 'text',
+                    name: file.name,
+                    size: file.size,
+                    content: content
+                });
+                renderAttachmentChips();
+                showToast(`📎 ${file.name} berhasil di-attach`);
+                resolve();
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    async function processPDF(file) {
+        const loadingChipIndex = attachedFiles.length;
+        attachedFiles.push({
+            type: 'pdf',
+            name: file.name,
+            size: file.size,
+            content: '',
+            loading: true
+        });
+        renderAttachmentChips();
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
+            }
+
+            attachedFiles[loadingChipIndex] = {
+                type: 'pdf',
+                name: file.name,
+                size: file.size,
+                content: fullText.trim()
+            };
+        } catch (err) {
+            attachedFiles[loadingChipIndex] = {
+                type: 'pdf',
+                name: file.name,
+                size: file.size,
+                content: '',
+                error: true
+            };
+            showToast(`❌ Gagal baca PDF: ${file.name}`);
+        }
+
+        renderAttachmentChips();
+        showToast(`📄 ${file.name} berhasil di-attach`);
+    }
+
+    async function processDOCX(file) {
+        const loadingChipIndex = attachedFiles.length;
+        attachedFiles.push({
+            type: 'docx',
+            name: file.name,
+            size: file.size,
+            content: '',
+            loading: true
+        });
+        renderAttachmentChips();
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            attachedFiles[loadingChipIndex] = {
+                type: 'docx',
+                name: file.name,
+                size: file.size,
+                content: result.value.trim()
+            };
+        } catch (err) {
+            attachedFiles[loadingChipIndex] = {
+                type: 'docx',
+                name: file.name,
+                size: file.size,
+                content: '',
+                error: true
+            };
+            showToast(`❌ Gagal baca DOCX: ${file.name}`);
+        }
+
+        renderAttachmentChips();
+        showToast(`📝 ${file.name} berhasil di-attach`);
+    }
+
+    // Render chips
+    function renderAttachmentChips() {
+        const container = document.getElementById('attachmentArea');
+        const chipsContainer = document.getElementById('attachmentChips');
+
+        if (!container || !chipsContainer) return;
+
+        chipsContainer.innerHTML = '';
+
+        if (attachedFiles.length === 0) {
+            container.classList.remove('has-files');
+            return;
+        }
+
+        container.classList.add('has-files');
+
+        attachedFiles.forEach((file, index) => {
+            const chip = document.createElement('div');
+            chip.className = `attachment-chip chip-${file.type} ${file.loading ? 'loading' : ''} ${file.error ? 'error' : ''}`;
+
+            let iconHTML = '';
+            if (file.type === 'pdf') iconHTML = `<i class="bi bi-file-earmark-pdf chip-icon"></i>`;
+            else if (file.type === 'docx') iconHTML = `<i class="bi bi-file-earmark-word chip-icon"></i>`;
+            else iconHTML = `<i class="bi bi-file-earmark-text chip-icon"></i>`;
+
+            chip.innerHTML = `
+            ${iconHTML}
+            <div class="chip-content">
+                <div class="chip-name">${file.name}</div>
+                <div class="chip-size">${(file.size / 1024).toFixed(1)} KB</div>
+            </div>
+            <button class="chip-remove" onclick="removeAttachment(${index}); event.stopImmediatePropagation();">×</button>
+        `;
+
+            chipsContainer.appendChild(chip);
+        });
+    }
+
+    window.removeAttachment = function (index) {
+        attachedFiles.splice(index, 1);
+        renderAttachmentChips();
+    };
+
+    // ═══════════════════════════════════════════════
+    // MODIFY sendMessage() — Inject attachments (Fase 3)
+    // ═══════════════════════════════════════════════
+
+    // Cari fungsi sendMessage() yang lama, lalu GANTI seluruh fungsinya dengan ini:
+    async function sendMessage(overrideText) {
+        const input = document.getElementById('userInput');
+        let text = overrideText || input.value.trim();
+
+        if ((!text && attachedFiles.length === 0) || isLoading) return;
+
+        showContent();
+        input.value = '';
+        input.style.height = 'auto';
+        isLoading = true;
+        document.getElementById('sendBtn').disabled = true;
+
+        // Inject attached text files ke prompt
+        if (attachedFiles.length > 0) {
+            let attachmentPrompt = '\n\n📎 **Attached Files:**\n';
+            attachedFiles.forEach((f, i) => {
+                if (f.content) {
+                    attachmentPrompt += `\n**${f.name}**\n\`\`\`\n${f.content}\n\`\`\`\n`;
+                }
+            });
+            text = text ? text + attachmentPrompt : attachmentPrompt.trim();
+        }
+
+        appendMsg('user', text);
+
+        const model = document.getElementById('modelSelect').value;
+
+        try {
+            if (mode === 'agent') await sendAgent(text, model);
+            else await sendChat(text, model);
+        } finally {
+            // Clear attachments setelah berhasil kirim
+            attachedFiles = [];
+            renderAttachmentChips();
+            isLoading = false;
+            document.getElementById('sendBtn').disabled = false;
+            input.focus();
+        }
+    }
 
 })();

@@ -22,6 +22,16 @@
     <!-- Styles -->
     <link rel="stylesheet" href="/static/chat.css" />
 
+    <!-- === TAMBAHAN UNTUK FILE ATTACHMENT (Fase 1) === -->
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
+    </script>
+
+    <!-- Mammoth.js untuk .docx -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js"></script>
+
     <!-- THREE.JS CDN — untuk 3D Orb -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -246,25 +256,40 @@
 
         <!-- ── Input area ── -->
         <div id="inputArea">
+
+            <!-- Attachment Chips Area -->
+            <div id="attachmentArea" class="attachment-area">
+                <div id="attachmentChips" class="attachment-chips"></div>
+            </div>
+
             <div class="input-card">
                 <textarea id="userInput" rows="1" placeholder="Message AI Chat..." onkeydown="handleKey(event)"
                     oninput="autoResize(this)" autocomplete="off"></textarea>
                 <div class="input-actions">
-                    <!-- Attach -->
-                    <button class="input-icon-btn" title="Attach file">
+                    <!-- Attach File -->
+                    <button class="input-icon-btn" id="attachBtn" title="Attach file">
                         <i class="bi bi-paperclip"></i>
                     </button>
+
+                    <!-- Hidden File Input -->
+                    <input type="file" id="fileInput" multiple
+                        accept=".txt,.js,.py,.html,.css,.json,.md,.pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.webm"
+                        style="display:none;" />
+
                     <!-- Create image -->
                     <button class="input-action-btn" onclick="sendSuggestion('Buatkan ilustrasi SVG yang menarik: ')">
                         <i class="bi bi-image"></i>
                         <span>Create an image</span>
                     </button>
+
                     <!-- Agent mode shortcut -->
                     <button class="input-action-btn" onclick="setModeAndFocus('agent')">
                         <i class="bi bi-globe2"></i>
                         <span>Agent mode</span>
                     </button>
+
                     <div class="input-actions-spacer"></div>
+
                     <!-- Send -->
                     <button id="sendBtn" onclick="sendMessage()" title="Send">
                         <i class="bi bi-arrow-up"></i>
