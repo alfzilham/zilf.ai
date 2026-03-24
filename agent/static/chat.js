@@ -1499,7 +1499,7 @@ function saveSettings() {
 }
 
 // ═══════════════════════════════════════════════
-// 3D ORB & INTERACTIVE EYES — RESET IMPLEMENTATION
+// 3D ORB & INTERACTIVE EYES — UPDATED
 // ═══════════════════════════════════════════════
 
 (function initOrbSystem() {
@@ -1526,54 +1526,50 @@ function saveSettings() {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
 
-    // ── 2. ORB MATERIAL (Silver/White/Kilat) ─────────
+    // ── 2. ORB MATERIAL (PUTIH-SILVER) ─────────────
     const geometry = new THREE.SphereGeometry(1, 64, 64);
     const material = new THREE.MeshPhysicalMaterial({
-        color: 0xf5f5f5,      // Putih Silver
-        metalness: 1.0,       // Full metal untuk kilau
-        roughness: 0.05,      // Sangat licin
+        color: 0xffffff,      // Putih Silver
+        metalness: 0.9,       // Metallic tinggi
+        roughness: 0.1,       // Sedikit kasar untuk difusi cahaya
         clearcoat: 1.0,
         clearcoatRoughness: 0.1,
         envMapIntensity: 1.5,
+        emissive: 0x222222,  // Sedikit emissive agar tidak gelap
+        emissiveIntensity: 0.5
     });
 
     const orb = new THREE.Mesh(geometry, material);
     scene.add(orb);
 
-    // ── 3. INNER GLOW ───────────────────────────────
+    // ── 3. INNER GLOW (PUTIH) ──────────────────────
     const glowGeo = new THREE.SphereGeometry(0.92, 32, 32);
     const glowMat = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: 0xffffff,      // Glow Putih
         transparent: true,
-        opacity: 0.12,
+        opacity: 0.15,
         side: THREE.BackSide
     });
     const glowMesh = new THREE.Mesh(glowGeo, glowMat);
     scene.add(glowMesh);
 
     // ── 4. LIGHTING ────────────────────────────────
-    // Ambient dasar
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambient);
 
-    // PointLight utama (akan mengikuti kursor untuk efek kilat)
-    const pointLight = new THREE.PointLight(0xffffff, 1.5, 100);
+    // PointLight utama (mengikuti kursor)
+    const pointLight = new THREE.PointLight(0xffffff, 2.0, 100);
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);
 
-    // Fake Environment Map (untuk refleksi)
+    // Fake Environment Map
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
-
-    // Simple cube environment
     const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256);
     const cubeCamera = new THREE.CubeCamera(0.1, 10, cubeRenderTarget);
 
-    // Buat environment scene sederhana
     const envScene = new THREE.Scene();
     envScene.background = new THREE.Color(0x111111);
-
-    // Tambahkan "cahaya" palsu di environment untuk refleksi
     const envLight1 = new THREE.Mesh(
         new THREE.SphereGeometry(0.5, 8, 8),
         new THREE.MeshBasicMaterial({ color: 0xffffff })
@@ -1594,14 +1590,13 @@ function saveSettings() {
         const delta = clock.getDelta();
         time += delta;
 
-        // Floating motion
+        // Floating
         orb.position.x = Math.sin(time * 0.5) * 0.03;
         orb.position.y = Math.cos(time * 0.7) * 0.04;
         orb.rotation.y = time * 0.2;
         orb.rotation.x = Math.sin(time * 0.3) * 0.1;
 
-        // Update light position based on mouse
-        // Mouse di mapping ke ruang 3D
+        // Light follow mouse
         const targetX = mouseX * 4.0;
         const targetY = mouseY * 4.0;
         pointLight.position.x += (targetX - pointLight.position.x) * 0.05;
@@ -1609,32 +1604,33 @@ function saveSettings() {
         pointLight.position.z = 4.0;
 
         // Glow pulse
-        glowMesh.material.opacity = 0.10 + Math.sin(time * 1.2) * 0.04;
+        glowMesh.material.opacity = 0.12 + Math.sin(time * 1.2) * 0.05;
 
         renderer.render(scene, camera);
     }
     animate();
 
-    // ── 6. EYE TRACKING LOGIC ──────────────────────
+    // ── 6. EYE TRACKING (LEBIH LELUASA) ────────────
     const eyeLeft = document.getElementById('eyeLeft');
     const eyeRight = document.getElementById('eyeRight');
-    const maxMove = 7; // Batas pergeseran mata (pixel)
+
+    // Jarak maksimal digeser (ditingkatkan dari 7 menjadi 25)
+    const maxMove = 25;
 
     function updateEyes(e) {
-        if (!e) return; // Safety check
+        if (!e) return;
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
 
-        // Normalisasi -1 sampai 1
-        const dx = (e.clientX - centerX) / centerX;
-        const dy = (e.clientY - centerY) / centerY;
+        // Hitung jarak relatif dari tengah layar
+        const dx = (e.clientX - centerX) / centerX; // -1 sampai 1
+        const dy = (e.clientY - centerY) / centerY; // -1 sampai 1
 
-        // Hitung pergeseran
+        // Kalikan dengan maxMove
+        // Jika kursor di ujung layar, mata akan bergeser 25px
         const moveX = dx * maxMove;
         const moveY = dy * maxMove;
 
-        // Terapkan ke garis mata (translate)
-        // CSS sudah set transform-origin di center via top:50% left:50%
         const transformVal = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
 
         if (eyeLeft) eyeLeft.style.transform = transformVal;
@@ -1646,15 +1642,13 @@ function saveSettings() {
         if (eyeRight) eyeRight.style.transform = 'translate(-50%, -50%)';
     }
 
-    // Global Mouse Move
     document.addEventListener('mousemove', (e) => {
         updateEyes(e);
-        // Update variabel untuk light 3D
+        // Update light target
         mouseX = (e.clientX / window.innerWidth) * 2 - 1;
         mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
     });
 
-    // Reset ketika keluar window
     document.addEventListener('mouseleave', () => {
         resetEyes();
         mouseX = 0;
@@ -1672,12 +1666,10 @@ function saveSettings() {
             setTimeout(() => eyeRight.classList.remove('blinking'), 150);
         }
 
-        // Random interval 3-6 detik
         const nextBlink = 3000 + Math.random() * 3000;
         setTimeout(triggerBlink, nextBlink);
     }
 
-    // Mulai loop blink
     setTimeout(triggerBlink, 2000);
 
     // ── 8. RESIZE HANDLER ──────────────────────────

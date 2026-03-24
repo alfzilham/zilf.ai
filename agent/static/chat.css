@@ -963,21 +963,7 @@ body>* {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   3D ORB — Three.js Canvas
-   ══════════════════════════════════════════════════════════════ */
-/* #orbCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    border-radius: 50%;
-    z-index: 1;
-    pointer-events: none;
-} */
-
-/* ══════════════════════════════════════════════════════════════
-   ORB EYES — Vertical Lines (Thick + Glow)
+   ORB EYES — Vertical Lines (Black + White Glow)
    ══════════════════════════════════════════════════════════════ */
 .orb-eyes-overlay {
     position: absolute;
@@ -987,30 +973,31 @@ body>* {
     height: 100%;
     z-index: 5;
     pointer-events: none;
-    /* Pointer events none agar klik mengenai canvas/orb wrap jika diperlukan */
 }
 
 .orb-eye-line {
     position: absolute;
     top: 50%;
     width: 4px;
-    /* Tebal 4px */
+    /* Tebal */
     height: 22px;
-    /* Tinggi garis */
-    background: rgba(255, 255, 255, 0.98);
+    /* Tinggi */
+    background: #000000;
+    /* Warna Hitam Pekat */
     border-radius: 2px;
-    /* Transform default: tengah. JS akan mengubah nilai translate */
+    /* Posisi default tengah */
     transform: translate(-50%, -50%);
-    transition: transform 0.09s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.06s linear;
+    /* Lebih cepat responsifnya */
 
-    /* Glow Effect */
+    /* Efek Glow Putih di sekitar garis hitam */
     box-shadow:
-        0 0 6px rgba(255, 255, 255, 1),
-        0 0 12px rgba(255, 255, 255, 0.8),
-        0 0 20px rgba(255, 255, 255, 0.5);
+        0 0 4px rgba(255, 255, 255, 1.0),
+        0 0 8px rgba(255, 255, 255, 0.8),
+        0 0 16px rgba(255, 255, 255, 0.4);
 }
 
-/* Posisi Default Kiri & Kanan */
+/* Posisi Default */
 #eyeLeft {
     left: calc(50% - 12px);
 }
