@@ -14,6 +14,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import os
+import secrets
 import sqlite3
 import time
 from collections import defaultdict
@@ -322,23 +323,13 @@ class RegisterRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     username: str = Field(..., min_length=3, max_length=30)
     email: EmailStr
-    password: str = Field(..., min_length=8, max_length=128)
+    password: Optional[str] = Field(None, min_length=8, max_length=128)
 
     @validator("username")
     def validate_username(cls, v):
         if not v.replace("_", "").isalnum():
             raise ValueError("Username can only contain letters, numbers, and underscore")
         return v.lower()
-
-    @validator("password")
-    def validate_password(cls, v):
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one number")
-        if not any(not c.isalnum() for c in v):
-            raise ValueError("Password must contain at least one special character")
-        return v
 
 
 class LoginRequest(BaseModel):
@@ -398,12 +389,17 @@ async def register(req: RegisterRequest, request: Request):
             detail="Too many attempts. Please try again in a few minutes.",
         )
 
+    # Generate random password if not provided
+    password = req.password
+    if not password:
+        password = secrets.token_urlsafe(24) + "A1!"
+
     try:
         user = create_user(
             name=req.name,
             username=req.username,
             email=req.email,
-            password=req.password,
+            password=password,
         )
     except ValueError as e:
         raise HTTPException(
@@ -478,15 +474,10 @@ async def forgot_password(req: ForgotPasswordRequest, request: Request):
         return {"message": "If an account with that email exists, a reset link has been sent."}
 
     # Generate reset token
-    import secrets
     reset_token = secrets.token_urlsafe(32)
     set_reset_token(user["id"], reset_token, expires_minutes=30)
 
-    # TODO: In production, send email with reset link:
-    # reset_url = f"{BASE_URL}/reset-password?token={reset_token}"
-    # send_email(user["email"], "Password Reset", reset_url)
-
-    # For development, log the token
+    # TODO: In production, send email with reset link
     print(f"[AUTH] Password reset token for {user['email']}: {reset_token}")
 
     return {"message": "If an account with that email exists, a reset link has been sent."}
@@ -662,8 +653,6 @@ async def google_callback(code: str = "", error: str = ""):
                 update_user_google_id(user["id"], google_id)
             else:
                 # Create new user
-                import secrets
-
                 username = email.split("@")[0].lower()
                 # Ensure unique username
                 base_username = username
@@ -683,19 +672,18 @@ async def google_callback(code: str = "", error: str = ""):
                     google_id=google_id,
                 )
 
-        # Simpan/update avatar dari Google (setelah semua kondisi di atas)
+        # Update avatar from Google
         if picture:
             update_user_avatar(user["id"], picture)
-            user = get_user_by_id(user["id"])  # refresh data
+            user = get_user_by_id(user["id"])
 
         # Generate JWT
         token = create_token(user["id"], user["username"], user["email"])
 
         # Redirect to frontend with token
-        # Frontend will extract token from URL and store in localStorage
         import urllib.parse
-
         import json
+
         user_data = urllib.parse.quote(json.dumps({
             "user_id": user["id"],
             "name": user["name"],

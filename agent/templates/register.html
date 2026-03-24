@@ -147,7 +147,6 @@
             height: 240px;
             z-index: 5;
             pointer-events: none;
-            /* Tidak perlu flex, karena kita akan posisi absolute manual untuk presisi */
         }
 
         /* Garis Vertikal Mata (Base Style) */
@@ -156,27 +155,22 @@
             top: 30%;
             width: 20px;
             height: 88px;
-            /* Panjang garis */
             background: rgba(0, 0, 0, 0.95);
-            border-radius:20px;
+            border-radius: 20px;
             box-shadow: 0 0 8px rgba(30, 30, 30, 0.9), 0 0 16px rgba(255, 255, 255, 0.4);
             transform: translate(-50%, -50%);
-            /* Center default */
             transition: transform 0.06s linear;
-            /* Smooth follow */
         }
 
-        /* Posisi Default Kiri & Kanan (Dalam container 240px visual side) */
+        /* Posisi Default Kiri & Kanan */
         #loginEyeLeft,
         #registerEyeLeft {
-            left: calc(50% - 12px);
-            /* Jarak dari tengah */
+            left: calc(50% - 52px);
         }
 
         #loginEyeRight,
         #registerEyeRight {
-            left: calc(50% + 12px);
-            /* Jarak dari tengah */
+            left: calc(50% + 52px);
         }
 
         /* Responsif mobile */
@@ -441,21 +435,6 @@
             color: var(--text-3);
         }
 
-        .auth-pw-toggle {
-            background: none;
-            border: none;
-            color: var(--text-3);
-            cursor: pointer;
-            font-size: 0.88rem;
-            padding: 0;
-            transition: color 0.15s;
-            flex-shrink: 0;
-        }
-
-        .auth-pw-toggle:hover {
-            color: var(--text-2);
-        }
-
         .auth-error {
             display: none;
             font-size: 0.72rem;
@@ -467,72 +446,6 @@
 
         .auth-error.show {
             display: block;
-        }
-
-        /* ══════════════════════════════════════════
-           PASSWORD STRENGTH
-        ══════════════════════════════════════════ */
-        .pw-strength {
-            display: flex;
-            gap: 4px;
-            margin-top: 6px;
-        }
-
-        .pw-bar {
-            flex: 1;
-            height: 3px;
-            border-radius: 2px;
-            background: var(--border-2);
-            transition: background 0.3s;
-        }
-
-        .pw-bar.weak {
-            background: var(--red);
-        }
-
-        .pw-bar.medium {
-            background: #fbbf24;
-        }
-
-        .pw-bar.strong {
-            background: var(--green);
-        }
-
-        .pw-label {
-            font-size: 0.68rem;
-            color: var(--text-3);
-            margin-top: 3px;
-            transition: color 0.3s;
-        }
-
-        /* Password requirements checklist */
-        .pw-requirements {
-            margin-top: 8px;
-            display: none;
-        }
-
-        .pw-requirements.show {
-            display: block;
-        }
-
-        .pw-req-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.7rem;
-            color: var(--text-3);
-            margin-bottom: 3px;
-            transition: color 0.2s;
-        }
-
-        .pw-req-item.met {
-            color: var(--green);
-        }
-
-        .pw-req-item i {
-            font-size: 0.65rem;
-            width: 14px;
-            text-align: center;
         }
 
         /* ══════════════════════════════════════════
@@ -825,59 +738,6 @@
                     <div class="auth-error" id="errEmail" role="alert"></div>
                 </div>
 
-                <!-- Password -->
-                <div class="auth-field">
-                    <label class="auth-label" for="inputPassword">Password</label>
-                    <div class="auth-input-wrap" id="wrapPassword">
-                        <i class="bi bi-lock"></i>
-                        <input type="password" id="inputPassword" placeholder="Min. 8 characters"
-                            autocomplete="new-password" aria-describedby="errPassword"
-                            oninput="checkPwStrength(this.value)" onfocus="showPwReqs()" />
-                        <button class="auth-pw-toggle" onclick="togglePw('inputPassword', this)" type="button"
-                            aria-label="Toggle password visibility">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                    <div class="pw-strength">
-                        <div class="pw-bar" id="bar1"></div>
-                        <div class="pw-bar" id="bar2"></div>
-                        <div class="pw-bar" id="bar3"></div>
-                        <div class="pw-bar" id="bar4"></div>
-                    </div>
-                    <div class="pw-label" id="pwLabel"></div>
-                    <div class="pw-requirements" id="pwReqs">
-                        <div class="pw-req-item" id="reqLen">
-                            <i class="bi bi-circle"></i> At least 8 characters
-                        </div>
-                        <div class="pw-req-item" id="reqUpper">
-                            <i class="bi bi-circle"></i> One uppercase letter
-                        </div>
-                        <div class="pw-req-item" id="reqNum">
-                            <i class="bi bi-circle"></i> One number
-                        </div>
-                        <div class="pw-req-item" id="reqSpecial">
-                            <i class="bi bi-circle"></i> One special character
-                        </div>
-                    </div>
-                    <div class="auth-error" id="errPassword" role="alert"></div>
-                </div>
-
-                <!-- Confirm Password -->
-                <div class="auth-field">
-                    <label class="auth-label" for="inputConfirmPw">Confirm Password</label>
-                    <div class="auth-input-wrap" id="wrapConfirmPw">
-                        <i class="bi bi-lock-fill"></i>
-                        <input type="password" id="inputConfirmPw" placeholder="Re-enter password"
-                            autocomplete="new-password" aria-describedby="errConfirmPw"
-                            onkeydown="if(event.key==='Enter') doRegister()" />
-                        <button class="auth-pw-toggle" onclick="togglePw('inputConfirmPw', this)" type="button"
-                            aria-label="Toggle password visibility">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                    <div class="auth-error" id="errConfirmPw" role="alert"></div>
-                </div>
-
                 <!-- Terms checkbox -->
                 <label class="auth-checkbox">
                     <input type="checkbox" id="agreeTerms" />
@@ -928,7 +788,6 @@
         <div class="auth-visual" id="authVisual">
             <canvas id="orbCanvas3D"></canvas>
 
-            <!-- Ganti div orb-eyes-overlay lama dengan ini -->
             <div class="orb-eyes-overlay" id="registerEyesOverlay">
                 <div class="orb-eye-line" id="registerEyeLeft"></div>
                 <div class="orb-eye-line" id="registerEyeRight"></div>
@@ -970,16 +829,6 @@
             document.documentElement.setAttribute('data-theme', t);
             localStorage.setItem('hams_theme', t);
             document.getElementById('themeIcon').className = t === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
-        }
-
-        // ═══════════════════════════════════════
-        // PASSWORD TOGGLE
-        // ═══════════════════════════════════════
-        function togglePw(id, btn) {
-            const input = document.getElementById(id);
-            const isText = input.type === 'text';
-            input.type = isText ? 'password' : 'text';
-            btn.querySelector('i').className = isText ? 'bi bi-eye' : 'bi bi-eye-slash';
         }
 
         // ═══════════════════════════════════════
@@ -1049,53 +898,11 @@
         }
 
         // ═══════════════════════════════════════
-        // PASSWORD STRENGTH & REQUIREMENTS
-        // ═══════════════════════════════════════
-        function showPwReqs() {
-            document.getElementById('pwReqs').classList.add('show');
-        }
-
-        function checkPwStrength(pw) {
-            const bars = [1, 2, 3, 4].map(i => document.getElementById('bar' + i));
-            const label = document.getElementById('pwLabel');
-            bars.forEach(b => b.className = 'pw-bar');
-
-            // Requirements check
-            const checks = {
-                reqLen: pw.length >= 8,
-                reqUpper: /[A-Z]/.test(pw),
-                reqNum: /[0-9]/.test(pw),
-                reqSpecial: /[^a-zA-Z0-9]/.test(pw),
-            };
-
-            Object.entries(checks).forEach(([id, met]) => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.classList.toggle('met', met);
-                el.querySelector('i').className = met ? 'bi bi-check-circle-fill' : 'bi bi-circle';
-            });
-
-            if (!pw) {
-                label.textContent = '';
-                return;
-            }
-
-            let score = Object.values(checks).filter(Boolean).length;
-            const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
-            const texts = ['', 'Weak', 'Fair', 'Strong', 'Very strong'];
-            const colors = { weak: 'var(--red)', medium: '#fbbf24', strong: 'var(--green)' };
-
-            for (let i = 0; i < score; i++) bars[i].classList.add(cls);
-            label.textContent = texts[score] || '';
-            label.style.color = colors[cls] || 'var(--text-3)';
-        }
-
-        // ═══════════════════════════════════════
         // REGISTER
         // ═══════════════════════════════════════
         async function doRegister() {
             hideGlobalError();
-            ['Name', 'Username', 'Email', 'Password', 'ConfirmPw'].forEach(f =>
+            ['Name', 'Username', 'Email'].forEach(f =>
                 setError('err' + f, 'wrap' + f, '')
             );
             document.getElementById('errTerms').classList.remove('show');
@@ -1103,8 +910,6 @@
             const name = document.getElementById('inputName').value.trim();
             const username = document.getElementById('inputUsername').value.trim();
             const email = document.getElementById('inputEmail').value.trim();
-            const password = document.getElementById('inputPassword').value;
-            const confirmPw = document.getElementById('inputConfirmPw').value;
             const agreeTerms = document.getElementById('agreeTerms').checked;
 
             let valid = true;
@@ -1127,30 +932,6 @@
                 valid = false;
             }
 
-            if (!password || password.length < 8) {
-                setError('errPassword', 'wrapPassword', 'Password must be at least 8 characters');
-                valid = false;
-            } else {
-                if (!/[A-Z]/.test(password)) {
-                    setError('errPassword', 'wrapPassword', 'Password needs at least one uppercase letter');
-                    valid = false;
-                } else if (!/[0-9]/.test(password)) {
-                    setError('errPassword', 'wrapPassword', 'Password needs at least one number');
-                    valid = false;
-                } else if (!/[^a-zA-Z0-9]/.test(password)) {
-                    setError('errPassword', 'wrapPassword', 'Password needs at least one special character');
-                    valid = false;
-                }
-            }
-
-            if (!confirmPw) {
-                setError('errConfirmPw', 'wrapConfirmPw', 'Please confirm your password');
-                valid = false;
-            } else if (password !== confirmPw) {
-                setError('errConfirmPw', 'wrapConfirmPw', 'Passwords do not match');
-                valid = false;
-            }
-
             if (!agreeTerms) {
                 const errTerms = document.getElementById('errTerms');
                 errTerms.textContent = 'You must agree to the Terms & Conditions';
@@ -1168,7 +949,7 @@
                 const res = await fetch('/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, username, email, password })
+                    body: JSON.stringify({ name, username, email })
                 });
                 const data = await res.json();
 
@@ -1194,7 +975,7 @@
         }
 
         // ═══════════════════════════════════════
-        // GOOGLE REGISTER (scaffold)
+        // GOOGLE REGISTER
         // ═══════════════════════════════════════
         function googleRegister() {
             window.location.href = '/auth/google';
@@ -1234,11 +1015,10 @@
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.3;
 
-            // ── Main sphere — green-tinted for register ──
+            // Main sphere
             const geometry = new THREE.SphereGeometry(1.2, 128, 128);
-            // ── Main sphere ──
             const material = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color(0.95, 0.95, 0.97), // Silver White
+                color: new THREE.Color(0.95, 0.95, 0.97),
                 emissive: new THREE.Color(0.2, 0.2, 0.25),
                 emissiveIntensity: 0.4,
                 metalness: 0.85,
@@ -1252,7 +1032,7 @@
             const sphere = new THREE.Mesh(geometry, material);
             scene.add(sphere);
 
-            // ── Inner glow ──
+            // Inner glow
             const glowGeo = new THREE.SphereGeometry(0.9, 64, 64);
             const glowMat = new THREE.MeshBasicMaterial({
                 color: new THREE.Color(0.90, 0.90, 0.93),
@@ -1262,7 +1042,7 @@
             const glowMesh = new THREE.Mesh(glowGeo, glowMat);
             scene.add(glowMesh);
 
-            // ── Rings ──
+            // Rings
             const ringGeo = new THREE.TorusGeometry(1.6, 0.015, 16, 100);
             const ringMat = new THREE.MeshBasicMaterial({
                 color: new THREE.Color(0.80, 0.80, 0.88),
@@ -1284,7 +1064,7 @@
             ring2.rotation.z = Math.PI / 6;
             scene.add(ring2);
 
-            // ── Lights ──
+            // Lights
             const pointLight = new THREE.PointLight(
                 new THREE.Color(1.0, 1.0, 1.0), 3.0, 12
             );
@@ -1302,7 +1082,7 @@
             );
             scene.add(ambientLight);
 
-            // ── Environment map ──
+            // Environment map
             const envScene = new THREE.Scene();
             const envGeo = new THREE.SphereGeometry(5, 32, 32);
             const envMat = new THREE.MeshBasicMaterial({
@@ -1335,9 +1115,7 @@
             cubeCam.update(renderer, envScene);
             material.envMap = cubeRT.texture;
 
-            // ═══════════════════════════════════════
-            // MOUSE TRACKING — FOR 3D LIGHT (SAFE)
-            // ═══════════════════════════════════════
+            // Mouse tracking
             let mouseX = 0, mouseY = 0;
             let targetLightX = 2, targetLightY = 2;
 
@@ -1349,9 +1127,7 @@
                 targetLightY = mouseY * 2.5;
             });
 
-            // ═══════════════════════════════════════
-            // ANIMATION LOOP
-            // ═══════════════════════════════════════
+            // Animation loop
             const clock = new THREE.Clock();
             let time = 0;
 
@@ -1360,34 +1136,28 @@
                 const delta = clock.getDelta();
                 time += delta;
 
-                // Floating motion
                 sphere.position.x = Math.sin(time * 0.5) * 0.08;
                 sphere.position.y = Math.cos(time * 0.7) * 0.12 + Math.sin(time * 0.3) * 0.04;
                 sphere.position.z = Math.sin(time * 0.4) * 0.03;
                 sphere.rotation.y = time * 0.12;
                 sphere.rotation.x = Math.sin(time * 0.2) * 0.06;
 
-                // Breathing
                 const breathScale = 1.0 + Math.sin(time * 1.0) * 0.025;
                 sphere.scale.setScalar(breathScale);
 
-                // Inner glow
                 glowMesh.position.copy(sphere.position);
                 glowMesh.material.opacity = 0.08 + Math.sin(time * 1.5) * 0.04;
                 glowMesh.scale.setScalar(0.9 + Math.sin(time * 0.8) * 0.03);
 
-                // Rings rotation
                 ring.rotation.z = time * 0.15;
                 ring.material.opacity = 0.12 + Math.sin(time * 0.6) * 0.04;
                 ring2.rotation.y = time * 0.1;
                 ring2.rotation.z = Math.PI / 6 + time * 0.08;
 
-                // Light follows mouse (smooth)
                 pointLight.position.x += (targetLightX - pointLight.position.x) * 0.05;
                 pointLight.position.y += (targetLightY - pointLight.position.y) * 0.05;
                 pointLight.position.z = 3.0;
 
-                // Auto orbit when no mouse
                 if (Math.abs(targetLightX) < 0.01 && Math.abs(targetLightY) < 0.01) {
                     pointLight.position.x = Math.cos(time * 0.4) * 2.5;
                     pointLight.position.y = Math.sin(time * 0.3) * 2.0;
@@ -1398,9 +1168,7 @@
 
             animate();
 
-            // ═══════════════════════════════════════
-            // RESIZE HANDLER
-            // ═══════════════════════════════════════
+            // Resize handler
             window.addEventListener('resize', () => {
                 if (window.innerWidth < 768) return;
                 const w = container.offsetWidth;
@@ -1410,11 +1178,7 @@
                 renderer.setSize(w, h);
             });
 
-            // ═══════════════════════════════════════
-            // EYE TRACKING — VERTICAL LINES (REGISTER)
-            // ═══════════════════════════════════════
-
-            // Khusus untuk Register: gunakan ID 'registerEyesOverlay'
+            // Eye tracking
             const eyesOverlay = document.getElementById('registerEyesOverlay');
 
             if (eyesOverlay) {
