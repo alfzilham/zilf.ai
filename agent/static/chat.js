@@ -319,6 +319,13 @@ function initProfessionalOrb() {
         }
     });
 
+    document.addEventListener('mouseleave', () => {
+        document.querySelectorAll('.orb-eyes-overlay .orb-pupil').forEach(p => {
+            p.style.transition = 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)';
+            p.style.transform = 'translate(-50%, -50%)';
+        });
+    });
+
     // Click interaction
     orbWrap.addEventListener('click', (e) => {
         e.preventDefault();
@@ -381,28 +388,24 @@ function initProfessionalOrb() {
 
         // Eye tracking + 3D light position
         if (isNearOrb) {
-            const edx = cursorX - orbCenterX;
-            const edy = cursorY - orbCenterY;
-            const dist = Math.sqrt(edx * edx + edy * edy) || 1;
-
-            const maxPupil = 4;
-            const norm = Math.min(dist / 200, 1);
-            const px = (edx / dist) * norm * maxPupil;
-            const py = (edy / dist) * norm * maxPupil;
-
-            // 2D pupil tracking (preserved)
-            document.querySelectorAll('.orb-pupil').forEach(p => {
-                p.style.transform = `translate(${px}px, ${py}px)`;
+            // Pakai mouseX/mouseY langsung — bukan cursorX/cursorY yang di-lerp
+            document.querySelectorAll('.orb-eyes-overlay .orb-eye').forEach(eye => {
+                const rect = eye.getBoundingClientRect();
+                const ex = rect.left + rect.width / 2;
+                const ey = rect.top + rect.height / 2;
+                const dx2 = mouseX - ex;
+                const dy2 = mouseY - ey;
+                const d2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
+                const maxOffset = 4;
+                const clamp = Math.min(d2, maxOffset * 6) / (maxOffset * 6);
+                const px = (dx2 / d2) * clamp * maxOffset;
+                const py = (dy2 / d2) * clamp * maxOffset;
+                const pupil = eye.querySelector('.orb-pupil');
+                if (pupil) {
+                    pupil.style.transition = 'none';
+                    pupil.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+                }
             });
-
-            // 3D light tracking — map cursor to Three.js light position
-            if (orbPointLight) {
-                const lightX = (edx / dist) * norm * 2.5;
-                const lightY = -(edy / dist) * norm * 2.0; // invert Y for 3D
-                orbPointLight.position.x = lightX;
-                orbPointLight.position.y = lightY;
-                orbPointLight.position.z = 2.5;
-            }
         }
 
         animationId = requestAnimationFrame(animate);
@@ -560,11 +563,11 @@ let orbAnimationId = null;
 // Color palettes for mode switching
 const ORB_COLORS = {
     chat: {
-        base: new THREE.Color(0.85, 0.85, 0.90),   // cool white-blue
-        emissive: new THREE.Color(0.15, 0.18, 0.25),   // subtle blue glow
-        light: new THREE.Color(1.0, 1.0, 1.0),      // white light
-        glow: new THREE.Color(0.6, 0.7, 1.0),      // blue-ish glow
-        ambient: new THREE.Color(0.12, 0.12, 0.18),   // dark blue ambient
+        base: new THREE.Color(0.92, 0.92, 0.95),   // putih-silver
+        emissive: new THREE.Color(0.18, 0.18, 0.20),   // silver glow subtle
+        light: new THREE.Color(1.0, 1.0, 1.0),   // pure white light
+        glow: new THREE.Color(0.85, 0.88, 0.95),   // silver-white glow
+        ambient: new THREE.Color(0.14, 0.14, 0.16),   // dark silver ambient
     },
     agent: {
         base: new THREE.Color(0.55, 0.95, 0.65),   // vibrant green
@@ -622,8 +625,8 @@ function initOrb3DLight() {
         color: orbTargetColors.base,
         emissive: orbTargetColors.emissive,
         emissiveIntensity: 0.4,
-        metalness: 0.1,
-        roughness: 0.15,
+        metalness: 0.35,
+        roughness: 0.05,
         clearcoat: 1.0,
         clearcoatRoughness: 0.05,
         reflectivity: 0.9,
@@ -1987,7 +1990,7 @@ function saveSettings() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ name: newName })
-            }).catch(() => {}); // silent fail
+            }).catch(() => { }); // silent fail
         }
     }
 

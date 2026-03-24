@@ -865,6 +865,19 @@
         <div class="auth-visual" id="authVisual">
             <canvas id="orbCanvas3D"></canvas>
 
+            <div class="orb-eyes-overlay" id="registerEyesOverlay">
+                <div class="orb-eye" id="registerEyeLeft">
+                    <div class="orb-pupil" id="registerPupilLeft">
+                        <div class="orb-pupil-shine"></div>
+                    </div>
+                </div>
+                <div class="orb-eye" id="registerEyeRight">
+                    <div class="orb-pupil" id="registerPupilRight">
+                        <div class="orb-pupil-shine"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Particles -->
             <div class="particle" style="left:20%;top:25%;animation-delay:0s;"></div>
             <div class="particle" style="left:65%;top:35%;animation-delay:1.5s;"></div>
@@ -1168,11 +1181,11 @@
             // ── Main sphere — green-tinted for register ──
             const geometry = new THREE.SphereGeometry(1.2, 128, 128);
             const material = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color(0.45, 0.85, 0.65),
-                emissive: new THREE.Color(0.05, 0.18, 0.10),
+                color: new THREE.Color(0.90, 0.90, 0.93),
+                emissive: new THREE.Color(0.16, 0.16, 0.18),
                 emissiveIntensity: 0.5,
-                metalness: 0.1,
-                roughness: 0.12,
+                metalness: 0.35,
+                roughness: 0.05,
                 clearcoat: 1.0,
                 clearcoatRoughness: 0.05,
                 reflectivity: 0.95,
@@ -1185,7 +1198,7 @@
             // ── Inner glow ──
             const glowGeo = new THREE.SphereGeometry(0.9, 64, 64);
             const glowMat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(0.3, 0.9, 0.5),
+                color: new THREE.Color(0.90, 0.90, 0.93),
                 transparent: true,
                 opacity: 0.1,
             });
@@ -1195,7 +1208,7 @@
             // ── Rings ──
             const ringGeo = new THREE.TorusGeometry(1.6, 0.015, 16, 100);
             const ringMat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(0.3, 0.85, 0.55),
+                color: new THREE.Color(0.80, 0.80, 0.88),
                 transparent: true,
                 opacity: 0.15,
             });
@@ -1205,7 +1218,7 @@
 
             const ring2Geo = new THREE.TorusGeometry(1.9, 0.008, 16, 100);
             const ring2Mat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(0.25, 0.75, 0.45),
+                color: new THREE.Color(0.70, 0.70, 0.80),
                 transparent: true,
                 opacity: 0.08,
             });
@@ -1216,19 +1229,19 @@
 
             // ── Lights ──
             const pointLight = new THREE.PointLight(
-                new THREE.Color(0.5, 1.0, 0.7), 3.0, 12
+                new THREE.Color(1.0, 1.0, 1.0), 3.0, 12
             );
             pointLight.position.set(2, 2, 3);
             scene.add(pointLight);
 
             const fillLight = new THREE.PointLight(
-                new THREE.Color(0.3, 0.6, 0.4), 1.0, 10
+                new THREE.Color(0.7, 0.7, 0.8), 1.0, 10
             );
             fillLight.position.set(-2, -1, 2);
             scene.add(fillLight);
 
             const ambientLight = new THREE.AmbientLight(
-                new THREE.Color(0.08, 0.15, 0.10), 0.5
+                new THREE.Color(0.14, 0.14, 0.16), 0.5
             );
             scene.add(ambientLight);
 
@@ -1333,6 +1346,37 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(w, h);
             });
+
+            // ── Eye tracking — direct snap, no lerp ──
+            const registerEyesOverlay = document.getElementById('registerEyesOverlay');
+            if (registerEyesOverlay) {
+                container.addEventListener('mousemove', (e) => {
+                    document.querySelectorAll('#registerEyesOverlay .orb-eye').forEach(eye => {
+                        const rect = eye.getBoundingClientRect();
+                        const ex = rect.left + rect.width / 2;
+                        const ey = rect.top + rect.height / 2;
+                        const dx = e.clientX - ex;
+                        const dy = e.clientY - ey;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const maxOffset = 5;
+                        const clamp = Math.min(dist, maxOffset * 6) / (maxOffset * 6);
+                        const px = (dx / dist) * clamp * maxOffset;
+                        const py = (dy / dist) * clamp * maxOffset;
+                        const pupil = eye.querySelector('.orb-pupil');
+                        if (pupil) {
+                            pupil.style.transition = 'none';
+                            pupil.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+                        }
+                    });
+                });
+
+                container.addEventListener('mouseleave', () => {
+                    document.querySelectorAll('#registerEyesOverlay .orb-pupil').forEach(p => {
+                        p.style.transition = 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)';
+                        p.style.transform = 'translate(-50%, -50%)';
+                    });
+                });
+            }
         })();
     </script>
 </body>

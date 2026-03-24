@@ -26,10 +26,10 @@
             --text: #f3f3f3;
             --text-2: #8a8a8a;
             --text-3: #444;
-            --accent: #818cf8;
-            --accent-2: #6366f1;
-            --accent-glow: rgba(129, 140, 248, 0.15);
-            --accent-glow-2: rgba(129, 140, 248, 0.08);
+            --accent: #e8e8ee;
+            --accent-2: #c0c0cc;
+            --accent-glow: rgba(232, 232, 238, 0.15);
+            --accent-glow-2: rgba(232, 232, 238, 0.08);
             --red: #f87171;
             --red-bg: rgba(248, 113, 113, 0.08);
             --red-border: rgba(248, 113, 113, 0.25);
@@ -52,8 +52,8 @@
             --text: #1a1a2e;
             --text-2: #606080;
             --text-3: #9090a0;
-            --accent: #6366f1;
-            --accent-2: #4f46e5;
+            --accent: #4a4a5a;
+            --accent-2: #2a2a3a;
             --accent-glow: rgba(99, 102, 241, 0.15);
             --accent-glow-2: rgba(99, 102, 241, 0.08);
             --red-bg: rgba(248, 113, 113, 0.06);
@@ -559,6 +559,58 @@
             text-decoration: underline;
         }
 
+        /* ── Orb Eyes Overlay (visual side) ── */
+        .auth-visual .orb-eyes-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 240px;
+            height: 240px;
+            z-index: 5;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 32px;
+            padding-top: 6px;
+        }
+
+        .auth-visual .orb-eye {
+            width: 28px;
+            height: 28px;
+            background: radial-gradient(circle at 40% 35%, #fff 0%, #f0f0f0 40%, #d8d8d8 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 255, 255, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-visual .orb-pupil {
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle at 35% 30%, #333 0%, #111 50%, #000 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .auth-visual .orb-pupil-shine {
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+        }
+
         /* ══════════════════════════════════════════
            RESPONSIVE — MOBILE
         ══════════════════════════════════════════ */
@@ -612,6 +664,19 @@
         ══════════════════════════════════════ -->
         <div class="auth-visual" id="authVisual">
             <canvas id="orbCanvas3D"></canvas>
+
+            <div class="orb-eyes-overlay" id="loginEyesOverlay">
+                <div class="orb-eye" id="loginEyeLeft">
+                    <div class="orb-pupil" id="loginPupilLeft">
+                        <div class="orb-pupil-shine"></div>
+                    </div>
+                </div>
+                <div class="orb-eye" id="loginEyeRight">
+                    <div class="orb-pupil" id="loginPupilRight">
+                        <div class="orb-pupil-shine"></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Floating particles -->
             <div class="particle" style="left:15%;top:20%;animation-delay:0s;"></div>
@@ -889,11 +954,11 @@
             // ── Main sphere ──
             const geometry = new THREE.SphereGeometry(1.2, 128, 128);
             const material = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color(0.55, 0.58, 0.95),
-                emissive: new THREE.Color(0.08, 0.08, 0.25),
+                color: new THREE.Color(0.90, 0.90, 0.93),
+                emissive: new THREE.Color(0.16, 0.16, 0.18),
                 emissiveIntensity: 0.5,
-                metalness: 0.1,
-                roughness: 0.12,
+                metalness: 0.35,
+                roughness: 0.05,
                 clearcoat: 1.0,
                 clearcoatRoughness: 0.05,
                 reflectivity: 0.95,
@@ -906,7 +971,7 @@
             // ── Inner glow ──
             const glowGeo = new THREE.SphereGeometry(0.9, 64, 64);
             const glowMat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(0.5, 0.55, 1.0),
+                color: new THREE.Color(0.88, 0.88, 0.92),
                 transparent: true,
                 opacity: 0.1,
             });
@@ -916,7 +981,7 @@
             // ── Outer glow ring ──
             const ringGeo = new THREE.TorusGeometry(1.6, 0.015, 16, 100);
             const ringMat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(0.5, 0.55, 0.95),
+                color: new THREE.Color(0.80, 0.80, 0.88),
                 transparent: true,
                 opacity: 0.15,
             });
@@ -927,7 +992,7 @@
             // Second ring
             const ring2Geo = new THREE.TorusGeometry(1.9, 0.008, 16, 100);
             const ring2Mat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(0.4, 0.45, 0.85),
+                color: new THREE.Color(0.70, 0.70, 0.80),
                 transparent: true,
                 opacity: 0.08,
             });
@@ -937,11 +1002,11 @@
             scene.add(ring2);
 
             // ── Lights ──
-            const pointLight = new THREE.PointLight(new THREE.Color(0.7, 0.75, 1.0), 3.0, 12);
+            const pointLight = new THREE.PointLight(new THREE.Color(1.0, 1.0, 1.0), 3.0, 12);
             pointLight.position.set(2, 2, 3);
             scene.add(pointLight);
 
-            const fillLight = new THREE.PointLight(new THREE.Color(0.4, 0.3, 0.8), 1.0, 10);
+            const fillLight = new THREE.PointLight(new THREE.Color(0.7, 0.7, 0.8), 1.0, 10);
             fillLight.position.set(-2, -1, 2);
             scene.add(fillLight);
 
@@ -1047,6 +1112,37 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(w, h);
             });
+
+            // ── Eye tracking — direct snap, no lerp ──
+            const loginEyesOverlay = document.getElementById('loginEyesOverlay');
+            if (loginEyesOverlay) {
+                container.addEventListener('mousemove', (e) => {
+                    document.querySelectorAll('#loginEyesOverlay .orb-eye').forEach(eye => {
+                        const rect = eye.getBoundingClientRect();
+                        const ex = rect.left + rect.width / 2;
+                        const ey = rect.top + rect.height / 2;
+                        const dx = e.clientX - ex;
+                        const dy = e.clientY - ey;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const maxOffset = 5;
+                        const clamp = Math.min(dist, maxOffset * 6) / (maxOffset * 6);
+                        const px = (dx / dist) * clamp * maxOffset;
+                        const py = (dy / dist) * clamp * maxOffset;
+                        const pupil = eye.querySelector('.orb-pupil');
+                        if (pupil) {
+                            pupil.style.transition = 'none';
+                            pupil.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+                        }
+                    });
+                });
+
+                container.addEventListener('mouseleave', () => {
+                    document.querySelectorAll('#loginEyesOverlay .orb-pupil').forEach(p => {
+                        p.style.transition = 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)';
+                        p.style.transform = 'translate(-50%, -50%)';
+                    });
+                });
+            }
         })();
     </script>
 </body>
