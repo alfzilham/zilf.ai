@@ -322,6 +322,8 @@ class LLMOutputParser:
             return None
 
         try:
+            if tool_name in llm_output and "final_answer" in llm_output:
+                return None
             return TOOL_MODELS[tool_name].model_validate(data)
         except Exception:
             return None

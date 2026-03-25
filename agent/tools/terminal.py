@@ -138,7 +138,7 @@ async def run_command(
     logger.info(f"[terminal] $ {command[:120]}")
 
     sandbox = await _get_sandbox()
-    result = await sandbox.run(command, workdir=working_directory, timeout=timeout)
+    result = await sandbox.run(command, workdir=working_directory, timeout=timeout_seconds)
 
     # Build output string
     output_parts: list[str] = []

@@ -403,6 +403,19 @@ class ReasoningLoop:
 
         failed = [r for r in step.tool_results if not r.success]
         if failed:
+            is_recoverable = False
+            for r in failed:
+                err_text = str(r.error or "")
+                if any(kw in err_text for kw in ["not installed", "ModuleNotFoundError", "ImportError", "Run: pip install"]):
+                    is_recoverable = True
+                    break
+                    
+            if is_recoverable:
+                reflections.append(
+                    "REQUIRED NEXT ACTION: Run `pip install <package>` using run_command, "
+                    "then retry the original tool call. Do NOT give a final answer yet."
+                )
+
             reflections.append(
                 f"⚠️ {len(failed)} tool(s) failed: {[r.tool_name for r in failed]}. "
                 "Will try to recover on the next step."
@@ -501,18 +514,9 @@ class ReasoningLoop:
 - Use tools repeatedly until the task is 100% complete
 - Only use final_answer when ALL work is done and verified
 
-## RESPONSE FORMAT — FOLLOW EXACTLY
+## RESPONSE FORMAT
 
-To call a tool:
-<thought>Your reasoning</thought>
-<action>tool_call</action>
-<tool>exact_tool_name</tool>
-<args>{{"param": "value"}}</args>
-
-When fully done:
-<thought>Task complete because...</thought>
-<action>final_answer</action>
-<answer>Your complete answer</answer>
+Use the native tool calling feature to execute tools. Do not output raw JSON or XML tags for tools in your text response.
 
 ## Available Tools
 {tools_list}

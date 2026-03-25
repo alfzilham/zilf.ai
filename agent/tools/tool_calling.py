@@ -162,7 +162,13 @@ class ToolDispatcher:
 
     @staticmethod
     def _make_result(call: ParsedToolCall, output: str) -> ToolResult:
-        is_error = output.startswith("Error") or output.startswith("Exit code")
+        is_error = (
+            output.startswith("Error")
+            or output.startswith("Exit code")
+            or "not installed" in output
+            or "ModuleNotFoundError" in output
+            or "ImportError" in output
+        )
         return ToolResult(
             tool_name=call.tool_name,
             tool_use_id=call.tool_use_id,

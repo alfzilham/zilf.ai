@@ -130,7 +130,7 @@ class Agent:
     # Public API
     # -----------------------------------------------------------------------
 
-    async def run(self, task: str, run_id: str | None = None) -> AgentResponse:
+    async def run(self, task: str, run_id: str | None = None, use_planner: bool | None = None) -> AgentResponse:
         """
         Execute a task end-to-end and return an AgentResponse.
 
@@ -147,8 +147,15 @@ class Agent:
             max_steps=self.max_steps,
         )
 
+        should_plan = self.use_planner if use_planner is None else use_planner
+        if should_plan and len(task) < 200:
+            task_lower = task.lower()
+            if not any(w in task_lower for w in ["plan", "steps", "phase", "first", "then"]):
+                logger.info(f"[agent:{rid}] Task is simple, skipping planner.")
+                should_plan = False
+
         # Phase 1: Plan
-        if self.use_planner:
+        if should_plan:
             try:
                 state.status = AgentStatus.PLANNING
                 state.plan = await self._planner.plan(task, run_id=rid)

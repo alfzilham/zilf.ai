@@ -112,13 +112,19 @@ async def _tavily_search(query: str, max_results: int, search_depth: str) -> lis
 # Provider: DuckDuckGo
 # ---------------------------------------------------------------------------
 
+def _ensure_ddg_installed() -> None:
+    try:
+        import duckduckgo_search  # noqa
+    except ImportError:
+        import subprocess
+        import sys
+        logger.info("[web_search] duckduckgo-search not found, attempting auto-install...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "duckduckgo-search", "--quiet"])
 
 async def _ddg_search(query: str, max_results: int) -> list[dict]:
     """Return results from DuckDuckGo. No API key required."""
-    try:
-        from duckduckgo_search import DDGS  # type: ignore[import]
-    except ImportError:
-        return [{"title": "Error", "url": "", "snippet": "duckduckgo-search not installed. Run: pip install duckduckgo-search", "score": 0.0}]
+    _ensure_ddg_installed()
+    from duckduckgo_search import DDGS  # type: ignore[import]
 
     try:
         results: list[dict] = []
