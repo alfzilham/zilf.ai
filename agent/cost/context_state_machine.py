@@ -1,13 +1,13 @@
 """
-Context State Machine — automates compression decisions based on utilization.
+Context State Machine â€” automates compression decisions based on utilization.
 
 Five states:
 
-  NORMAL         < 60%   — no action needed
-  MONITOR       60–70%   — log; no action yet
-  COMPRESS      70–80%   — sliding window (drop oldest)
-  COMPRESS_HEAVY 80–90%  — summarization + sliding window
-  EMERGENCY      ≥ 90%   — discard all but system messages + last 4 turns
+  NORMAL         < 60%   â€” no action needed
+  MONITOR       60â€“70%   â€” log; no action yet
+  COMPRESS      70â€“80%   â€” sliding window (drop oldest)
+  COMPRESS_HEAVY 80â€“90%  â€” summarization + sliding window
+  EMERGENCY      â‰¥ 90%   â€” discard all but system messages + last 4 turns
 
 State is evaluated on every call to `tick()`. Transitions are logged.
 
@@ -40,10 +40,10 @@ from agent.cost.windowing import SlidingWindow, SummarizationWindow
 
 class ContextState(Enum):
     NORMAL         = auto()   # < 60%
-    MONITOR        = auto()   # 60–70%
-    COMPRESS       = auto()   # 70–80%
-    COMPRESS_HEAVY = auto()   # 80–90%
-    EMERGENCY      = auto()   # ≥ 90%
+    MONITOR        = auto()   # 60â€“70%
+    COMPRESS       = auto()   # 70â€“80%
+    COMPRESS_HEAVY = auto()   # 80â€“90%
+    EMERGENCY      = auto()   # â‰¥ 90%
 
 
 # (lower_bound_inclusive, upper_bound_exclusive)
@@ -92,7 +92,7 @@ class ContextStateMachine:
         """
         Evaluate context state and apply compression if needed.
 
-        This is the main entry point — call it before every LLM API call.
+        This is the main entry point â€” call it before every LLM API call.
 
         Args:
             messages: Full conversation history (may include system messages).
@@ -106,7 +106,7 @@ class ContextStateMachine:
 
         if new_state != self.state:
             logger.info(
-                f"[context_sm] State: {self.state.name} → {new_state.name} "
+                f"[context_sm] State: {self.state.name} â†’ {new_state.name} "
                 f"({self.tracker.utilization_pct}% utilization)"
             )
             self.state = new_state
@@ -119,21 +119,21 @@ class ContextStateMachine:
 
         elif self.state == ContextState.MONITOR:
             logger.debug(
-                f"[context_sm] MONITOR — {self.tracker.utilization_pct}% "
+                f"[context_sm] MONITOR â€” {self.tracker.utilization_pct}% "
                 f"(threshold: 60%). No action yet."
             )
             return messages
 
         elif self.state == ContextState.COMPRESS:
             logger.info(
-                f"[context_sm] COMPRESS — applying sliding window "
+                f"[context_sm] COMPRESS â€” applying sliding window "
                 f"(target: {self.compress_max_tokens:,} tokens)"
             )
             sw = SlidingWindow(max_tokens=self.compress_max_tokens)
             return sw.apply(messages)
 
         elif self.state == ContextState.COMPRESS_HEAVY:
-            logger.info("[context_sm] COMPRESS_HEAVY — summarizing + sliding window")
+            logger.info("[context_sm] COMPRESS_HEAVY â€” summarizing + sliding window")
             result = messages
             if self.llm is not None:
                 sumw = SummarizationWindow(
@@ -145,7 +145,7 @@ class ContextStateMachine:
 
         elif self.state == ContextState.EMERGENCY:
             logger.warning(
-                "[context_sm] 🚨 EMERGENCY compression — "
+                "[context_sm] ðŸš¨ EMERGENCY compression â€” "
                 "discarding all but system messages + last 4 turns"
             )
             system = [m for m in messages if m["role"] == "system"]

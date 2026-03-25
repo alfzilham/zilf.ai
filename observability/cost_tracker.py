@@ -1,5 +1,5 @@
 """
-Cost Tracker — tracks token usage and estimates API cost per task run.
+Cost Tracker â€” tracks token usage and estimates API cost per task run.
 
 Pricing table is loaded from config/logging_config.yaml when available,
 and falls back to hardcoded defaults otherwise.

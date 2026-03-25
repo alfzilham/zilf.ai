@@ -1,10 +1,10 @@
 """
-ZILF-MAX Base — shared constants, helpers, dan base class.
+ZILF-MAX Base â€” shared constants, helpers, dan base class.
 Di-import oleh zilf_max_chat.py, zilf_max_agent.py, zilf_max_thinking.py.
 
 Fixes applied:
-  B18 — Token tracking via _call_api_tracked()
-  B20 — System prompt sebagai role "system" terpisah di _build_payload()
+  B18 â€” Token tracking via _call_api_tracked()
+  B20 â€” System prompt sebagai role "system" terpisah di _build_payload()
 """
 
 from __future__ import annotations
@@ -187,7 +187,7 @@ class ZilfMaxBase(BaseLLM):
                 json=payload,
             )
             if resp.status_code != 200:
-                logger.error(f"[zilf-max] {resp.status_code} — body: {resp.text[:1000]}")
+                logger.error(f"[zilf-max] {resp.status_code} â€” body: {resp.text[:1000]}")
             resp.raise_for_status()
             return resp.json().get("reply", "")
 
@@ -205,7 +205,7 @@ class ZilfMaxBase(BaseLLM):
                 json=payload,
             )
             if resp.status_code != 200:
-                logger.error(f"[zilf-max] {resp.status_code} — body: {resp.text[:1000]}")
+                logger.error(f"[zilf-max] {resp.status_code} â€” body: {resp.text[:1000]}")
             resp.raise_for_status()
 
             data = resp.json()
@@ -270,7 +270,7 @@ class ZilfMaxBase(BaseLLM):
                     )
 
                 if frontend_key != self._active_model:
-                    logger.warning(f"[zilf-max] fallback: {self._active_model} → {frontend_key}")
+                    logger.warning(f"[zilf-max] fallback: {self._active_model} â†’ {frontend_key}")
                     self._active_model = frontend_key
                 return result
 

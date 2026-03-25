@@ -1,5 +1,5 @@
 """
-ZILF-MAX Thinking Mode — chat dengan Extended Thinking (<think> blocks).
+ZILF-MAX Thinking Mode â€” chat dengan Extended Thinking (<think> blocks).
 HANYA untuk chat mode (tanpa tools). Tidak dipakai di agent mode.
 """
 
@@ -31,7 +31,7 @@ def _extract_thinking(text: str) -> tuple[str, str]:
 
 class ZilfMaxThinkingLLM(ZilfMaxBase):
     """
-    Mode extended thinking — chat biasa tapi model berpikir keras
+    Mode extended thinking â€” chat biasa tapi model berpikir keras
     di dalam <think> tags sebelum menjawab.
     Tidak cocok untuk agent mode.
     """
@@ -81,7 +81,7 @@ class ZilfMaxThinkingLLM(ZilfMaxBase):
         system: str | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
-        # Selalu pakai generate() — dua alasan:
+        # Selalu pakai generate() â€” dua alasan:
         # 1. Setelah fallback, _provider bisa berubah sehingga cek groq tidak reliable
         # 2. generate() sudah strip <think> tags dengan benar via _extract_thinking()
         result = await self.generate(messages, system=system)

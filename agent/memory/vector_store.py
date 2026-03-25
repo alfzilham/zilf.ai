@@ -1,9 +1,9 @@
 """
-Vector Store — semantic search over memories using embeddings.
+Vector Store â€” semantic search over memories using embeddings.
 
 Supports two backends:
-  - ChromaDB  (default — easy setup, persists to disk)
-  - FAISS     (optional — faster at scale, requires numpy + faiss-cpu)
+  - ChromaDB  (default â€” easy setup, persists to disk)
+  - FAISS     (optional â€” faster at scale, requires numpy + faiss-cpu)
 
 Falls back gracefully: if neither is installed, returns empty results
 with a warning rather than crashing.
@@ -39,7 +39,7 @@ class SearchResult:
     id: str
     content: str
     metadata: dict[str, Any] = field(default_factory=dict)
-    score: float = 0.0         # lower = more similar (distance), or 0–1 (cosine)
+    score: float = 0.0         # lower = more similar (distance), or 0â€“1 (cosine)
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +201,7 @@ class FAISSVectorStore:
         self._docs.clear()
 
     def delete(self, entry_id: str) -> None:
-        # FAISS IndexFlatL2 doesn't support deletion — mark as deleted in metadata
+        # FAISS IndexFlatL2 doesn't support deletion â€” mark as deleted in metadata
         idx = int(entry_id)
         if 0 <= idx < len(self._docs):
             content, meta = self._docs[idx]
@@ -251,7 +251,7 @@ class VectorStore:
     """
     Unified vector store that auto-selects the best available backend.
 
-    Priority: ChromaDB → FAISS → NoOp
+    Priority: ChromaDB â†’ FAISS â†’ NoOp
 
     Usage::
 

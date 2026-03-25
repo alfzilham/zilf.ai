@@ -1,5 +1,5 @@
 """
-Task Prompt Templates — structures the first user message for common task types.
+Task Prompt Templates â€” structures the first user message for common task types.
 
 Principles (from Prompt Engineering.md):
   - One task per prompt
@@ -8,11 +8,11 @@ Principles (from Prompt Engineering.md):
   - Keep templates terse and self-contained
 
 Available templates:
-  BugFixTemplate          — reproduce → locate → fix → test
-  FeatureTemplate         — spec → interface → criteria
-  RefactorTemplate        — scope → constraints → criteria
-  CodeReviewTemplate      — review type → focus areas
-  build_task_prompt()     — auto-selects template based on task keywords
+  BugFixTemplate          â€” reproduce â†’ locate â†’ fix â†’ test
+  FeatureTemplate         â€” spec â†’ interface â†’ criteria
+  RefactorTemplate        â€” scope â†’ constraints â†’ criteria
+  CodeReviewTemplate      â€” review type â†’ focus areas
+  build_task_prompt()     â€” auto-selects template based on task keywords
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ BUG_FIX_TEMPLATE = """\
 **Actual behaviour**
 {actual_behaviour}
 
-**Relevant files** (may be incomplete — search if needed)
+**Relevant files** (may be incomplete â€” search if needed)
 {relevant_files}
 
 **Acceptance criteria**

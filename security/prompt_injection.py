@@ -1,12 +1,12 @@
 """
-Prompt Injection Defense — multi-layer protection against prompt injection attacks.
+Prompt Injection Defense â€” multi-layer protection against prompt injection attacks.
 
 Layers implemented:
-  1. InputSanitizer       — strips known injection markers from text
-  2. OutputValidator      — blocks dangerous commands before execution
-  3. AnomalyDetector      — monitors action sequences for suspicious patterns
-  4. SecondaryLLMChecker  — uses a second LLM call to audit primary output
-  5. InjectionDefense     — facade that wires all layers together
+  1. InputSanitizer       â€” strips known injection markers from text
+  2. OutputValidator      â€” blocks dangerous commands before execution
+  3. AnomalyDetector      â€” monitors action sequences for suspicious patterns
+  4. SecondaryLLMChecker  â€” uses a second LLM call to audit primary output
+  5. InjectionDefense     â€” facade that wires all layers together
 
 Attack vectors defended:
   - HTML/XML comment injection in files
@@ -68,7 +68,7 @@ class InputSanitizer:
     """
     Removes known injection markers from text before it reaches the LLM.
 
-    Redacts rather than silently drops — replaced text is marked with
+    Redacts rather than silently drops â€” replaced text is marked with
     [REDACTED:injection] so the LLM knows something was removed.
     """
 
@@ -203,7 +203,7 @@ class ExecutionPolicy:
             if pattern.search(cmd_stripped):
                 return False, f"Denylist match: {pattern.pattern}"
 
-        # Allowlist check — if command starts with a safe prefix, allow
+        # Allowlist check â€” if command starts with a safe prefix, allow
         lower = cmd_stripped.lower()
         if any(lower.startswith(prefix) for prefix in _ALLOWED_COMMAND_PREFIXES):
             return True, "Allowlisted command prefix"
@@ -232,7 +232,7 @@ class AnomalyDetector:
     Detects:
       - Excessive file reads followed by network/exec calls (exfiltration)
       - Repeated identical tool calls (loop / injection driving)
-      - Rapid escalation patterns (read → write → execute)
+      - Rapid escalation patterns (read â†’ write â†’ execute)
     """
 
     # Suspicious patterns: (description, check_function)
@@ -340,18 +340,18 @@ class SecondaryLLMChecker:
         except Exception as exc:
             # If checker fails, be cautious but don't block (availability > security here)
             from loguru import logger
-            logger.warning(f"[secondary_check] Failed: {exc} — defaulting to SAFE")
+            logger.warning(f"[secondary_check] Failed: {exc} â€” defaulting to SAFE")
             return True, f"Secondary check unavailable: {exc}"
 
 
 # ---------------------------------------------------------------------------
-# 6. Facade — InjectionDefense
+# 6. Facade â€” InjectionDefense
 # ---------------------------------------------------------------------------
 
 
 class InjectionDefense:
     """
-    Main defense facade — wires all layers together.
+    Main defense facade â€” wires all layers together.
 
     Usage in the agent::
 

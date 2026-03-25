@@ -1,5 +1,5 @@
 """
-Context Manager — keeps the LLM context window within token budget.
+Context Manager â€” keeps the LLM context window within token budget.
 
 Responsibilities:
   1. Track token usage across all messages in a conversation
@@ -131,7 +131,7 @@ class ContextManager:
                     if isinstance(b, dict)
                 )
             summary = str(content)[:80].replace("\n", " ")
-            dropped_summaries.append(f"[{m.get('role', '?')}] {summary}…")
+            dropped_summaries.append(f"[{m.get('role', '?')}] {summary}â€¦")
 
         # Build pruned message list
         result: list[dict[str, Any]] = []
@@ -143,7 +143,7 @@ class ContextManager:
         # Inject summary after the first message
         if dropped_summaries:
             summary_text = (
-                f"[Context pruned — {len(dropped_summaries)} messages removed to fit token budget. "
+                f"[Context pruned â€” {len(dropped_summaries)} messages removed to fit token budget. "
                 f"Summary: {' | '.join(dropped_summaries[:5])}]"
             )
             result.insert(1, {"role": "user", "content": summary_text})

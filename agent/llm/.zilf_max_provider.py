@@ -1,5 +1,5 @@
 """
-ZILF-MAX LLM Provider — wraps zilf-max-api-production.up.railway.app
+ZILF-MAX LLM Provider â€” wraps zilf-max-api-production.up.railway.app
 
 Fitur:
 - ReAct-style tool calling via prompt engineering (XML tags)
@@ -52,8 +52,8 @@ _GROQ_MODELS: set[str] = {
 _FRONTEND_TO_HAMSMAX: dict[str, tuple[str, str]] = {
     "llama-3.3-70b-versatile": ("llama-3.3-70b-versatile", "groq"),
     "llama-3.1-8b-instant":    ("llama-3.1-8b-instant",    "groq"),
-    "llama3-8b-8192":          ("llama-3.1-8b-instant",    "groq"),   # deprecated → redirect
-    "llama3-70b-8192":         ("llama-3.3-70b-versatile", "groq"),   # deprecated → redirect
+    "llama3-8b-8192":          ("llama-3.1-8b-instant",    "groq"),   # deprecated â†’ redirect
+    "llama3-70b-8192":         ("llama-3.3-70b-versatile", "groq"),   # deprecated â†’ redirect
     "gemma2-9b-it":            ("gemma2-9b-it",             "groq"),
     "compound-beta":           ("compound-beta",            "groq"),
     "nvidia/qwen-3.5":         ("qwen",       "nvidia"),
@@ -69,9 +69,9 @@ _FRONTEND_TO_HAMSMAX: dict[str, tuple[str, str]] = {
     "zilf-max":                ("llama-3.3-70b-versatile", "groq"),
 }
 
-# ── System prompts ─────────────────────────────────────────────────────────
+# â”€â”€ System prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-# FIX: _REACT_SYSTEM sekarang tipis — hanya wrapper format XML.
+# FIX: _REACT_SYSTEM sekarang tipis â€” hanya wrapper format XML.
 # base_system dari reasoning_loop.py diletakkan di ATAS agar tidak tertimpa.
 _REACT_SYSTEM = """{base_system}
 
@@ -146,7 +146,7 @@ def _format_tools_text(tools: list[dict]) -> str:
     return "\n".join(lines)
 
 
-# ── Pattern deteksi tool call ──────────────────────────────────────────────
+# â”€â”€ Pattern deteksi tool call â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _TOOL_CALL_PATTERNS = [
     r'<tool>\s*\S+\s*</tool>',          # <tool>nama_tool</tool>
     r'<args>\s*\{',                      # <args>{...
@@ -190,9 +190,9 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
     Return: (thought, action_type, tool_name_or_answer, tool_args_or_none)
 
     FIX utama:
-    1. Kalau tidak ada <answer> tag tapi text mengandung pola tool call → paksa jadi tool_call
-    2. Kalau final answer mengandung sisa tool call text → bersihkan dulu
-    3. Validasi: kalau answer masih mengandung tool call patterns setelah dibersihkan → retry sebagai tool_call
+    1. Kalau tidak ada <answer> tag tapi text mengandung pola tool call â†’ paksa jadi tool_call
+    2. Kalau final answer mengandung sisa tool call text â†’ bersihkan dulu
+    3. Validasi: kalau answer masih mengandung tool call patterns setelah dibersihkan â†’ retry sebagai tool_call
     """
     thought_m = re.search(r'<thought>(.*?)</thought>', text, re.DOTALL | re.IGNORECASE)
     action_m  = re.search(r'<action>(.*?)</action>',   text, re.DOTALL | re.IGNORECASE)
@@ -203,7 +203,7 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
     thought    = thought_m.group(1).strip() if thought_m else ""
     action_raw = action_m.group(1).strip().lower() if action_m else ""
 
-    # ── CASE 1: Eksplisit tool_call ──────────────────────────────────────
+    # â”€â”€ CASE 1: Eksplisit tool_call â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if action_raw == "tool_call" and tool_m:
         tool_name = tool_m.group(1).strip()
         tool_args: dict = {}
@@ -219,11 +219,11 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
                         pass
         return thought, "tool_call", tool_name, tool_args
 
-    # ── CASE 2: Ada <answer> tag → ambil isinya ──────────────────────────
+    # â”€â”€ CASE 2: Ada <answer> tag â†’ ambil isinya â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if answer_m:
         raw_answer = answer_m.group(1).strip()
 
-        # Validasi: kalau isi <answer> MASIH mengandung tool call → paksa jadi tool_call
+        # Validasi: kalau isi <answer> MASIH mengandung tool call â†’ paksa jadi tool_call
         if _looks_like_tool_call(raw_answer) and tool_m:
             tool_name = tool_m.group(1).strip()
             tool_args = {}
@@ -239,7 +239,7 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
         clean = _clean_answer(raw_answer)
         return thought, "final_answer", clean or raw_answer, None
 
-    # ── CASE 3: Tidak ada <answer> dan tidak ada action eksplisit ────────
+    # â”€â”€ CASE 3: Tidak ada <answer> dan tidak ada action eksplisit â”€â”€â”€â”€â”€â”€â”€â”€
     # Cek apakah keseluruhan text ini sebenarnya adalah tool call
     if _looks_like_tool_call(text):
         # Coba parse sebagai tool call
@@ -259,11 +259,11 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
             logger.debug(f"[zilf-max] No <answer> tag, detected tool call: {tool_name}")
             return thought, "tool_call", tool_name, tool_args
 
-    # ── CASE 4: Fallback — bersihkan text dan jadikan final answer ────────
+    # â”€â”€ CASE 4: Fallback â€” bersihkan text dan jadikan final answer â”€â”€â”€â”€â”€â”€â”€â”€
     # Tapi hanya kalau TIDAK ada tanda-tanda tool call sama sekali
     clean_text = _clean_answer(text)
 
-    # Kalau setelah dibersihkan hasilnya kosong → ada yang salah, return raw
+    # Kalau setelah dibersihkan hasilnya kosong â†’ ada yang salah, return raw
     if not clean_text:
         logger.warning("[zilf-max] Answer empty after cleaning, returning raw text")
         clean_text = text.strip()
@@ -287,8 +287,8 @@ class ZilfMaxLLM(BaseLLM):
     LLM provider yang memanggil ZILF-MAX API.
 
     Fitur:
-        extended=True  → inject extended thinking prompt, parse <think> blocks
-        tools=[...]    → ReAct tool calling via prompt engineering
+        extended=True  â†’ inject extended thinking prompt, parse <think> blocks
+        tools=[...]    â†’ ReAct tool calling via prompt engineering
     """
 
     def __init__(
@@ -370,7 +370,7 @@ class ZilfMaxLLM(BaseLLM):
             resp.raise_for_status()
             return resp.json().get("reply", "")
 
-    # ── generate ──────────────────────────────────────────────────────────
+    # â”€â”€ generate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async def generate(
         self,
@@ -413,7 +413,7 @@ class ZilfMaxLLM(BaseLLM):
                     tool_use_id=f"tc_{uuid.uuid4().hex[:8]}",
                     tool_input=tool_args or {},
                 )
-                logger.debug(f"[zilf-max] → tool_call: {tool_or_answer} args={tool_args}")
+                logger.debug(f"[zilf-max] â†’ tool_call: {tool_or_answer} args={tool_args}")
                 return LLMResponse(
                     thought=thought,
                     action_type=ActionType.TOOL_CALL if hasattr(ActionType, 'TOOL_CALL') else "tool_call",
@@ -424,7 +424,7 @@ class ZilfMaxLLM(BaseLLM):
             else:
                 answer = tool_or_answer or thought or raw_text
 
-                # Validasi final: kalau answer masih mengandung tool call text → log warning
+                # Validasi final: kalau answer masih mengandung tool call text â†’ log warning
                 if _looks_like_tool_call(answer):
                     logger.warning(
                         f"[zilf-max] final_answer still contains tool call patterns after cleaning! "
@@ -433,7 +433,7 @@ class ZilfMaxLLM(BaseLLM):
                     # Last resort clean
                     answer = _clean_answer(answer) or answer
 
-                logger.debug(f"[zilf-max] → final_answer (first 200): {answer[:200]}")
+                logger.debug(f"[zilf-max] â†’ final_answer (first 200): {answer[:200]}")
                 return LLMResponse(
                     thought=thought,
                     action_type=ActionType.FINAL_ANSWER if hasattr(ActionType, 'FINAL_ANSWER') else "final_answer",
@@ -459,7 +459,7 @@ class ZilfMaxLLM(BaseLLM):
                 raw=raw_text,
             )
 
-    # ── generate_text ──────────────────────────────────────────────────────
+    # â”€â”€ generate_text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async def generate_text(
         self,
@@ -492,7 +492,7 @@ class ZilfMaxLLM(BaseLLM):
 
         return raw_text
 
-    # ── stream ─────────────────────────────────────────────────────────────
+    # â”€â”€ stream â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async def stream(
         self,

@@ -1,11 +1,11 @@
 """
-Integration tests for tool chains — sequential multi-tool workflows.
+Integration tests for tool chains â€” sequential multi-tool workflows.
 
 Tests:
-  - Write → read → delete chain
-  - Write → search by content
-  - Write multiple → list dir
-  - Write Python → run code
+  - Write â†’ read â†’ delete chain
+  - Write â†’ search by content
+  - Write multiple â†’ list dir
+  - Write Python â†’ run code
   - Error propagation through chains
   - Registry parallel dispatch
 """
@@ -258,7 +258,7 @@ class TestErrorPropagation:
         err = await reg.dispatch("read_file", {"path": str(tmp_workspace / "missing.txt")})
         assert "error" in err.lower() or "not found" in err.lower()
 
-        # Chain continues — write a new file
+        # Chain continues â€” write a new file
         ok = await reg.dispatch("write_file", {
             "path": str(tmp_workspace / "recovery.txt"),
             "content": "recovered",

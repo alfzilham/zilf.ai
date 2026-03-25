@@ -1,10 +1,10 @@
 """
-ZILF-MAX Agent Mode — ReAct tool calling via prompt engineering.
-TIDAK ada extended thinking di sini — fokus ke format XML saja.
+ZILF-MAX Agent Mode â€” ReAct tool calling via prompt engineering.
+TIDAK ada extended thinking di sini â€” fokus ke format XML saja.
 Dipakai oleh reasoning_loop.py saat agent berjalan.
 
 Fixes applied:
-  B18 — Token tracking via track_tokens=True
+  B18 â€” Token tracking via track_tokens=True
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from loguru import logger
 from agent.llm.zilf_max_base import ZilfMaxBase
 from agent.llm.base import LLMResponse
 
-# ── ReAct system prompt ────────────────────────────────────────────────────
+# â”€â”€ ReAct system prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _REACT_SYSTEM = """{base_system}
 
 ## TOOL CALLING FORMAT (WAJIB IKUTI PERSIS)
@@ -89,7 +89,7 @@ uvicorn==0.24.0
 - JANGAN tulis JSON di luar tag <args>
 - JANGAN beri final_answer sebelum semua file dibuat DAN diverifikasi dengan run_command
 - Hanya SATU tool call per respons
-- Jika tool gagal karena dependency missing → jalankan pip install dulu, lalu retry
+- Jika tool gagal karena dependency missing â†’ jalankan pip install dulu, lalu retry
 
 ## DAFTAR TOOL TERSEDIA
 {tools_text}"""
@@ -142,7 +142,7 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
                         pass
         return thought, "tool_call", tool_name, tool_args
 
-    # CASE 4: Fallback — extract only text outside XML blocks
+    # CASE 4: Fallback â€” extract only text outside XML blocks
     stripped = re.sub(
         r'<(thought|action|tool|args)>.*?</\1>',
         '',
@@ -160,7 +160,7 @@ def _parse_react_response(text: str) -> tuple[str, str, str | None, dict | None]
 
 class ZilfMaxAgentLLM(ZilfMaxBase):
     """
-    Mode agent — ReAct tool calling murni.
+    Mode agent â€” ReAct tool calling murni.
     B18 FIX: token tracking terintegrasi.
     """
 
@@ -211,7 +211,7 @@ class ZilfMaxAgentLLM(ZilfMaxBase):
                 tool_use_id=f"tc_{uuid.uuid4().hex[:8]}",
                 tool_input=tool_args or {},
             )
-            logger.debug(f"[zilf-max/agent] → tool_call: {tool_or_answer}")
+            logger.debug(f"[zilf-max/agent] â†’ tool_call: {tool_or_answer}")
             return LLMResponse(
                 thought=thought,
                 action_type=ActionType.TOOL_CALL,
@@ -223,7 +223,7 @@ class ZilfMaxAgentLLM(ZilfMaxBase):
             )
 
         answer = tool_or_answer or thought or raw_text
-        logger.debug(f"[zilf-max/agent] → final_answer: {answer[:200]}")
+        logger.debug(f"[zilf-max/agent] â†’ final_answer: {answer[:200]}")
         return LLMResponse(
             thought=thought,
             action_type=ActionType.FINAL_ANSWER,

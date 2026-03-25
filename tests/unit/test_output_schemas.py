@@ -3,7 +3,7 @@ Unit tests for Pydantic output schemas and the LLM output parser.
 
 Tests:
   - TaskStep / TaskPlan dependency graph
-  - CodingLoopState Write→Run→Fix cycle
+  - CodingLoopState Writeâ†’Runâ†’Fix cycle
   - TaskResult.to_task_complete_block() format
   - AgentResponseSchema success/token properties
   - LLMOutputParser edge cases
@@ -77,8 +77,8 @@ class TestTaskPlan:
         plan = self._make_plan()
         plan.mark_done(1)
         summary = plan.to_summary()
-        assert "✓" in summary
-        assert "○" in summary
+        assert "âœ“" in summary
+        assert "â—‹" in summary
 
     def test_invalid_status_raises(self) -> None:
         from agent.output.schemas import TaskStep

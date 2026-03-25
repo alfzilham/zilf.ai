@@ -1,5 +1,5 @@
 """
-Isolation helpers — resource constraints and security hardening
+Isolation helpers â€” resource constraints and security hardening
 applied to every sandbox container.
 
 This module produces the kwargs dict passed to docker.containers.run()
@@ -24,9 +24,9 @@ class IsolationProfile:
     Encapsulates all Docker security / resource settings for one container.
 
     Profiles:
-      - strict   (default) — no network, minimal caps, tightest limits
-      - standard — outbound HTTP allowed (e.g. for pip install inside sandbox)
-      - minimal  — for local dev / CI where full hardening isn't needed
+      - strict   (default) â€” no network, minimal caps, tightest limits
+      - standard â€” outbound HTTP allowed (e.g. for pip install inside sandbox)
+      - minimal  â€” for local dev / CI where full hardening isn't needed
     """
 
     # Resource limits
@@ -95,7 +95,7 @@ def strict_profile(
     seccomp_path: str | None = "security/seccomp_profile.json",
 ) -> IsolationProfile:
     """
-    Strictest isolation — no network, all caps dropped, seccomp whitelist.
+    Strictest isolation â€” no network, all caps dropped, seccomp whitelist.
     Use this for running untrusted code snippets.
     """
     return IsolationProfile(
@@ -115,7 +115,7 @@ def standard_profile(
     memory: str = "1g",
 ) -> IsolationProfile:
     """
-    Standard isolation — allows outbound HTTP for pip installs etc.
+    Standard isolation â€” allows outbound HTTP for pip installs etc.
     Still drops all capabilities and disallows privilege escalation.
     """
     return IsolationProfile(

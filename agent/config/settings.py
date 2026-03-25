@@ -1,5 +1,5 @@
 """
-Centralized settings — single source of truth for all configuration.
+Centralized settings â€” single source of truth for all configuration.
 
 Loads values from (in priority order):
   1. Environment variables  (highest priority)
@@ -155,7 +155,7 @@ class Settings(BaseSettings):
 
 
 # ---------------------------------------------------------------------------
-# YAML loader — merges YAML defaults under the Settings model
+# YAML loader â€” merges YAML defaults under the Settings model
 # ---------------------------------------------------------------------------
 
 
@@ -215,5 +215,5 @@ def get_settings() -> Settings:
     )
 
 
-# Module-level singleton — import this everywhere
+# Module-level singleton â€” import this everywhere
 settings: Settings = get_settings()

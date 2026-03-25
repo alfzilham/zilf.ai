@@ -1,5 +1,5 @@
 """
-Filesystem Tools — read, write, list, search, and delete files in /workspace.
+Filesystem Tools â€” read, write, list, search, and delete files in /workspace.
 """
 
 from __future__ import annotations
@@ -119,7 +119,7 @@ async def write_file(path: str, content: str, encoding: str = "utf-8") -> str:
     Args:
         path: Destination path (absolute /workspace/... or relative).
         content: Raw text to write. Do NOT wrap in markdown code fences.
-        encoding: File encoding — utf-8 (default).
+        encoding: File encoding â€” utf-8 (default).
     """
     try:
         resolved = _safe_path(path)
@@ -147,7 +147,7 @@ async def list_dir(
     Args:
         directory: Directory to list (absolute or relative to /workspace).
         recursive: Whether to recurse into subdirectories. Default False.
-        path: Alias for directory — model may send either name.
+        path: Alias for directory â€” model may send either name.
     """
     if path is not None:
         directory = path
@@ -178,7 +178,7 @@ async def list_dir(
     if not entries:
         return f"(empty directory: {directory})"
 
-    header = f"{directory}/ — {len(entries)} items"
+    header = f"{directory}/ â€” {len(entries)} items"
     return header + "\n" + "\n".join(entries)
 
 
@@ -194,8 +194,8 @@ async def search_files(
     Args:
         pattern: Glob pattern, e.g. '*.py', '*config*'.
         directory: Directory to search in.
-        contains: Optional text substring — only return files containing this.
-        path: Alias for directory — model may send either name.
+        contains: Optional text substring â€” only return files containing this.
+        path: Alias for directory â€” model may send either name.
     """
     if path is not None:
         directory = path

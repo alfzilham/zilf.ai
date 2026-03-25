@@ -1,5 +1,5 @@
 """
-Groq provider — ultra-fast cloud inference via Groq API.
+Groq provider â€” ultra-fast cloud inference via Groq API.
 
 Supports models:
   - llama3-70b-8192
@@ -46,7 +46,7 @@ To call a tool:
 When the task is complete:
 {"action": "final_answer", "answer": "<your final response>", "thought": "<your reasoning>"}
 
-Respond with ONLY the JSON — no markdown, no explanation outside the JSON.
+Respond with ONLY the JSON â€” no markdown, no explanation outside the JSON.
 """
 
     def __init__(
@@ -91,7 +91,7 @@ Respond with ONLY the JSON — no markdown, no explanation outside the JSON.
         full_system = self._build_system(system, tools)
         api_messages = self._flatten_messages(messages, full_system)
 
-        logger.debug(f"[groq] Calling {self.model} — {len(api_messages)} messages")
+        logger.debug(f"[groq] Calling {self.model} â€” {len(api_messages)} messages")
 
         resp = await client.chat.completions.create(
             model=self.model,

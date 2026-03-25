@@ -1,5 +1,5 @@
 """
-SWE-bench Runner — runs the Zilf AI against SWE-bench tasks
+SWE-bench Runner â€” runs the Zilf AI against SWE-bench tasks
 and records results using BenchmarkTracker.
 
 SWE-bench evaluates agents on resolving real GitHub issues from popular
@@ -35,7 +35,7 @@ from typing import Any
 
 
 # ---------------------------------------------------------------------------
-# BenchmarkTracker — stores results across runs
+# BenchmarkTracker â€” stores results across runs
 # ---------------------------------------------------------------------------
 
 
@@ -337,7 +337,7 @@ async def run_swebench(
 
 
 # ---------------------------------------------------------------------------
-# Stubs — replace with real SWE-bench dataset loading
+# Stubs â€” replace with real SWE-bench dataset loading
 # ---------------------------------------------------------------------------
 
 
@@ -361,7 +361,7 @@ def _load_tasks(split: str, limit: int | None) -> list[dict[str, Any]]:
 async def _evaluate_task(task: dict[str, Any], response: Any) -> bool:
     """
     Run the task's test suite against the agent's changes.
-    Stub — real implementation uses docker to run pytest in the repo.
+    Stub â€” real implementation uses docker to run pytest in the repo.
     """
     # In production: spin up docker container with patched repo and run tests
     return response.success

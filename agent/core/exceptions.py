@@ -9,25 +9,25 @@ Every error carries:
 
 Error categories:
   AgentError
-  ├── LLMError
-  │   ├── RateLimitError
-  │   ├── LLMTimeoutError
-  │   ├── ContentPolicyError
-  │   └── ContextLengthError
-  ├── ToolError
-  │   ├── FileNotFoundToolError
-  │   ├── PermissionToolError
-  │   ├── SyntaxToolError
-  │   ├── SubprocessToolError
-  │   └── ToolTimeoutError
-  ├── LogicError
-  │   ├── InfiniteLoopError
-  │   ├── GoalDriftError
-  │   └── HallucinatedPathError
-  └── EnvironmentError
-      ├── DockerError
-      ├── NetworkError
-      └── DiskFullError
+  â”œâ”€â”€ LLMError
+  â”‚   â”œâ”€â”€ RateLimitError
+  â”‚   â”œâ”€â”€ LLMTimeoutError
+  â”‚   â”œâ”€â”€ ContentPolicyError
+  â”‚   â””â”€â”€ ContextLengthError
+  â”œâ”€â”€ ToolError
+  â”‚   â”œâ”€â”€ FileNotFoundToolError
+  â”‚   â”œâ”€â”€ PermissionToolError
+  â”‚   â”œâ”€â”€ SyntaxToolError
+  â”‚   â”œâ”€â”€ SubprocessToolError
+  â”‚   â””â”€â”€ ToolTimeoutError
+  â”œâ”€â”€ LogicError
+  â”‚   â”œâ”€â”€ InfiniteLoopError
+  â”‚   â”œâ”€â”€ GoalDriftError
+  â”‚   â””â”€â”€ HallucinatedPathError
+  â””â”€â”€ EnvironmentError
+      â”œâ”€â”€ DockerError
+      â”œâ”€â”€ NetworkError
+      â””â”€â”€ DiskFullError
 """
 
 from __future__ import annotations
@@ -80,7 +80,7 @@ class LLMError(AgentError):
 
 
 class RateLimitError(LLMError):
-    """Provider rate limit hit — retry after backoff."""
+    """Provider rate limit hit â€” retry after backoff."""
 
     def __init__(self, retry_after: float = 60.0, **kwargs: Any) -> None:
         super().__init__(
@@ -188,7 +188,7 @@ class InfiniteLoopError(LogicError):
 
     def __init__(self, loop_length: int, step: int, **kwargs: Any) -> None:
         super().__init__(
-            f"Infinite loop detected at step {step} (cycle ≈ {loop_length} steps)",
+            f"Infinite loop detected at step {step} (cycle â‰ˆ {loop_length} steps)",
             recoverable=True,
             **kwargs,
         )
@@ -226,18 +226,18 @@ class NetworkError(AgentEnvironmentError):
 
 
 class DiskFullError(AgentEnvironmentError):
-    """Workspace storage exhausted — not recoverable automatically."""
+    """Workspace storage exhausted â€” not recoverable automatically."""
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(
-            "Disk quota exceeded — free up workspace space before retrying.",
+            "Disk quota exceeded â€” free up workspace space before retrying.",
             recoverable=False,
             **kwargs,
         )
 
 
 # ---------------------------------------------------------------------------
-# Convenience mapping: error class name → category string
+# Convenience mapping: error class name â†’ category string
 # ---------------------------------------------------------------------------
 
 ERROR_CATEGORY: dict[str, str] = {

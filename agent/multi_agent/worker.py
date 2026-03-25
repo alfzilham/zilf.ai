@@ -1,5 +1,5 @@
 """
-Worker Agent — executes one focused subtask assigned by the Supervisor.
+Worker Agent â€” executes one focused subtask assigned by the Supervisor.
 
 A Worker is a stripped-down Agent that:
   - Receives a subtask via the MessageBus
@@ -8,11 +8,11 @@ A Worker is a stripped-down Agent that:
   - Has a configurable role/persona (coder, reviewer, tester, etc.)
 
 Roles available:
-  coder      — writes and modifies code
-  reviewer   — checks code quality, security, best practices
-  tester     — creates and runs tests
-  documenter — writes docstrings and documentation
-  devops     — handles deployment and infrastructure tasks
+  coder      â€” writes and modifies code
+  reviewer   â€” checks code quality, security, best practices
+  tester     â€” creates and runs tests
+  documenter â€” writes docstrings and documentation
+  devops     â€” handles deployment and infrastructure tasks
 
 Usage::
 
@@ -46,7 +46,7 @@ ROLE_PROMPTS: dict[str, str] = {
         "well-documented, production-quality code. "
         "Always read existing files before editing them. "
         "Run tests after every significant change. "
-        "Focus only on the assigned subtask — do not refactor unrelated code."
+        "Focus only on the assigned subtask â€” do not refactor unrelated code."
     ),
     "reviewer": (
         "You are a Code Quality Specialist. Your job is to review code for "
@@ -63,7 +63,7 @@ ROLE_PROMPTS: dict[str, str] = {
     "documenter": (
         "You are a Technical Writer and Python developer. Your job is to write "
         "clear, accurate documentation. Add Google-style docstrings to all public "
-        "functions and classes. Do not change any logic — only add/update comments."
+        "functions and classes. Do not change any logic â€” only add/update comments."
     ),
     "devops": (
         "You are a DevOps Engineer. Your job is to handle deployment, "

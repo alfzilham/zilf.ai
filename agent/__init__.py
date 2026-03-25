@@ -1,5 +1,5 @@
 """
-Zilf AI — autonomous coding assistant.
+Zilf AI â€” autonomous coding assistant.
 
 Public API::
 

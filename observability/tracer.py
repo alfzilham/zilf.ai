@@ -1,5 +1,5 @@
 """
-Tracer — OpenTelemetry-based distributed tracing for the Zilf AI.
+Tracer â€” OpenTelemetry-based distributed tracing for the Zilf AI.
 
 Creates spans for:
   - Agent task runs (root span)
@@ -34,7 +34,7 @@ from typing import Any, Generator
 
 
 class _NoOpSpan:
-    """Span that does nothing — keeps agent code working without OTel."""
+    """Span that does nothing â€” keeps agent code working without OTel."""
 
     def set_attribute(self, key: str, value: Any) -> None:
         pass
@@ -116,7 +116,7 @@ class AgentTracer:
         thought: str = "",
         action_type: str = "",
     ) -> Generator[Any, None, None]:
-        """Child span for one reasoning step (Think → Act → Observe)."""
+        """Child span for one reasoning step (Think â†’ Act â†’ Observe)."""
         with self._tracer.start_as_current_span("agent.step") as span:
             span.set_attribute("agent.step_number", step)
             span.set_attribute("agent.thought", thought[:200])
@@ -137,7 +137,7 @@ class AgentTracer:
         t0 = time.perf_counter()
         with self._tracer.start_as_current_span(f"tool.{tool_name}") as span:
             span.set_attribute("tool.name", tool_name)
-            # Sanitize arguments — never log secrets
+            # Sanitize arguments â€” never log secrets
             safe_args = {
                 k: (str(v)[:100] if not any(s in k.lower() for s in ("key", "token", "secret")) else "[REDACTED]")
                 for k, v in arguments.items()
@@ -214,5 +214,5 @@ class AgentTracer:
 
         except ImportError:
             from loguru import logger
-            logger.debug("[tracer] opentelemetry not installed — tracing disabled.")
+            logger.debug("[tracer] opentelemetry not installed â€” tracing disabled.")
             return _NoOpTracer()

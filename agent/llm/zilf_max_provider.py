@@ -1,10 +1,10 @@
 """
-ZILF-MAX Provider — router utama yang memilih mode yang tepat.
+ZILF-MAX Provider â€” router utama yang memilih mode yang tepat.
 
 Mode:
-  - ZilfMaxChatLLM     → chat biasa (default)
-  - ZilfMaxAgentLLM    → agent/ReAct dengan tools
-  - ZilfMaxThinkingLLM → chat dengan extended thinking
+  - ZilfMaxChatLLM     â†’ chat biasa (default)
+  - ZilfMaxAgentLLM    â†’ agent/ReAct dengan tools
+  - ZilfMaxThinkingLLM â†’ chat dengan extended thinking
 
 Backward compatible: ZilfMaxLLM masih bisa dipakai seperti biasa.
 """
@@ -22,7 +22,7 @@ from agent.llm.base import LLMResponse
 
 class ZilfMaxLLM(ZilfMaxBase):
     """
-    Router utama — delegate ke mode yang tepat berdasarkan
+    Router utama â€” delegate ke mode yang tepat berdasarkan
     apakah ada tools (agent) atau extended=True (thinking).
 
     Usage (tidak berubah dari sebelumnya):

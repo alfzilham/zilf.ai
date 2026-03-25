@@ -1,10 +1,10 @@
 """
-ZILF-MAX Chat Mode — simple chat tanpa tools dan tanpa extended thinking.
+ZILF-MAX Chat Mode â€” simple chat tanpa tools dan tanpa extended thinking.
 
 Fixes applied:
-  B18  — Token tracking via track_tokens=True
-  B10  — True streaming via /v1/chat/stream endpoint
-  A2   — generate_text() uses _build_payload() properly (consistent with B20)
+  B18  â€” Token tracking via track_tokens=True
+  B10  â€” True streaming via /v1/chat/stream endpoint
+  A2   â€” generate_text() uses _build_payload() properly (consistent with B20)
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from agent.llm.base import LLMResponse
 
 
 class ZilfMaxChatLLM(ZilfMaxBase):
-    """Mode chat biasa — with token tracking and true streaming."""
+    """Mode chat biasa â€” with token tracking and true streaming."""
 
     async def generate(
         self,

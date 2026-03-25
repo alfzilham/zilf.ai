@@ -1,5 +1,5 @@
 """
-Ollama provider — run LLMs locally with zero API cost. (v2)
+Ollama provider â€” run LLMs locally with zero API cost. (v2)
 
 Supports any model available via `ollama pull`:
   - llama3, llama3:70b
@@ -7,7 +7,7 @@ Supports any model available via `ollama pull`:
   - mistral, mixtral
   - deepseek-coder, phi3
 
-Requires: Ollama running locally (`ollama serve`) — no API key needed.
+Requires: Ollama running locally (`ollama serve`) â€” no API key needed.
 Default base URL: http://localhost:11434
 """
 
@@ -53,10 +53,10 @@ You MUST respond with a single JSON object. No prose. No markdown. No explanatio
 {"action": "final_answer", "answer": "<your complete response>", "thought": "<your reasoning>"}
 
 ## CRITICAL RULES:
-1. For ANY task that involves creating a file → use write_file tool FIRST
-2. For ANY task that involves running code → use run_command tool FIRST  
+1. For ANY task that involves creating a file â†’ use write_file tool FIRST
+2. For ANY task that involves running code â†’ use run_command tool FIRST  
 3. NEVER use final_answer if you haven't called write_file yet for file creation tasks
-4. After write_file → use run_command to verify → THEN use final_answer
+4. After write_file â†’ use run_command to verify â†’ THEN use final_answer
 
 ## Tool Reference:
 - write_file: {"action": "tool_call", "tool": "write_file", "input": {"path": "/workspace/file.py", "content": "..."}, "thought": "..."}
@@ -111,7 +111,7 @@ START YOUR RESPONSE WITH { AND END WITH }
         full_system = self._build_system(system, tools)
         api_messages = self._flatten_messages(messages, full_system)
 
-        logger.debug(f"[ollama] Calling {self.model} — {len(api_messages)} messages")
+        logger.debug(f"[ollama] Calling {self.model} â€” {len(api_messages)} messages")
 
         resp = await client.chat(
             model=self.model,
@@ -214,7 +214,7 @@ START YOUR RESPONSE WITH { AND END WITH }
         raw_text = re.sub(r"^```(?:json)?\n?", "", raw_text)
         raw_text = re.sub(r"\n?```$", "", raw_text)
 
-        # Try to extract JSON object — find first { to last }
+        # Try to extract JSON object â€” find first { to last }
         start = raw_text.find("{")
         end = raw_text.rfind("}") + 1
 
@@ -255,7 +255,7 @@ START YOUR RESPONSE WITH { AND END WITH }
             except json.JSONDecodeError:
                 pass
 
-        # Model didn't follow JSON format — treat whole text as final answer
+        # Model didn't follow JSON format â€” treat whole text as final answer
         logger.warning("[ollama] Could not parse JSON response, treating as final answer.")
         return LLMResponse(
             thought=raw_text,

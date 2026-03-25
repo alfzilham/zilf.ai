@@ -78,7 +78,7 @@ class ToolResult(BaseModel):
 
 class ReasoningStep(BaseModel):
     """
-    A single iteration of the Perceive → Reason → Act → Observe → Reflect cycle.
+    A single iteration of the Perceive â†’ Reason â†’ Act â†’ Observe â†’ Reflect cycle.
 
     Maps directly to one LLM call plus its resulting tool executions.
     """

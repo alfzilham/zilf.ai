@@ -1,5 +1,5 @@
 """
-Episodic Memory — stores complete past task run records for retrieval and replay.
+Episodic Memory â€” stores complete past task run records for retrieval and replay.
 
 Each episode captures:
   - The original task description
@@ -68,7 +68,7 @@ class Episode:
         return self.input_tokens + self.output_tokens
 
     def to_summary(self) -> str:
-        icon = "✓" if self.success else "✗"
+        icon = "âœ“" if self.success else "âœ—"
         return (
             f"{icon} [{self.episode_id[:8]}] {self.task[:80]} "
             f"| reward={self.reward:.2f} steps={self.steps_taken}"
@@ -121,7 +121,7 @@ class EpisodicMemory:
             task:             Original task description.
             actions:          List of tool calls made during the run.
             outcome:          Human-readable description of what happened.
-            reward:           Success score 0.0–1.0.
+            reward:           Success score 0.0â€“1.0.
             input_tokens:     Total input tokens consumed.
             output_tokens:    Total output tokens generated.
             steps_taken:      Number of reasoning steps.

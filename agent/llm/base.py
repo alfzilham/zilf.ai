@@ -2,12 +2,12 @@
 Abstract base class for all LLM providers.
 
 Every provider (Anthropic, OpenAI, Ollama) must implement:
-  - generate()       → full agentic response with tool call support
-  - generate_text()  → simple text-only completion (used by planner)
-  - stream()         → streaming text generation
+  - generate()       â†’ full agentic response with tool call support
+  - generate_text()  â†’ simple text-only completion (used by planner)
+  - stream()         â†’ streaming text generation
 
 This abstraction lets the agent switch providers without changing any
-other code — just swap the LLM instance passed to Agent().
+other code â€” just swap the LLM instance passed to Agent().
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ class LLMResponse:
     """
     Unified response from any LLM provider.
 
-    The ReasoningLoop only ever sees this type — never provider-specific
+    The ReasoningLoop only ever sees this type â€” never provider-specific
     response objects.
     """
 
@@ -104,7 +104,7 @@ class BaseLLM(ABC):
         **kwargs: Any,
     ) -> str:
         """
-        Simple text-only generation — no tool calls.
+        Simple text-only generation â€” no tool calls.
         Used by TaskPlanner and other non-agentic components.
         """
         ...

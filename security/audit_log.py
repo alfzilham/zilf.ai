@@ -1,5 +1,5 @@
 """
-Audit Log — immutable append-only trail of all agent actions.
+Audit Log â€” immutable append-only trail of all agent actions.
 
 Records every:
   - Tool call (name, arguments, result, exit code)
@@ -7,7 +7,7 @@ Records every:
   - Security event (injection attempt, policy violation, anomaly)
   - Agent lifecycle (start, complete, error)
 
-Written as JSON-lines to a file that is never overwritten — only appended.
+Written as JSON-lines to a file that is never overwritten â€” only appended.
 Each entry has a checksum so tampering is detectable.
 
 Usage::
@@ -102,7 +102,7 @@ class AuditLog:
         step: int = 0,
         action_type: str = "",
     ) -> None:
-        """Record an LLM API call (no prompt/response content — privacy)."""
+        """Record an LLM API call (no prompt/response content â€” privacy)."""
         self._write({
             "event_type": EventType.LLM_CALL,
             "model": model,
@@ -292,7 +292,7 @@ class AuditLog:
             if any(s in k.lower() for s in sensitive_keys):
                 result[k] = "[REDACTED]"
             elif isinstance(v, str) and len(v) > 200:
-                result[k] = v[:200] + "… [truncated]"
+                result[k] = v[:200] + "â€¦ [truncated]"
             else:
                 result[k] = v
         return result

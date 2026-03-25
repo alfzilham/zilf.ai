@@ -1,19 +1,19 @@
 """
-Tool Output Truncation — shrinks oversized tool results before they
+Tool Output Truncation â€” shrinks oversized tool results before they
 bloat the context window.
 
 Three strategies:
-  1. head_tail_truncate     — keep top fraction + bottom fraction (for files)
-  2. error_focused_truncate — keep error/traceback lines (for terminal output)
-  3. hard_truncate          — binary token cut (last resort)
+  1. head_tail_truncate     â€” keep top fraction + bottom fraction (for files)
+  2. error_focused_truncate â€” keep error/traceback lines (for terminal output)
+  3. hard_truncate          â€” binary token cut (last resort)
 
 Dispatcher `truncate_tool_output()` routes each tool to the right strategy.
 
 Per-tool token budgets (defaults):
-  read_file    → 2,000 tokens
-  run_command  → 1,500 tokens
-  web_search   → 1,000 tokens
-  default      → 1,200 tokens
+  read_file    â†’ 2,000 tokens
+  run_command  â†’ 1,500 tokens
+  web_search   â†’ 1,000 tokens
+  default      â†’ 1,200 tokens
 
 Usage::
 
@@ -181,9 +181,9 @@ def truncate_tool_output(tool_name: str, output: str) -> str:
     Route `output` to the appropriate truncation strategy for `tool_name`.
 
     Routing:
-      run_command / run_code → error_focused_truncate
-      read_file              → head_tail_truncate
-      everything else        → hard_truncate
+      run_command / run_code â†’ error_focused_truncate
+      read_file              â†’ head_tail_truncate
+      everything else        â†’ hard_truncate
     """
     max_tokens = TOOL_BUDGETS.get(tool_name, TOOL_BUDGETS["default"])
 

@@ -1,5 +1,5 @@
 """
-Memory System — short-term context + long-term vector store.
+Memory System â€” short-term context + long-term vector store.
 
 Three memory tiers:
   - Short-term  : the current context window (recent steps, task description)
@@ -59,7 +59,7 @@ class ShortTermMemory:
 
 
 # ---------------------------------------------------------------------------
-# Long-term memory (ChromaDB — lazy import so tests don't require it)
+# Long-term memory (ChromaDB â€” lazy import so tests don't require it)
 # ---------------------------------------------------------------------------
 
 
@@ -89,7 +89,7 @@ class LongTermMemory:
                 metadata={"hnsw:space": "cosine"},
             )
         except ImportError:
-            logger.warning("chromadb not installed — long-term memory disabled.")
+            logger.warning("chromadb not installed â€” long-term memory disabled.")
             self._collection = _NoOpCollection()
         return self._collection
 

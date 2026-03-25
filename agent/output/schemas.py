@@ -5,7 +5,7 @@ Pydantic models for:
   - CodeResult        : result of a code generation or edit task
   - TaskResult        : final outcome of a complete task run
   - AgentResponseSchema: top-level response returned to the caller
-  - CodingLoopState   : tracks Write → Run → Read → Fix iterations
+  - CodingLoopState   : tracks Write â†’ Run â†’ Read â†’ Fix iterations
   - TaskStep          : one step in a dependency-aware plan
   - TaskPlan          : full plan with dependency graph + next-step resolver
 """
@@ -58,13 +58,13 @@ class CodeResult(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Coding loop state  (Write → Run → Read → Fix)
+# Coding loop state  (Write â†’ Run â†’ Read â†’ Fix)
 # ---------------------------------------------------------------------------
 
 
 class CodingLoopState(BaseModel):
     """
-    Tracks one iteration of the Write → Run → Read → Fix cycle.
+    Tracks one iteration of the Write â†’ Run â†’ Read â†’ Fix cycle.
 
     The reasoning loop creates one CodingLoopState per coding subtask
     and updates it as the agent writes, tests, and patches code.
@@ -179,7 +179,7 @@ class TaskPlan(BaseModel):
         done = len(self.completed_steps)
         total = len(self.steps)
         lines = [f"Plan: {done}/{total} steps done"]
-        icons = {"done": "✓", "failed": "✗", "running": "▶", "pending": "○", "skipped": "—"}
+        icons = {"done": "âœ“", "failed": "âœ—", "running": "â–¶", "pending": "â—‹", "skipped": "â€”"}
         for s in self.steps:
             lines.append(f"  {icons.get(s.status,'?')} {s.step_id}. {s.title}")
         return "\n".join(lines)

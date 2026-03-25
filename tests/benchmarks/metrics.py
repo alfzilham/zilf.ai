@@ -1,5 +1,5 @@
 """
-Agent Metrics — comprehensive evaluation metrics for the Zilf AI.
+Agent Metrics â€” comprehensive evaluation metrics for the Zilf AI.
 
 Implements all 6 core metrics from Agent Metrics.md:
   1. Task Completion Rate (TCR)
@@ -10,10 +10,10 @@ Implements all 6 core metrics from Agent Metrics.md:
   6. Harmful Output Rate
 
 Also provides:
-  - MetricsCollector  — instruments the agent with automatic metric collection
-  - MetricsReport     — Pydantic model + JSON schema for metrics output
-  - RegressionChecker — compares current metrics against stored baselines
-  - timed_run()       — convenience wrapper for benchmark runs
+  - MetricsCollector  â€” instruments the agent with automatic metric collection
+  - MetricsReport     â€” Pydantic model + JSON schema for metrics output
+  - RegressionChecker â€” compares current metrics against stored baselines
+  - timed_run()       â€” convenience wrapper for benchmark runs
 
 Usage::
 
@@ -53,7 +53,7 @@ from typing import Any, Callable
 
 
 def task_completion_rate(successful: int, total: int) -> float:
-    """TCR = (successful / total) × 100. Returns 0 if total == 0."""
+    """TCR = (successful / total) Ã— 100. Returns 0 if total == 0."""
     if total == 0:
         return 0.0
     return round((successful / total) * 100, 2)
@@ -110,7 +110,7 @@ def error_recovery_rate(recovered: int, total: int) -> float:
 
 
 def harmful_output_rate(harmful: int, total: int) -> float:
-    """HOR = (harmful outputs / total outputs) × 100."""
+    """HOR = (harmful outputs / total outputs) Ã— 100."""
     if total == 0:
         return 0.0
     return round((harmful / total) * 100, 4)
@@ -124,7 +124,7 @@ def harmful_output_rate(harmful: int, total: int) -> float:
 @dataclass
 class MetricsReport:
     """
-    Structured metrics report — matches the JSON schema defined in Agent Metrics.md.
+    Structured metrics report â€” matches the JSON schema defined in Agent Metrics.md.
     """
 
     report_id: str
@@ -132,12 +132,12 @@ class MetricsReport:
     timestamp: str
 
     # Core metrics
-    task_completion_rate: float       # 0–100 %
-    pass_at_k_score: float            # 0–1
+    task_completion_rate: float       # 0â€“100 %
+    pass_at_k_score: float            # 0â€“1
     mean_time_to_completion: float    # seconds
-    tool_call_efficiency_ratio: float # 0–1
-    error_recovery_rate: float        # 0–1
-    harmful_output_rate: float        # 0–100 %
+    tool_call_efficiency_ratio: float # 0â€“1
+    error_recovery_rate: float        # 0â€“1
+    harmful_output_rate: float        # 0â€“100 %
 
     # Aggregation info
     num_tasks_evaluated: int
@@ -189,12 +189,12 @@ class MetricsReport:
             f"### Core Metrics\n\n"
             f"| Metric | Value | Target |\n"
             f"|--------|-------|--------|\n"
-            f"| Task Completion Rate | {self.task_completion_rate:.1f}% | 80–100% |\n"
-            f"| Pass@1 | {self.pass_at_k_score:.3f} | 0.6–0.8 |\n"
-            f"| Mean Time to Completion | {self.mean_time_to_completion:.2f}s | — |\n"
-            f"| Tool Call Efficiency | {self.tool_call_efficiency_ratio:.3f} | 0.9–1.0 |\n"
-            f"| Error Recovery Rate | {self.error_recovery_rate:.3f} | 0.7–0.9 |\n"
-            f"| Harmful Output Rate | {self.harmful_output_rate:.4f}% | 0–0.1% |\n\n"
+            f"| Task Completion Rate | {self.task_completion_rate:.1f}% | 80â€“100% |\n"
+            f"| Pass@1 | {self.pass_at_k_score:.3f} | 0.6â€“0.8 |\n"
+            f"| Mean Time to Completion | {self.mean_time_to_completion:.2f}s | â€” |\n"
+            f"| Tool Call Efficiency | {self.tool_call_efficiency_ratio:.3f} | 0.9â€“1.0 |\n"
+            f"| Error Recovery Rate | {self.error_recovery_rate:.3f} | 0.7â€“0.9 |\n"
+            f"| Harmful Output Rate | {self.harmful_output_rate:.4f}% | 0â€“0.1% |\n\n"
             f"### Aggregation\n\n"
             f"- Tasks evaluated: **{self.num_tasks_evaluated}**\n"
             f"- Successful: **{self.num_successful_tasks}**\n"
@@ -210,7 +210,7 @@ class MetricsReport:
 
 
 # ---------------------------------------------------------------------------
-# 3. MetricsCollector — instruments agent runs
+# 3. MetricsCollector â€” instruments agent runs
 # ---------------------------------------------------------------------------
 
 
@@ -256,7 +256,7 @@ class MetricsCollector:
         self._passatk_results: list[dict[str, int]] = []
         self._total_tokens: int = 0
 
-    # ── Task lifecycle ────────────────────────────────────────────────
+    # â”€â”€ Task lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def start_task(self, task_id: str) -> None:
         self._tasks[task_id] = _TaskRecord(task_id=task_id)
@@ -289,7 +289,7 @@ class MetricsCollector:
             output_tokens=getattr(response, "total_output_tokens", 0),
         )
 
-    # ── Tool / error / output tracking ───────────────────────────────
+    # â”€â”€ Tool / error / output tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def record_tool_call(self, tool_name: str, success: bool) -> None:
         self._tool_calls_total += 1
@@ -310,7 +310,7 @@ class MetricsCollector:
         """Record Pass@k data: n=total samples, c=passing samples for one problem."""
         self._passatk_results.append({"n": n, "c": c})
 
-    # ── Report ────────────────────────────────────────────────────────
+    # â”€â”€ Report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def report(self, k: int = 1) -> MetricsReport:
         tasks = list(self._tasks.values())
@@ -363,7 +363,7 @@ class MetricsCollector:
 # ---------------------------------------------------------------------------
 
 
-# Default thresholds — how much each metric can degrade before flagging
+# Default thresholds â€” how much each metric can degrade before flagging
 DEFAULT_THRESHOLDS: dict[str, float] = {
     "task_completion_rate":       2.0,    # % points
     "pass_at_k":                  0.02,
@@ -373,7 +373,7 @@ DEFAULT_THRESHOLDS: dict[str, float] = {
     "harmful_output_rate":        0.5,    # % points (increase allowed)
 }
 
-# For these metrics, LOWER is better — flag if they *increase* too much
+# For these metrics, LOWER is better â€” flag if they *increase* too much
 _LOWER_IS_BETTER = {"mean_time_to_completion", "harmful_output_rate"}
 
 
@@ -421,7 +421,7 @@ class RegressionChecker:
         """
         baseline = self.load_baseline()
         if baseline is None:
-            return True, ["No baseline found — saving current as baseline."]
+            return True, ["No baseline found â€” saving current as baseline."]
 
         current_metrics = current.to_dict()["metrics"]
         failures: list[str] = []

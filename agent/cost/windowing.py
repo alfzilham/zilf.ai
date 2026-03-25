@@ -1,12 +1,12 @@
 """
-Windowing Strategies — keep the LLM context within budget across long sessions.
+Windowing Strategies â€” keep the LLM context within budget across long sessions.
 
 Four strategies (from simplest to most sophisticated):
 
-  1. SlidingWindow        — drop oldest messages; fast, loses early context
-  2. SummarizationWindow  — compress old turns via LLM call; preserves semantics
-  3. RetrievalWindow      — embed all turns, retrieve by cosine similarity
-  4. HierarchicalContext  — three tiers: verbatim → summary → key-fact archive
+  1. SlidingWindow        â€” drop oldest messages; fast, loses early context
+  2. SummarizationWindow  â€” compress old turns via LLM call; preserves semantics
+  3. RetrievalWindow      â€” embed all turns, retrieve by cosine similarity
+  4. HierarchicalContext  â€” three tiers: verbatim â†’ summary â†’ key-fact archive
 
 Recommended default for production: HierarchicalContext.
 
@@ -88,7 +88,7 @@ _SUMMARIZE_SYSTEM = (
     "You are a coding agent memory compressor. "
     "Given a block of conversation turns, produce a concise bullet-point summary "
     "preserving: decisions made, files changed, errors encountered, constraints stated. "
-    "Output ONLY the summary — no preamble or closing remarks."
+    "Output ONLY the summary â€” no preamble or closing remarks."
 )
 
 
@@ -143,7 +143,7 @@ class SummarizationWindow:
         from loguru import logger
         logger.debug(
             f"[windowing] Summarization: compressed {split} turns "
-            f"({count_message_tokens(to_compress):,} tokens) → "
+            f"({count_message_tokens(to_compress):,} tokens) â†’ "
             f"~{count_tokens(summary_text):,} tokens"
         )
 
@@ -260,7 +260,7 @@ class RetrievalWindow:
 @dataclass
 class HierarchicalContext:
     """
-    Three-tier context — mirrors human memory:
+    Three-tier context â€” mirrors human memory:
 
       Tier 1 (recent):   Last `recent_turns` non-system turns, verbatim
       Tier 2 (middle):   Turns beyond recent, compressed into summaries
@@ -296,7 +296,7 @@ class HierarchicalContext:
     def build_context(self) -> list[Message]:
         """
         Assemble the final message list:
-          system messages → archive injection → summaries → recent turns
+          system messages â†’ archive injection â†’ summaries â†’ recent turns
         """
         system = [m for m in self._turns if m["role"] == "system"]
         recent = [m for m in self._turns if m["role"] != "system"]
@@ -320,7 +320,7 @@ class HierarchicalContext:
         result.extend(recent)
         return result
 
-    # ── Private promotion logic ───────────────────────────────────────────────
+    # â”€â”€ Private promotion logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _promote_sync(self) -> None:
         """Move overflow turns to archive without LLM call."""
@@ -361,4 +361,4 @@ class HierarchicalContext:
 
     def _key_fact(self, turns: list[Message]) -> str:
         combined = " ".join(m.get("content", "")[:150] for m in turns)
-        return f"• {combined[:130]}…"
+        return f"â€¢ {combined[:130]}â€¦"

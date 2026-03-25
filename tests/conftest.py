@@ -2,12 +2,12 @@
 Shared pytest fixtures for the Zilf AI test suite.
 
 Available fixtures:
-  mock_llm           — MockLLM with scripted responses
-  tmp_workspace      — isolated temp dir, sets AGENT_WORKSPACE env var
-  registry           — ToolRegistry with all default tools
-  agent              — Agent wired with MockLLM + registry
-  error_reporter     — ErrorReporter writing to a temp log dir
-  checkpoint_manager — CheckpointManager in a temp dir
+  mock_llm           â€” MockLLM with scripted responses
+  tmp_workspace      â€” isolated temp dir, sets AGENT_WORKSPACE env var
+  registry           â€” ToolRegistry with all default tools
+  agent              â€” Agent wired with MockLLM + registry
+  error_reporter     â€” ErrorReporter writing to a temp log dir
+  checkpoint_manager â€” CheckpointManager in a temp dir
 """
 
 from __future__ import annotations
@@ -221,5 +221,5 @@ def checkpoint_manager(tmp_path: Path):
 
 
 def run_async(coro):
-    """Run a coroutine synchronously — useful in sync test helpers."""
+    """Run a coroutine synchronously â€” useful in sync test helpers."""
     return asyncio.get_event_loop().run_until_complete(coro)

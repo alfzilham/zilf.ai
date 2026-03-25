@@ -1,10 +1,10 @@
 """
-BaseTool — abstract interface that every tool must implement.
+BaseTool â€” abstract interface that every tool must implement.
 
 Tools are the agent's hands: they let it read files, run commands,
 search the web, and execute code. Every tool exposes:
   - a name  (used by the LLM to call it)
-  - a description  (tells the LLM *when* to use it — most important field)
+  - a description  (tells the LLM *when* to use it â€” most important field)
   - an input_schema  (JSON Schema for arguments)
   - an execute() method  (the actual implementation)
 """
@@ -33,7 +33,7 @@ class BaseTool(ABC):
         """
         Execute the tool and return a string result.
 
-        Always returns a string — the LLM only understands text.
+        Always returns a string â€” the LLM only understands text.
         Raise an exception on failure; the registry will catch it and
         return a formatted error string to the LLM.
         """

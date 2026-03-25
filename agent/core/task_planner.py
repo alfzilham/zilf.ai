@@ -1,5 +1,5 @@
 """
-Task Planner — decomposes a complex user task into ordered subtasks.
+Task Planner â€” decomposes a complex user task into ordered subtasks.
 
 Uses the LLM to produce a structured TaskPlan before the reasoning loop starts,
 giving the agent a roadmap to follow and backtrack against.
@@ -45,9 +45,9 @@ PLANNER_SYSTEM = """You are a software engineering task planner.
 Your job is to decompose a user task into clear, ordered subtasks.
 
 Rules:
-- Each subtask must be atomic — one clear goal.
+- Each subtask must be atomic â€” one clear goal.
 - List dependencies explicitly (by subtask id).
-- Aim for 3–8 subtasks. Don't over-split simple tasks.
+- Aim for 3â€“8 subtasks. Don't over-split simple tasks.
 - Respond ONLY with valid JSON matching the schema below.
 - Do NOT include markdown code fences, backticks, or any explanation.
 - Start your response directly with { and end with }
@@ -119,7 +119,7 @@ class TaskPlanner:
             estimated_steps=spec.estimated_steps,
         )
         logger.info(
-            f"[planner:{rid}] Plan ready — {len(subtasks)} subtasks, "
+            f"[planner:{rid}] Plan ready â€” {len(subtasks)} subtasks, "
             f"~{spec.estimated_steps} estimated steps."
         )
         return plan
@@ -133,7 +133,7 @@ class TaskPlanner:
         Parse JSON dari LLM response.
 
         Fix: handle wrapper {"thinking": "", "answer": "..."} yang datang
-        dari ZilfMaxThinkingLLM.generate_text() — unwrap dulu sebelum parse.
+        dari ZilfMaxThinkingLLM.generate_text() â€” unwrap dulu sebelum parse.
         """
         import json
         import re
@@ -149,7 +149,7 @@ class TaskPlanner:
         # Strip markdown fences
         clean = re.sub(r"```(?:json)?|```", "", raw).strip()
 
-        # Extract JSON object — find first { to last }
+        # Extract JSON object â€” find first { to last }
         start = clean.find("{")
         end = clean.rfind("}") + 1
         if start == -1 or end == 0:

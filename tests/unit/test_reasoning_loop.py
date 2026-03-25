@@ -37,7 +37,7 @@ class TestReasoningLoop:
         from agent.core.reasoning_loop import ReasoningLoop
         from agent.core.state import AgentState, AgentStatus
 
-        # Always returns a tool call — never finishes
+        # Always returns a tool call â€” never finishes
         responses = ['{"tool": "list_dir", "directory": "/workspace"}'] * 20
         llm = mock_llm_factory(responses)
         loop = ReasoningLoop(llm=llm, tool_registry=registry, max_steps=3, verbose=False)

@@ -1,9 +1,9 @@
 """
-Web Search Tool — searches the web for documentation, error messages, and code examples.
+Web Search Tool â€” searches the web for documentation, error messages, and code examples.
 
 Provider chain:
-  1. Tavily  (primary — designed for AI agents, structured results)
-  2. DuckDuckGo  (fallback — free, no API key required)
+  1. Tavily  (primary â€” designed for AI agents, structured results)
+  2. DuckDuckGo  (fallback â€” free, no API key required)
 
 Features:
   - TTL cache (1 hour) to avoid duplicate API calls
@@ -199,10 +199,10 @@ async def web_search(
 
     Use this when you need library documentation, to look up error messages,
     find recent API changes, or research a topic not in the workspace.
-    Do NOT use this to find files in the workspace — use list_dir or search_files instead.
+    Do NOT use this to find files in the workspace â€” use list_dir or search_files instead.
 
     Args:
-        query: Search query. Be specific — include library names, version numbers,
+        query: Search query. Be specific â€” include library names, version numbers,
             and verbatim error text. Example: 'python httpx AsyncClient timeout 0.27'
         max_results: Number of results to return. Default 5, max 10.
         search_depth: 'basic' (faster) or 'advanced' (more thorough, Tavily only).

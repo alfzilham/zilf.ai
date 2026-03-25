@@ -1,18 +1,18 @@
 """
-Pydantic Output Parser — reliable extraction and validation of LLM responses.
+Pydantic Output Parser â€” reliable extraction and validation of LLM responses.
 
 Solves the core problem: LLMs produce inconsistent output formats.
 This module provides:
 
-1. LLMOutputParser       — extracts JSON from messy LLM text, validates with Pydantic
-2. Self-executing tools  — Pydantic models with .execute() methods
+1. LLMOutputParser       â€” extracts JSON from messy LLM text, validates with Pydantic
+2. Self-executing tools  â€” Pydantic models with .execute() methods
    - FileReadTool
    - FileWriteTool
    - RunCommandTool
    - WebSearchTool
    - CodeAnalysisTool
-3. SafeFilePath          — field validator preventing path traversal
-4. StructuredAgent       — minimal agent that parses + dispatches tool calls
+3. SafeFilePath          â€” field validator preventing path traversal
+4. StructuredAgent       â€” minimal agent that parses + dispatches tool calls
 
 Why Pydantic for tool calls?
   - Type safety at parse time (not at runtime crash)
@@ -50,7 +50,7 @@ class SafeFilePath(BaseModel):
       - Null byte injection
     """
 
-    path: str = Field(..., description="File path — relative or absolute under /workspace")
+    path: str = Field(..., description="File path â€” relative or absolute under /workspace")
 
     @field_validator("path")
     @classmethod
@@ -108,7 +108,7 @@ class FileWriteTool(BaseModel):
 
     tool: Literal["write_file"] = "write_file"
     file_path: str = Field(..., description="Destination path")
-    content: str = Field(..., description="Raw text to write — no markdown fences")
+    content: str = Field(..., description="Raw text to write â€” no markdown fences")
     encoding: str = Field("utf-8", description="File encoding")
     validate_python: bool = Field(
         False,
@@ -227,7 +227,7 @@ class CodeAnalysisTool(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Tool union — maps tool name → model class
+# Tool union â€” maps tool name â†’ model class
 # ---------------------------------------------------------------------------
 
 TOOL_MODELS: dict[str, type[BaseModel]] = {
@@ -374,7 +374,7 @@ class StructuredAgent:
             tool = self.parser.parse_tool_call(response_text)
 
             if tool is None:
-                # No tool call — treat as final answer
+                # No tool call â€” treat as final answer
                 return response_text.strip()
 
             # Execute the tool

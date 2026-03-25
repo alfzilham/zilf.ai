@@ -1,5 +1,5 @@
 """
-Integration tests — full agent task runs with MockLLM.
+Integration tests â€” full agent task runs with MockLLM.
 
 Tests:
   - Write + verify task completes successfully
@@ -58,7 +58,7 @@ class TestAgentEndToEnd:
         from agent.core.agent import Agent
         from agent.core.state import AgentStatus
 
-        # Always calls list_dir — never finishes
+        # Always calls list_dir â€” never finishes
         responses = ['{"tool": "list_dir", "directory": "/workspace"}'] * 20
         llm = mock_llm_factory(responses)
         agent = Agent(llm=llm, tool_registry=registry, max_steps=3, use_planner=False, verbose=False)
@@ -99,7 +99,7 @@ class TestToolChains:
 
     @pytest.mark.asyncio
     async def test_write_read_delete_chain(self, tmp_workspace: Path) -> None:
-        """Write → read back → delete — all via registry dispatch."""
+        """Write â†’ read back â†’ delete â€” all via registry dispatch."""
         from agent.tools.registry import ToolRegistry
         reg = ToolRegistry.default()
         path = str(tmp_workspace / "chain_test.txt")

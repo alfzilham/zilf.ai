@@ -1,5 +1,5 @@
 """
-Tool Calling — parses LLM tool-call responses, validates schemas,
+Tool Calling â€” parses LLM tool-call responses, validates schemas,
 and dispatches to the registry.
 
 Handles provider differences:

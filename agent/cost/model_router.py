@@ -1,22 +1,22 @@
 """
-Model Router — cost-aware model selection and prompt optimization utilities.
+Model Router â€” cost-aware model selection and prompt optimization utilities.
 
 Components:
-  ModelRouter          — selects cheap/medium/expensive model by task complexity
-  FileChunker          — splits large Python files by function/class (AST-based)
-  PromptCompressor     — removes whitespace and common verbose phrases
+  ModelRouter          â€” selects cheap/medium/expensive model by task complexity
+  FileChunker          â€” splits large Python files by function/class (AST-based)
+  PromptCompressor     â€” removes whitespace and common verbose phrases
 
 Model tier routing (from Token & API Cost Management.md):
 
-  LOW complexity   → haiku / flash  (typo fix, doc update, rename)
-  MEDIUM complexity → sonnet / gpt-4o-mini  (feature, bug fix)
-  HIGH complexity  → opus / gpt-4o  (architecture, algorithm design)
+  LOW complexity   â†’ haiku / flash  (typo fix, doc update, rename)
+  MEDIUM complexity â†’ sonnet / gpt-4o-mini  (feature, bug fix)
+  HIGH complexity  â†’ opus / gpt-4o  (architecture, algorithm design)
 
 Usage::
 
     router = ModelRouter()
     model = router.select("Design a microservices architecture")
-    # → "claude-opus-4"
+    # â†’ "claude-opus-4"
 
     chunker = FileChunker()
     chunks = chunker.chunk_file("src/parser.py")
@@ -51,7 +51,7 @@ _HIGH_KEYWORDS: tuple[str, ...] = (
     "security audit", "performance", "scalab",
 )
 
-# Model tiers — override via ModelRouter(tiers={...})
+# Model tiers â€” override via ModelRouter(tiers={...})
 DEFAULT_TIERS: dict[str, dict[str, str]] = {
     "anthropic": {
         "low":    "claude-haiku-4-5",
@@ -76,9 +76,9 @@ class ModelRouter:
     Selects the appropriate model tier based on task complexity.
 
     Rules (from Token & API Cost Management.md):
-      LOW    → cheap model (haiku / flash)
-      MEDIUM → balanced model (sonnet / gpt-4o)
-      HIGH   → most capable model (opus / gpt-4o)
+      LOW    â†’ cheap model (haiku / flash)
+      MEDIUM â†’ balanced model (sonnet / gpt-4o)
+      HIGH   â†’ most capable model (opus / gpt-4o)
     """
 
     def __init__(
@@ -193,7 +193,7 @@ class FileChunker:
         """
         Return the top-k chunks most relevant to `query` (keyword scoring).
 
-        Simple but fast — no embeddings needed.
+        Simple but fast â€” no embeddings needed.
         """
         query_words = {w.lower() for w in re.split(r"\W+", query) if len(w) > 2}
         if not query_words:
@@ -208,7 +208,7 @@ class FileChunker:
         scored.sort(key=lambda x: -x[0])
         return [c for _, c in scored[:max_chunks] if _ > 0] or chunks[:max_chunks]
 
-    # ── Private ───────────────────────────────────────────────────────────────
+    # â”€â”€ Private â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _chunk_python(self, source: str, filename: str) -> list[FileChunk]:
         try:
@@ -235,7 +235,7 @@ class FileChunker:
                 ))
 
             if not chunks:
-                # No top-level defs — treat whole file as one chunk
+                # No top-level defs â€” treat whole file as one chunk
                 chunks.append(FileChunk(
                     name       = filename,
                     content    = source,
@@ -305,7 +305,7 @@ class PromptCompressor:
       1. Collapses multiple consecutive spaces/tabs to one
       2. Replaces verbose multi-word phrases with concise equivalents
 
-    This is NOT semantic compression — it is a fast preprocessing step.
+    This is NOT semantic compression â€” it is a fast preprocessing step.
     For heavy compression, use SummarizationWindow instead.
     """
 

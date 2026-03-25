@@ -1,5 +1,5 @@
 """
-Code Executor Tool — runs Python, JavaScript, and Bash snippets in the sandbox.
+Code Executor Tool â€” runs Python, JavaScript, and Bash snippets in the sandbox.
 
 Different from run_command (which runs arbitrary shell commands):
   - run_code is for short snippet execution and quick verification
@@ -44,7 +44,7 @@ async def run_code(
     or test a function before writing it to a permanent file.
 
     Args:
-        code: The source code snippet to execute. Raw code — not markdown.
+        code: The source code snippet to execute. Raw code â€” not markdown.
         language: Programming language: 'python' (default), 'javascript', or 'bash'.
         timeout_seconds: Execution timeout in seconds. Default 30, max 120.
     """

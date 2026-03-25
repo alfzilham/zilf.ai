@@ -1,5 +1,5 @@
 """
-Docker Sandbox Manager — lifecycle management for sandbox containers.
+Docker Sandbox Manager â€” lifecycle management for sandbox containers.
 
 Responsibilities:
   - Build / pull the sandbox image if missing

@@ -1,5 +1,5 @@
 """
-Error Recovery Prompts — targeted prompts that help the agent recover from
+Error Recovery Prompts â€” targeted prompts that help the agent recover from
 specific failure modes by asking the LLM to self-correct.
 
 Each function returns a (system, user_message) tuple that can be fed directly
@@ -27,7 +27,7 @@ BASE_CORRECTOR_SYSTEM = (
     "You are an expert debugger embedded in an AI coding agent. "
     "You receive the original task, the agent's previous output, and the "
     "exact error it caused. "
-    "Produce ONLY the corrected output — no explanation, no markdown fences, "
+    "Produce ONLY the corrected output â€” no explanation, no markdown fences, "
     "no preamble. The output will be written directly to a file or executed."
 )
 

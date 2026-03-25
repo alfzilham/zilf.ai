@@ -1,5 +1,5 @@
 """
-Loop Detector — prevents the agent from spinning in infinite reasoning cycles.
+Loop Detector â€” prevents the agent from spinning in infinite reasoning cycles.
 
 Two complementary detection mechanisms:
 
@@ -12,7 +12,7 @@ Two complementary detection mechanisms:
 2. SemanticLoopDetector (optional, requires embeddings)
    - Embeds each reasoning text turn
    - Raises when `min_trigger_pairs` recent turns are above
-     cosine similarity `threshold` — catches paraphrased loops
+     cosine similarity `threshold` â€” catches paraphrased loops
 
 Usage::
 
@@ -167,7 +167,7 @@ class ToolCallLoopDetector:
 
 
 # ---------------------------------------------------------------------------
-# Semantic loop detector (optional — requires numpy)
+# Semantic loop detector (optional â€” requires numpy)
 # ---------------------------------------------------------------------------
 
 
@@ -226,7 +226,7 @@ class SemanticLoopDetector:
             )
 
     # -----------------------------------------------------------------------
-    # Stub — replace with real embeddings in production
+    # Stub â€” replace with real embeddings in production
     # -----------------------------------------------------------------------
 
     def _embed(self, text: str) -> Any:

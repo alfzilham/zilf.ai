@@ -1,5 +1,5 @@
 """
-Terminal Tool — executes shell commands inside the Docker sandbox.
+Terminal Tool â€” executes shell commands inside the Docker sandbox.
 
 The agent uses this to run tests, install packages, call git,
 build projects, and inspect the runtime environment.
@@ -153,11 +153,11 @@ async def run_command(
     if len(output) > MAX_OUTPUT_CHARS:
         half = MAX_OUTPUT_CHARS // 2
         output = (
-            f"[Truncated — {len(output):,} chars total]\n\n"
+            f"[Truncated â€” {len(output):,} chars total]\n\n"
             f"{output[:half]}\n\n...\n\n{output[-half:]}"
         )
 
-    status = "✓" if result.success else f"✗ exit={result.exit_code}"
+    status = "âœ“" if result.success else f"âœ— exit={result.exit_code}"
     logger.debug(f"[terminal] {status} | {output[:80]}")
 
     if not result.success and not getattr(result, "timed_out", False):

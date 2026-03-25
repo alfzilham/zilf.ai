@@ -1,10 +1,10 @@
 """
-Budget Guardrail — hard limits that stop the agent before exceeding budget.
+Budget Guardrail â€” hard limits that stop the agent before exceeding budget.
 
 Three independent limits (all optional):
-  max_tokens_per_run    — total tokens in one agent task run
-  max_cost_per_run      — USD cost ceiling for one task run
-  max_cost_cumulative   — USD cost ceiling across the entire session
+  max_tokens_per_run    â€” total tokens in one agent task run
+  max_cost_per_run      â€” USD cost ceiling for one task run
+  max_cost_cumulative   â€” USD cost ceiling across the entire session
 
 When a limit would be exceeded, `check()` raises `BudgetExceededError`
 (or returns (False, reason) depending on `raise_on_exceed` setting).
@@ -85,7 +85,7 @@ class BudgetGuardrail:
     _run_calls:       int   = field(default=0, init=False, repr=False)
     _total_calls:     int   = field(default=0, init=False, repr=False)
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    # â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def check(
         self,
@@ -96,7 +96,7 @@ class BudgetGuardrail:
         """
         Check whether this LLM call would exceed any limit.
 
-        Does NOT record the call — call `record()` after the call completes.
+        Does NOT record the call â€” call `record()` after the call completes.
 
         Returns:
             (True, "Within limits") if allowed.
@@ -128,7 +128,7 @@ class BudgetGuardrail:
             )
 
         if violations:
-            reason = "Budget exceeded — " + "; ".join(violations)
+            reason = "Budget exceeded â€” " + "; ".join(violations)
             if self.raise_on_exceed:
                 raise BudgetExceededError(reason)
             return False, reason
@@ -141,7 +141,7 @@ class BudgetGuardrail:
         input_tokens: int,
         output_tokens: int,
     ) -> None:
-        """Record a completed LLM call — update internal counters."""
+        """Record a completed LLM call â€” update internal counters."""
         cost = self._estimate_cost(model, input_tokens, output_tokens)
         self._run_tokens      += input_tokens + output_tokens
         self._run_cost        += cost
@@ -155,7 +155,7 @@ class BudgetGuardrail:
         self._run_cost   = 0.0
         self._run_calls  = 0
 
-    # ── Properties ───────────────────────────────────────────────────────────
+    # â”€â”€ Properties â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @property
     def run_tokens(self) -> int:
@@ -173,7 +173,7 @@ class BudgetGuardrail:
     def run_calls(self) -> int:
         return self._run_calls
 
-    # ── Helpers ──────────────────────────────────────────────────────────────
+    # â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _estimate_cost(self, model: str, input_tokens: int, output_tokens: int) -> float:
         pricing = self.pricing.get(model, self.pricing.get("unknown", {"input": 3.0, "output": 15.0}))

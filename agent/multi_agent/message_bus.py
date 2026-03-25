@@ -1,15 +1,15 @@
 """
-Message Bus — async pub/sub inter-agent communication.
+Message Bus â€” async pub/sub inter-agent communication.
 
 Agents send typed messages to named topics.
 Subscribers receive messages via async queues.
 
 Message types:
-  TASK_ASSIGNED   — supervisor → worker: here is your subtask
-  TASK_RESULT     — worker → supervisor: subtask is done
-  TASK_FAILED     — worker → supervisor: subtask failed
-  STATUS_UPDATE   — worker → supervisor: progress update
-  BROADCAST       — any → all: system-wide notification
+  TASK_ASSIGNED   â€” supervisor â†’ worker: here is your subtask
+  TASK_RESULT     â€” worker â†’ supervisor: subtask is done
+  TASK_FAILED     â€” worker â†’ supervisor: subtask failed
+  STATUS_UPDATE   â€” worker â†’ supervisor: progress update
+  BROADCAST       â€” any â†’ all: system-wide notification
 
 Usage::
 

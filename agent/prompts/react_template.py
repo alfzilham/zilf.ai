@@ -1,11 +1,11 @@
 """
-ReAct Prompt Templates — builds the Thought/Action/Observation message
+ReAct Prompt Templates â€” builds the Thought/Action/Observation message
 sequence fed to the LLM on each reasoning step.
 
 The ReAct framework (Reasoning + Acting) interleaves:
-  Thought   — the agent's reasoning about what to do next
-  Action    — the tool call it decides to make
-  Observation — the tool's output
+  Thought   â€” the agent's reasoning about what to do next
+  Action    â€” the tool call it decides to make
+  Observation â€” the tool's output
 
 This module provides:
   ReActPromptBuilder   : assembles the full message list for a new LLM call
@@ -121,7 +121,7 @@ class ReActPromptBuilder:
         Build the messages list for the next LLM call.
 
         Args:
-            state: AgentState — carries task, steps, plan, token counts.
+            state: AgentState â€” carries task, steps, plan, token counts.
 
         Returns:
             List of message dicts in OpenAI/Anthropic format.
@@ -138,7 +138,7 @@ class ReActPromptBuilder:
             done = sum(1 for s in state.plan.subtasks if s.status.value == "success")
             total = len(state.plan.subtasks)
             plan_lines = "\n".join(
-                f"  {'✓' if s.status.value == 'success' else '○'} {s.id}: {s.title}"
+                f"  {'âœ“' if s.status.value == 'success' else 'â—‹'} {s.id}: {s.title}"
                 for s in state.plan.subtasks
             )
             task_content += (

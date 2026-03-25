@@ -1,9 +1,9 @@
 """
-LLM Router — selects and falls back between providers automatically.
+LLM Router â€” selects and falls back between providers automatically.
 
 Supports two modes:
-  1. Single provider  — always use one LLM
-  2. Fallback chain   — try providers in order; move to next on error
+  1. Single provider  â€” always use one LLM
+  2. Fallback chain   â€” try providers in order; move to next on error
 
 Usage::
 
@@ -76,7 +76,7 @@ class LLMRouter(BaseLLM):
         primary: BaseLLM | None = None
         fallbacks: list[BaseLLM] = []
 
-        # ── 1. Tentukan primary berdasarkan AGENT_LLM_PROVIDER ──
+        # â”€â”€ 1. Tentukan primary berdasarkan AGENT_LLM_PROVIDER â”€â”€
         if provider_name == "zilf-max":
             try:
                 from agent.llm.zilf_max_provider import ZilfMaxLLM
@@ -101,7 +101,7 @@ class LLMRouter(BaseLLM):
         elif provider_name == "ollama":
             primary = OllamaLLM(model=model or "deepseek-coder")
 
-        # ── 2. Tambahkan semua provider lain sebagai fallback ──
+        # â”€â”€ 2. Tambahkan semua provider lain sebagai fallback â”€â”€
         # B4 FIX: Setiap provider dicek INDEPENDEN (if, bukan elif)
 
         if os.environ.get("ZILF_MAX_API_KEY"):
@@ -128,14 +128,14 @@ class LLMRouter(BaseLLM):
             except ImportError:
                 pass
 
-        # ── 3. Ollama selalu jadi fallback terakhir ──
+        # â”€â”€ 3. Ollama selalu jadi fallback terakhir â”€â”€
         has_ollama = isinstance(primary, OllamaLLM) or any(
             isinstance(f, OllamaLLM) for f in fallbacks
         )
         if not has_ollama:
             fallbacks.append(OllamaLLM(model="deepseek-coder"))
 
-        # ── 4. Jika tidak ada primary, ambil dari fallbacks ──
+        # â”€â”€ 4. Jika tidak ada primary, ambil dari fallbacks â”€â”€
         if primary is None:
             if fallbacks:
                 primary = fallbacks.pop(0)

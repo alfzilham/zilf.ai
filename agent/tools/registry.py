@@ -1,5 +1,5 @@
 """
-Tool Registry — central hub for all agent tools.
+Tool Registry â€” central hub for all agent tools.
 
 Solves three problems at once:
   1. Eliminates hand-writing JSON schemas (auto-generated from type hints + docstrings)
@@ -40,7 +40,7 @@ MAX_CONCURRENCY = 5        # parallel tool call limit
 
 
 # ---------------------------------------------------------------------------
-# Type → JSON Schema helpers
+# Type â†’ JSON Schema helpers
 # ---------------------------------------------------------------------------
 
 
@@ -58,7 +58,7 @@ def _type_to_schema(annotation: Any) -> dict[str, Any]:
         if len(non_none) == 1:
             return _type_to_schema(non_none[0])
 
-    # Literal["a", "b"] → enum
+    # Literal["a", "b"] â†’ enum
     if origin is Literal:
         return {"type": "string", "enum": list(args)}
 
@@ -195,7 +195,7 @@ class ToolRegistry:
         name: str | None = None,
         description: str | None = None,
     ) -> Any:
-        """Decorator — registers a function as a tool."""
+        """Decorator â€” registers a function as a tool."""
 
         def decorator(func: Callable) -> Callable:
             tool_name = name or func.__name__
@@ -277,7 +277,7 @@ class ToolRegistry:
 
             result = _truncate(str(raw))
             elapsed = (time.perf_counter() - t0) * 1000
-            logger.debug(f"[registry] {name} → {elapsed:.0f}ms | {result[:80]}")
+            logger.debug(f"[registry] {name} â†’ {elapsed:.0f}ms | {result[:80]}")
             return result
 
         except Exception as exc:
@@ -330,7 +330,7 @@ class ToolRegistry:
         register_web_search_tools(registry)
         register_code_executor_tools(registry)
 
-        logger.info(f"[registry] Default registry ready — {len(registry._tools)} tools: {registry.list_names()}")
+        logger.info(f"[registry] Default registry ready â€” {len(registry._tools)} tools: {registry.list_names()}")
         return registry
 
     # -----------------------------------------------------------------------
@@ -361,6 +361,6 @@ def _truncate(text: str, max_chars: int = MAX_OUTPUT_CHARS) -> str:
         return text
     half = max_chars // 2
     return (
-        f"[Output truncated — {len(text):,} total chars]\n\n"
+        f"[Output truncated â€” {len(text):,} total chars]\n\n"
         f"{text[:half]}\n\n...\n\n{text[-half:]}"
     )
