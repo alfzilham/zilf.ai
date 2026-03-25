@@ -34,6 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applyLanguage(currentLang);
 
+    renderRightHistory();
+
     // Search input
     document.getElementById('searchInput')?.addEventListener('input', e => {
         const q = e.target.value.toLowerCase();
@@ -791,6 +793,7 @@ async function sendChat(content, model) {   // content bisa string atau array
         // Simpan dulu dengan judul sementara (seperti sebelumnya)
         const tempTitle = history.find(m => m.role === 'user')?.content?.slice(0, 50) || userTextForHistory.slice(0, 50);
         saveChatToHistory(tempTitle, history);
+        renderRightHistory();
 
         // === AUTO GENERATE JUDUL PINTAR ===
         if (history.length === 2) {           // hanya pada percakapan pertama
@@ -990,6 +993,7 @@ function handleAgentEvent(ev, block, statusBanner, taskText) {
 
         const tempTitle = (taskText || ev.answer || '').slice(0, 50);
         saveChatToHistory(tempTitle, history);
+        renderRightHistory();
 
         // === AUTO GENERATE JUDUL PINTAR ===
         if (history.length === 2) {
@@ -2725,47 +2729,39 @@ async function sendMessage(overrideText) {
         }
     };
 
-    // ═══════════════════════════════════════════════
-    // FLOATING RESPONSE BUBBLE - ZILF-MAX Style
-    // ═══════════════════════════════════════════════
-    window.showFloatingResponse = function (message = "ZILF-MAX telah menjawab", duration = 4500) {
-        // Hapus yang lama kalau ada
-        const old = document.getElementById('zilf-floating');
-        if (old) old.remove();
+    // Toggle Right History Panel
+    function toggleRightPanel() {
+        const panel = document.getElementById('rightHistoryPanel');
+        panel.classList.toggle('open');
+    }
 
-        const bubble = document.createElement('div');
-        bubble.id = 'zilf-floating';
-        bubble.className = 'floating-response';
+    // Render Right Panel History
+    function renderRightHistory() {
+        const container = document.getElementById('rightHistoryList');
+        if (!container) return;
 
-        bubble.innerHTML = `
-        <div class="header">
-            <div class="orb"></div>
-            <span class="ai-name">ZILF-MAX</span>
-        </div>
-        <div class="content">
-            ${message}
-        </div>
-    `;
+        const chats = loadAllChats();
+        container.innerHTML = '';
 
-        document.body.appendChild(bubble);
-
-        // Trigger animasi masuk
-        setTimeout(() => bubble.classList.add('show'), 10);
-
-        // Auto hide
-        const timeout = setTimeout(() => {
-            if (bubble.parentNode) {
-                bubble.classList.remove('show');
-                setTimeout(() => bubble.remove(), 350);
-            }
-        }, duration);
-
-        // Klik untuk dismiss manual
-        bubble.addEventListener('click', () => {
-            clearTimeout(timeout);
-            bubble.classList.remove('show');
-            setTimeout(() => bubble.remove(), 350);
+        chats.forEach(chat => {
+            const item = document.createElement('div');
+            item.className = `right-history-item ${chat.id === currentChatId ? 'active' : ''}`;
+            item.innerHTML = `
+            <div class="right-history-title">${escHtml(chat.title)}</div>
+            <div class="right-history-date">${getDateLabel(chat.updatedAt || chat.createdAt)}</div>
+        `;
+            item.addEventListener('click', () => {
+                restoreChat(chat.id);
+                toggleRightPanel(); // tutup panel setelah klik
+            });
+            container.appendChild(item);
         });
-    };
+
+        if (chats.length === 0) {
+            container.innerHTML = `<div style="text-align:center; color:#64748b; padding:40px 20px;">Belum ada riwayat obrolan</div>`;
+        }
+    }
+
+    // Panggil fungsi ini setiap kali history berubah
 
 })();
