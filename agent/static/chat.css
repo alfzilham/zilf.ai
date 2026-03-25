@@ -760,6 +760,7 @@ body>* {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    position: relative;
 }
 
 #content::-webkit-scrollbar {
@@ -773,14 +774,13 @@ body>* {
 
 /* ── Welcome ── */
 #welcome {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    padding: 32px 24px 16px;
-    gap: 0;
-    margin: auto 0;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    padding: 40px 24px;
 }
 
 /* ── Professional Orb Enhancements ── */
@@ -1815,6 +1815,8 @@ body>* {
 #inputArea {
     padding: 0 20px 18px;
     flex-shrink: 0;
+    position: relative;
+    background: var(--bg);
 }
 
 .input-card {
