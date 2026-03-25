@@ -13,6 +13,12 @@ Endpoints:
 """
 
 from __future__ import annotations
+import os
+from dotenv import load_dotenv
+
+# Muat variabel lingkungan dari file .env (jalur absolut)
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+load_dotenv(env_path)
 
 import asyncio
 import json

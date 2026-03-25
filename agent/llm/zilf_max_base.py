@@ -20,7 +20,7 @@ from loguru import logger
 
 from agent.llm.base import BaseLLM, LLMResponse
 
-ZILF_MAX_BASE_URL = "https://zilfmax.up.railway.app"
+ZILF_MAX_BASE_URL = "https://zilf-max-api-production.up.railway.app"
 
 ZILF_MAX_MODELS: dict[str, str] = {
     "groq":       "llama-3.3-70b-versatile",
@@ -152,14 +152,23 @@ class ZilfMaxBase(BaseLLM):
             history.insert(0, {"role": "system", "content": system})
 
         MAX_HISTORY_CHARS = 12_000
-        total_chars = sum(len(h["content"]) for h in history)
+
+        # Pisahkan system prompt dari history biasa
+        system_msgs = [h for h in history if h["role"] == "system"]
+        user_msgs   = [h for h in history if h["role"] != "system"]
+
+        # Hitung HANYA dari user/assistant messages
+        total_chars = sum(len(h["content"]) for h in user_msgs)
         if total_chars > MAX_HISTORY_CHARS:
-            # Keep only the last 4 history turns to stay within limits
-            history = history[-4:]
+            # Truncate HANYA user/assistant, system prompt tetap aman
+            user_msgs = user_msgs[-4:]
             logger.warning(
                 f"[zilf-max] History truncated to last 4 turns "
                 f"(was {total_chars} chars total)"
             )
+
+        # Gabungkan kembali: system prompt selalu di depan
+        history = system_msgs + user_msgs
 
         return {
             "message":    user_message,
