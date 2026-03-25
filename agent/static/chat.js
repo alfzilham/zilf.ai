@@ -860,9 +860,10 @@ function updateStreamingBubble(id, text) {
 async function sendAgent(text, model) {
     const box = showContent();
 
-    const row = document.createElement('div'); row.className = 'msg-row ai';
-    const av = document.createElement('div'); av.className = 'avatar ai';
-    av.innerHTML = '<i class="bi bi-stars"></i>';
+    const row = document.createElement('div');
+    row.className = 'msg-row ai';
+
+    const av = buildAiAvatar();
 
     const cont = document.createElement('div'); cont.className = 'bubble ai';
     const blk = document.createElement('div'); blk.className = 'agent-block';

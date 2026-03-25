@@ -3623,8 +3623,7 @@ body>* {
 .model-badge.glm {
     background: linear-gradient(135deg, #7c3aeda1, #a955f7a1);
     color: #bc00f6;
-    border-radius: 1px;
-    border-color: #bc00f6;
+    border: 5px solid #bc00f6;
 }
 
 /* ══ AVATAR ORB MINI — Blue-Teal Gradient (matches welcome orb) ══ */
