@@ -21,6 +21,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
     <!-- Styles -->
     <link rel="stylesheet" href="/static/chat.css?v=3" />
+    <!-- AOS (Animate On Scroll) -->
+    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
 
     <!-- === TAMBAHAN UNTUK FILE ATTACHMENT (Fase 1) === -->
     <!-- PDF.js -->
@@ -204,7 +206,7 @@
                 <!-- ════════════════════════════════════
      3D ORB & EYES
 ════════════════════════════════════ -->
-                <div class="orb-wrap" id="orbWrap">
+                <div class="orb-wrap" id="orbWrap" data-aos="zoom-in" data-aos-duration="1000">
                     <!-- Three.js Canvas -->
                     <canvas id="orbCanvas"></canvas>
 
@@ -215,15 +217,15 @@
                     </div>
                 </div>
 
-                <div class="welcome-greeting">
+                <div class="welcome-greeting" data-aos="fade-up" data-aos-delay="200" data-aos-duration="800">
                     Good <span id="greetPart">Evening</span>,
                     <span class="greeting-name" id="greetingName">HAMS AI</span>.<br />
                     Can I help you with anything?
                 </div>
-                <div class="welcome-sub">Powered by HAMS-MAX — Groq &amp; NVIDIA models</div>
+                <div class="welcome-sub" data-aos="fade-up" data-aos-delay="400" data-aos-duration="800">Powered by HAMS-MAX — Groq &amp; NVIDIA models</div>
 
                 <!-- Feature cards (updated by JS based on mode) -->
-                <div class="feature-cards" id="featureCards">
+                <div class="feature-cards" id="featureCards" data-aos="fade-up" data-aos-delay="600" data-aos-duration="800">
                     <div class="feature-card"
                         onclick="sendSuggestion('Buatkan landing page modern untuk produk kopi premium, HTML CSS JS lengkap dengan animasi.')">
                         <div class="feature-card-title"><i class="bi bi-globe2" style="color:var(--accent)"></i>
@@ -373,6 +375,9 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="/static/chat.js?v=4"></script>
+    <!-- AOS JS -->
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    <script>AOS.init({ once: true, easing: 'ease-out-cubic' });</script>
 
     <!-- History Modal -->
     <div id="historyModal">

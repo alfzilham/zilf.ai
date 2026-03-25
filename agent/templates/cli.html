@@ -10,6 +10,8 @@
         href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- AOS (Animate On Scroll) -->
+    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
     <style>
         :root {
             --bg: #07070d;
@@ -804,7 +806,7 @@
                 <div class="doc-content">
 
                     <!-- Hero -->
-                    <div class="doc-hero">
+                    <div class="doc-hero" data-aos="fade-up" data-aos-duration="800">
                         <div class="doc-hero-badge">
                             <i class="bi bi-terminal"></i> Developer Tools
                         </div>
@@ -814,7 +816,7 @@
                     </div>
 
                     <!-- CLI via npm -->
-                    <div class="doc-section" id="cli">
+                    <div class="doc-section" id="cli" data-aos="fade-up" data-aos-duration="700">
                         <div class="doc-section-title">
                             <i class="bi bi-terminal-fill"></i> CLI via npm
                         </div>
@@ -825,7 +827,7 @@
                         </div>
 
                         <!-- Prasyarat -->
-                        <div class="doc-subsection" id="prereq">
+                        <div class="doc-subsection" id="prereq" data-aos="fade-up" data-aos-delay="100">
                             <div class="doc-subsection-title">Prasyarat CLI</div>
                             <div class="prereq-list">
                                 <div class="prereq-item">
@@ -844,7 +846,7 @@
                         </div>
 
                         <!-- Instalasi -->
-                        <div class="doc-subsection" id="install">
+                        <div class="doc-subsection" id="install" data-aos="fade-up" data-aos-delay="100">
                             <div class="doc-subsection-title">Instalasi — PowerShell (Windows)</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -891,7 +893,7 @@ $env:HAMS_PATH = "C:\path\to\hams-ai"</pre>
                         </div>
 
                         <!-- Perintah -->
-                        <div class="doc-subsection" id="commands">
+                        <div class="doc-subsection" id="commands" data-aos="fade-up" data-aos-delay="100">
                             <div class="doc-subsection-title">Perintah CLI</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -920,7 +922,7 @@ hams --port 9000</pre>
                         </div>
 
                         <!-- Contoh Sesi -->
-                        <div class="doc-subsection" id="session">
+                        <div class="doc-subsection" id="session" data-aos="fade-up" data-aos-delay="100">
                             <div class="doc-subsection-title">Contoh Sesi Chat</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -949,13 +951,13 @@ hams.ai — AI Coding Agent
                     </div>
 
                     <!-- Penggunaan -->
-                    <div class="doc-section" id="usage">
+                    <div class="doc-section" id="usage" data-aos="fade-up" data-aos-duration="700">
                         <div class="doc-section-title">
                             <i class="bi bi-rocket-takeoff-fill"></i> Penggunaan
                         </div>
 
                         <!-- Jalankan Agent -->
-                        <div class="doc-subsection" id="agent">
+                        <div class="doc-subsection" id="agent" data-aos="fade-up" data-aos-delay="100">
                             <div class="doc-subsection-title">Jalankan Agent</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -978,7 +980,7 @@ python examples/basic_agent.py --demo</pre>
                         </div>
 
                         <!-- Via CLI Python -->
-                        <div class="doc-subsection" id="python">
+                        <div class="doc-subsection" id="python" data-aos="fade-up" data-aos-delay="100">
                             <div class="doc-subsection-title">Via CLI Python</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -998,7 +1000,7 @@ python -m agent.main run "Refactor utils.py" --verbose</pre>
                         </div>
 
                         <!-- Via API -->
-                        <div class="doc-subsection" id="api">
+                        <div class="doc-subsection" id="api" data-aos="fade-up" data-aos-delay="100">
                             <div class="doc-subsection-title">Via API (FastAPI)</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -1113,6 +1115,9 @@ curl -X POST http://localhost:8000/run \
             });
         }
     </script>
+    <!-- AOS JS -->
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    <script>AOS.init({ once: true, easing: 'ease-out-cubic', container: document.getElementById('content') });</script>
 </body>
 
 </html>
