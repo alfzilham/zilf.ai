@@ -788,8 +788,14 @@ async function sendChat(content, model) {   // content bisa string atau array
         history.push({ role: 'user', content: userTextForHistory });
         history.push({ role: 'assistant', content: reply });
 
-        const title = history.find(m => m.role === 'user')?.content?.slice(0, 50) || userTextForHistory.slice(0, 50);
-        saveChatToHistory(title, history);
+        // Simpan dulu dengan judul sementara (seperti sebelumnya)
+        const tempTitle = history.find(m => m.role === 'user')?.content?.slice(0, 50) || userTextForHistory.slice(0, 50);
+        saveChatToHistory(tempTitle, history);
+
+        // === AUTO GENERATE JUDUL PINTAR ===
+        if (history.length === 2) {           // hanya pada percakapan pertama
+            generateSmartTitle();
+        }
 
     } catch (err) {
         removeTyping();
@@ -981,8 +987,13 @@ function handleAgentEvent(ev, block, statusBanner, taskText) {
         history.push({ role: 'user', content: taskText || '' });
         history.push({ role: 'assistant', content: ev.answer || '' });
 
-        const title = (taskText || ev.answer || '').slice(0, 50);
-        saveChatToHistory(title, history);
+        const tempTitle = (taskText || ev.answer || '').slice(0, 50);
+        saveChatToHistory(tempTitle, history);
+
+        // === AUTO GENERATE JUDUL PINTAR ===
+        if (history.length === 2) {
+            generateSmartTitle();
+        }
 
     } else if (ev.type === 'error') {
         statusBanner.innerHTML =
@@ -2671,5 +2682,52 @@ async function sendMessage(overrideText) {
         renderer.setSize(newSize, newSize);
     });
 
+    // ═══════════════════════════════════════════════
+    // AUTO GENERATE CHAT TITLE (menggunakan endpoint baru /v1/chat/generate-title)
+    // ═══════════════════════════════════════════════
+    async function generateSmartTitle() {
+        // Hanya generate kalau ini percakapan pertama (1 user + 1 AI)
+        if (history.length < 2 || !currentChatId) return;
+
+        const lastUserMsg = history[history.length - 2].content;
+
+        try {
+            const res = await fetch('/v1/chat/generate-title', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                    // Authorization tidak ditambahkan karena /chat/stream juga tidak pakai (sesuai kode lama kamu)
+                },
+                body: JSON.stringify({
+                    message: lastUserMsg,
+                    history: history.slice(-6),        // ambil 6 pesan terakhir untuk konteks yang lebih baik
+                    provider: document.getElementById('modelSelect')?.value === 'nvidia' ? 'nvidia' : 'groq',
+                    model: null
+                })
+            });
+
+            if (!res.ok) throw new Error('Generate title failed');
+
+            const data = await res.json();
+            const smartTitle = data.title.trim();
+
+            if (!smartTitle) return;
+
+            // Update title di localStorage + refresh sidebar
+            const chats = loadAllChats();
+            const idx = chats.findIndex(c => c.id === currentChatId);
+            if (idx !== -1) {
+                chats[idx].title = smartTitle;
+                chats[idx].updatedAt = new Date().toISOString();
+                saveAllChats(chats);
+                renderHistoryList();           // refresh sidebar langsung
+            }
+
+            console.log('%c[Title Generated] ' + smartTitle, 'color:#00d4ff;font-weight:bold');
+        } catch (err) {
+            console.warn('[Title Gen] Gagal:', err.message);
+            // fallback otomatis ke judul lama (tidak perlu lakukan apa-apa)
+        }
+    }
 
 })();
