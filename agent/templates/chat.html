@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Zilf.ai — Autonomous AI Assistant powered by Groq &amp; NVIDIA models" />
-    <meta name="theme-color" content="#070D0D" />
-    <meta property="og:title" content="Zilf.ai" />
+    <meta name="description" content="HAMS.AI — Autonomous AI Assistant powered by Groq &amp; NVIDIA models" />
+    <meta name="theme-color" content="#07070d" />
+    <meta property="og:title" content="HAMS.AI" />
     <meta property="og:description" content="Autonomous AI Assistant powered by Groq &amp; NVIDIA models" />
     <meta property="og:type" content="website" />
-    <title>Zilf.ai — Autonomous AI Assistant</title>
+    <title>HAMS.AI — Autonomous AI Assistant</title>
     <link rel="icon" type="image/png" href="/static/favicon/apple-icon.png" />
     <link rel="apple-touch-icon" href="/static/image/logo.png" />
 
@@ -19,8 +19,6 @@
         rel="stylesheet" />
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
-    <!-- AOS Animate On Scroll -->
-    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
     <!-- Styles -->
     <link rel="stylesheet" href="/static/chat.css?v=3" />
 
@@ -57,7 +55,7 @@
                 <img src="/static/image/logo.png" alt="HAMS.AI"
                     style="width:22px;height:22px;border-radius:5px;object-fit:cover;" />
             </div>
-            <span class="sidebar-label">Zilf<span class="logo-dot">.ai</span></span>
+            <span class="sidebar-label">HAMS<span class="logo-dot">AI</span></span>
             <button class="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse">
                 <i class="bi bi-layout-sidebar-reverse"></i>
             </button>
@@ -114,7 +112,7 @@
             <div class="sidebar-profile" onclick="toggleProfileDropdown(event)">
                 <div class="profile-avatar" id="profileAvatar">AI</div>
                 <div class="profile-info sidebar-label">
-                    <div class="profile-name" id="profileName">Zilf.ai User</div>
+                    <div class="profile-name" id="profileName">HAMS User</div>
                     <div class="profile-plan">Free plan</div>
                 </div>
                 <button class="profile-menu-btn sidebar-label" title="Menu">
@@ -141,15 +139,14 @@
             <!-- Model selector -->
             <div class="model-dropdown" id="modelDropdown" onclick="toggleModelDropdown()">
                 <i class="bi bi-cpu model-icon"></i>
-                <span id="modelLabel">Zilf.ai MAX</span>
+                <span id="modelLabel">HAMS-MAX</span>
                 <i class="bi bi-chevron-down chevron-icon" id="modelChevron"></i>
 
                 <div class="model-panel" id="modelPanel">
                     <div class="model-group">
-                        <div class="model-group-label">Zilf.ai MAX — Powered by 12 Models</div>
+                        <div class="model-group-label">HAMS-MAX — Powered by 12 Models</div>
                         <div class="model-option selected" data-value="hams-max" onclick="selectModel(this)">
-                            <span class="model-badge hams">Z</span>Zilf.ai MAX
-                        </div>
+                            <span class="model-badge hams">H</span>HAMS-MAX
                         </div>
                     </div>
                     <div class="model-group">
@@ -207,7 +204,7 @@
                 <!-- ════════════════════════════════════
      3D ORB & EYES
 ════════════════════════════════════ -->
-                <div class="orb-wrap" id="orbWrap" data-aos="zoom-in">
+                <div class="orb-wrap" id="orbWrap">
                     <!-- Three.js Canvas -->
                     <canvas id="orbCanvas"></canvas>
 
@@ -218,30 +215,30 @@
                     </div>
                 </div>
 
-                <div class="welcome-greeting" data-aos="fade-up">
+                <div class="welcome-greeting">
                     Good <span id="greetPart">Evening</span>,
-                    <span class="greeting-name" id="greetingName">Zilf.ai</span>.<br />
+                    <span class="greeting-name" id="greetingName">HAMS AI</span>.<br />
                     Can I help you with anything?
                 </div>
-                <div class="welcome-sub" data-aos="fade-up" data-aos-delay="100">Powered by Zilf.ai MAX — Groq &amp; NVIDIA models</div>
+                <div class="welcome-sub">Powered by HAMS-MAX — Groq &amp; NVIDIA models</div>
 
                 <!-- Feature cards (updated by JS based on mode) -->
                 <div class="feature-cards" id="featureCards">
-                    <div class="feature-card" data-aos="fade-up" data-aos-delay="100"
+                    <div class="feature-card"
                         onclick="sendSuggestion('Buatkan landing page modern untuk produk kopi premium, HTML CSS JS lengkap dengan animasi.')">
                         <div class="feature-card-title"><i class="bi bi-globe2" style="color:var(--accent)"></i>
                             &nbsp;Buat Website</div>
                         <div class="feature-card-desc">Landing page, dashboard, UI component, dan animasi interaktif
                             siap pakai.</div>
                     </div>
-                    <div class="feature-card" data-aos="fade-up" data-aos-delay="200"
+                    <div class="feature-card"
                         onclick="sendSuggestion('Buatkan REST API FastAPI Python untuk todo list dengan CRUD dan auth JWT, kode lengkap.')">
                         <div class="feature-card-title"><i class="bi bi-code-slash" style="color:var(--accent)"></i>
                             &nbsp;Generate Kode</div>
                         <div class="feature-card-desc">Python, JS, SQL, API — kode lengkap dengan komentar dan error
                             handling.</div>
                     </div>
-                    <div class="feature-card" data-aos="fade-up" data-aos-delay="300"
+                    <div class="feature-card"
                         onclick="sendSuggestion('Analisis perbandingan React vs Vue vs Svelte untuk startup kecil: performa, ekosistem, rekomendasi.')">
                         <div class="feature-card-title"><i class="bi bi-bar-chart-line" style="color:var(--accent)"></i>
                             &nbsp;Analisis &amp; Riset</div>
@@ -258,7 +255,7 @@
         </div><!-- /content -->
 
         <!-- ── Input area ── -->
-        <div id="inputArea" data-aos="fade-up">
+        <div id="inputArea">
 
             <!-- Attachment Chips Area -->
             <div id="attachmentArea" class="attachment-area">
@@ -368,7 +365,7 @@
                 const t = (performance.now() - t0) * 0.001 * 0.4;
                 gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
                 gl.uniform1f(uTime, t); gl.uniform1f(uAmp, 0.8);
-                gl.uniform3fv(uCS, [0.0, 0.9, 0.75, 0.1, 0.98, 0.88, 0.0, 0.24, 0.2]);
+                gl.uniform3fv(uCS, [1.0, 1.0, 1.0, 0.55, 0.55, 0.55, 0.1, 0.1, 0.1]);
                 gl.uniform2f(uRes, canvas.width, canvas.height); gl.uniform1f(uBlend, 0.6);
                 gl.drawArrays(gl.TRIANGLES, 0, 3);
             })();
@@ -376,16 +373,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="/static/chat.js?v=4"></script>
-
-    <!-- AOS Library -->
-    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-    <script>
-        AOS.init({
-            duration: 800,
-            easing: 'ease-in-out',
-            once: true
-        });
-    </script>
 
     <!-- History Modal -->
     <div id="historyModal">

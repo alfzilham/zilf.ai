@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zilf.ai — Register</title>
+    <title>HAMS.AI — Register</title>
     <link rel="icon" type="image/png" href="/static/favicon/apple-icon.png" />
     <link
         href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
@@ -16,47 +16,47 @@
            VARIABLES — same as login
         ══════════════════════════════════════════ */
         :root {
-            --bg: #070D0D;
-            --bg-2: #0B1215;
-            --surface: rgba(0, 229, 192, 0.03);
-            --surface-2: rgba(0, 229, 192, 0.06);
-            --border: rgba(0, 229, 192, 0.06);
-            --border-2: rgba(0, 229, 192, 0.10);
-            --border-focus: rgba(0, 229, 192, 0.4);
-            --text: #FFFFFF;
-            --text-2: #E0E6ED;
-            --text-3: #607B85;
-            --accent: #00E5C0;
-            --accent-2: #1CFBE2;
-            --accent-glow: rgba(0, 229, 192, 0.15);
-            --accent-glow-2: rgba(0, 229, 192, 0.08);
-            --red: #FF4C4C;
-            --red-bg: rgba(255, 76, 76, 0.08);
-            --red-border: rgba(255, 76, 76, 0.25);
-            --green: #00E5C0;
-            --green-bg: rgba(0, 229, 192, 0.08);
-            --green-border: rgba(0, 229, 192, 0.25);
+            --bg: #07070d;
+            --bg-2: #0a0a12;
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-2: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-2: rgba(255, 255, 255, 0.10);
+            --border-focus: rgba(255, 255, 255, 0.22);
+            --text: #f3f3f3;
+            --text-2: #8a8a8a;
+            --text-3: #444;
+            --accent: #818cf8;
+            --accent-2: #6366f1;
+            --accent-glow: rgba(129, 140, 248, 0.15);
+            --accent-glow-2: rgba(129, 140, 248, 0.08);
+            --red: #f87171;
+            --red-bg: rgba(248, 113, 113, 0.08);
+            --red-border: rgba(248, 113, 113, 0.25);
+            --green: #4ade80;
+            --green-bg: rgba(74, 222, 128, 0.08);
+            --green-border: rgba(74, 222, 128, 0.25);
         }
 
         [data-theme="light"] {
-            --bg: #070D0D;
-            --bg-2: #0B1215;
-            --surface: rgba(0, 229, 192, 0.03);
-            --surface-2: rgba(0, 229, 192, 0.06);
-            --border: rgba(0, 229, 192, 0.06);
-            --border-2: rgba(0, 229, 192, 0.10);
-            --border-focus: rgba(0, 229, 192, 0.4);
-            --text: #FFFFFF;
-            --text-2: #E0E6ED;
-            --text-3: #607B85;
-            --accent: #00E5C0;
-            --accent-2: #1CFBE2;
-            --accent-glow: rgba(0, 229, 192, 0.15);
-            --accent-glow-2: rgba(0, 229, 192, 0.08);
-            --red-bg: rgba(255, 76, 76, 0.06);
-            --red-border: rgba(255, 76, 76, 0.2);
-            --green-bg: rgba(0, 229, 192, 0.06);
-            --green-border: rgba(0, 229, 192, 0.2);
+            --bg: #f0f0f5;
+            --bg-2: #e8e8f0;
+            --surface: rgba(255, 255, 255, 0.8);
+            --surface-2: rgba(255, 255, 255, 0.9);
+            --border: rgba(0, 0, 0, 0.06);
+            --border-2: rgba(0, 0, 0, 0.10);
+            --border-focus: rgba(99, 102, 241, 0.4);
+            --text: #1a1a2e;
+            --text-2: #606080;
+            --text-3: #9090a0;
+            --accent: #6366f1;
+            --accent-2: #4f46e5;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+            --accent-glow-2: rgba(99, 102, 241, 0.08);
+            --red-bg: rgba(248, 113, 113, 0.06);
+            --red-border: rgba(248, 113, 113, 0.2);
+            --green-bg: rgba(74, 222, 128, 0.06);
+            --green-border: rgba(74, 222, 128, 0.2);
         }
 
         *,
@@ -122,8 +122,8 @@
             position: absolute;
             inset: 0;
             background:
-                radial-gradient(ellipse at 60% 40%, rgba(0, 229, 192, 0.08) 0%, transparent 60%),
-                radial-gradient(ellipse at 30% 70%, rgba(0, 229, 192, 0.05) 0%, transparent 50%);
+                radial-gradient(ellipse at 60% 40%, rgba(129, 140, 248, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 70%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
             pointer-events: none;
         }
 
@@ -510,8 +510,8 @@
             padding: 13px;
             border-radius: 12px;
             border: none;
-            background: #00E5C0;
-            color: #070D0D;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: #fff;
             font-family: 'Sora', sans-serif;
             font-size: 0.88rem;
             font-weight: 700;
@@ -699,11 +699,11 @@
                 <!-- Logo -->
                 <div class="auth-logo">
                     <img src="/static/image/logo.png" alt="HAMS.AI" />
-                    <span class="auth-logo-text">Zilf<span class="auth-logo-dot">.ai</span></span>
+                    <span class="auth-logo-text">HAMS<span class="auth-logo-dot">AI</span></span>
                 </div>
 
                 <h1 class="auth-title">Create new account</h1>
-                <p class="auth-sub">Start using Zilf.ai for free</p>
+                <p class="auth-sub">Start using HAMS AI for free</p>
 
                 <!-- Global error -->
                 <div class="auth-global-error" id="globalError" role="alert">
@@ -814,7 +814,7 @@
             <div class="visual-brand">
                 <div class="visual-brand-logo">
                     <img src="/static/image/logo.png" alt="HAMS.AI" />
-                    <span>Zilf<span class="brand-dot">.ai</span></span>
+                    <span>HAMS<span class="brand-dot">AI</span></span>
                 </div>
                 <div class="visual-tagline">
                     Your autonomous AI assistant. Chat, code, research — powered by multi-model intelligence.
