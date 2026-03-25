@@ -154,8 +154,14 @@ class Agent:
                 logger.info(f"[agent:{rid}] Task is simple, skipping planner.")
                 should_plan = False
 
-        # Phase 1: Plan
-        if should_plan:
+        def _should_plan(task: str) -> bool:
+            if len(task) < 200:
+                return False
+            plan_keywords = ["plan", "phase", "step by step", "first.*then", "langkah", "tahap"]
+            import re
+            return any(re.search(kw, task, re.IGNORECASE) for kw in plan_keywords)
+
+        if self.use_planner and _should_plan(task):
             try:
                 state.status = AgentStatus.PLANNING
                 state.plan = await self._planner.plan(task, run_id=rid)

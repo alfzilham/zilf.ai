@@ -113,17 +113,19 @@ async def _tavily_search(query: str, max_results: int, search_depth: str) -> lis
 # ---------------------------------------------------------------------------
 
 async def _ddg_search(query: str, max_results: int) -> list[dict]:
-    """Return results from DuckDuckGo. No API key required."""
     try:
-        from duckduckgo_search import DDGS  # type: ignore[import]
+        from duckduckgo_search import DDGS
     except ImportError:
         import sys, subprocess
-        logger.info("[web_search] duckduckgo-search not found, attempting auto-install...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "duckduckgo-search", "--quiet"])
-        from duckduckgo_search import DDGS  # type: ignore[import]
+        logger.info("[web_search] duckduckgo-search not installed. Installing automatically...")
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "duckduckgo-search", "--quiet"]
+        )
+        from duckduckgo_search import DDGS
 
     import asyncio
 
+    original_query = query
     for attempt in range(3):
         try:
             results: list[dict] = []
@@ -139,7 +141,6 @@ async def _ddg_search(query: str, max_results: int) -> list[dict]:
             if results:
                 return results
 
-            # Empty results — wait and retry with shorter query
             if attempt < 2:
                 wait = (attempt + 1) * 2
                 logger.warning(
@@ -147,17 +148,19 @@ async def _ddg_search(query: str, max_results: int) -> list[dict]:
                     f"retrying in {wait}s with simplified query..."
                 )
                 await asyncio.sleep(wait)
-                # Shorten query on retry (take first 4 words)
-                query = " ".join(query.split()[:4])
+                query = " ".join(original_query.split()[:4])
 
         except Exception as exc:
             logger.warning(f"[web_search] DuckDuckGo attempt {attempt+1} error: {exc}")
             if attempt < 2:
                 await asyncio.sleep(2)
 
-    return [{"title": "Search unavailable", "url": "", "snippet":
-             "Search returned no results after 3 attempts. Use knowledge cutoff data instead.",
-             "score": 0.0}]
+    return [{
+        "title": "Search unavailable",
+        "url": "",
+        "snippet": "Search returned no results after 3 attempts. Use your training knowledge instead.",
+        "score": 0.0,
+    }]
 
 
 # ---------------------------------------------------------------------------

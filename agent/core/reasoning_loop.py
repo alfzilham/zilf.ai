@@ -403,23 +403,28 @@ class ReasoningLoop:
 
         failed = [r for r in step.tool_results if not r.success]
         if failed:
-            is_recoverable = False
             for r in failed:
-                err_text = str(r.error or "")
-                if any(kw in err_text for kw in ["not installed", "ModuleNotFoundError", "ImportError", "Run: pip install"]):
-                    is_recoverable = True
-                    break
-                    
-            if is_recoverable:
-                reflections.append(
-                    "REQUIRED NEXT ACTION: Run `pip install <package>` using run_command, "
-                    "then retry the original tool call. Do NOT give a final answer yet."
-                )
-
-            reflections.append(
-                f"⚠️ {len(failed)} tool(s) failed: {[r.tool_name for r in failed]}. "
-                "Will try to recover on the next step."
-            )
+                error_text = (r.error or r.output or "").lower()
+                recoverable_keywords = [
+                    "not installed", "modulenotfounderror", "importerror",
+                    "no module named", "run: pip install", "pip install",
+                ]
+                if any(kw in error_text for kw in recoverable_keywords):
+                    import re
+                    pkg_match = re.search(r'pip install ([\w\-]+)', r.error or r.output or "", re.IGNORECASE)
+                    pkg = pkg_match.group(1) if pkg_match else "the missing package"
+                    reflections.append(
+                        f"⚠️ Tool `{r.tool_name}` failed because a dependency is missing. "
+                        f"REQUIRED NEXT ACTION: Call run_command with "
+                        f'command="pip install {pkg}" to install it, '
+                        f"then retry {r.tool_name} with the same arguments. "
+                        f"Do NOT give a final_answer yet — the task is not complete."
+                    )
+                else:
+                    reflections.append(
+                        f"⚠️ Tool `{r.tool_name}` failed: {(r.error or '')[:120]}. "
+                        "Will try to recover on the next step."
+                    )
 
         empty_outputs = [
             r for r in step.tool_results
@@ -514,9 +519,7 @@ class ReasoningLoop:
 - Use tools repeatedly until the task is 100% complete
 - Only use final_answer when ALL work is done and verified
 
-## RESPONSE FORMAT
-
-Use the native tool calling feature to execute tools. Do not output raw JSON or XML tags for tools in your text response.
+# Tool calling format is defined in the provider layer (hams_max_provider.py)
 
 ## Available Tools
 {tools_list}
