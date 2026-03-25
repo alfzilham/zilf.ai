@@ -107,7 +107,6 @@ body {
     display: flex;
     height: 100dvh;
     overflow: hidden;
-    margin: 0;
 }
 
 /* ── Background gradient ── */
@@ -115,13 +114,16 @@ body::before {
     display: none;
 }
 
-/* body>* z-index removed — stacking controlled per-element */
+body>* {
+    position: relative;
+    z-index: 1;
+}
 
 /* ── Aurora background ── */
 #auroraBg {
     position: fixed;
     inset: 0;
-    z-index: -1;
+    z-index: -10;
     pointer-events: none;
     opacity: 0.5;
     width: 100%;
@@ -141,7 +143,6 @@ body::before {
     height: 100%;
     transition: transform 0.28s cubic-bezier(.4, 0, .2, 1), width 0.28s;
     z-index: 50;
-    position: relative;
     box-shadow: 4px 0 32px rgba(0, 0, 0, 0.3);
 }
 
@@ -384,10 +385,10 @@ body::before {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0;
-    height: 100%;
-    position: relative;
+    height: 100vh;
     overflow: hidden;
+    min-width: 0;
+    position: relative;
 }
 
 /* ── Topbar ── */
@@ -403,8 +404,8 @@ body::before {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     overflow: visible;
+    z-index: 100;
     position: relative;
-    z-index: 40;
 }
 
 /* Hamburger (mobile) */
@@ -497,9 +498,10 @@ body::before {
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(0, 229, 192, 0.06);
-    z-index: 1000;
+    z-index: 200;
     overflow: hidden;
     padding: 6px;
+    z-index: 999;
 }
 
 .model-panel.open {
@@ -1811,10 +1813,8 @@ body::before {
    INPUT AREA
 ════════════════════════════════════ */
 #inputArea {
-    padding: 0 20px 20px;
+    padding: 0 20px 18px;
     flex-shrink: 0;
-    position: relative;
-    z-index: 30;
 }
 
 .input-card {
@@ -2122,26 +2122,13 @@ body::before {
         position: fixed;
         top: 0;
         left: 0;
-        height: 100%;
+        bottom: 0;
         transform: translateX(-100%);
-        z-index: 999;
+        z-index: 50;
     }
 
     #sidebar.open {
         transform: translateX(0);
-    }
-
-    /* Sidebar overlay backdrop */
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 998;
-    }
-
-    .sidebar-overlay.open {
-        display: block;
     }
 
     .hamburger {
