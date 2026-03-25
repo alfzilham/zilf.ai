@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id" data-theme="dark">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zilf.ai — CLI & Code</title>
+    <title>Zilf.ai â€” CLI & Code</title>
     <link rel="icon" type="image/png" href="/static/image/logo.png" />
     <link
         href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
@@ -65,14 +65,14 @@
             overflow: hidden;
         }
 
-        /* ══════════════════════════════════════
+        /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    CLI INTRO OVERLAY
-══════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
         #cliIntro {
             position: fixed;
             inset: 0;
             z-index: 9999;
-            background: #1a1a1a;
+            background: linear-gradient(160deg, #020d0e 0%, #041419 50%, #020a0b 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -153,7 +153,7 @@
             font-weight: 400;
         }
 
-        /* ── Ticket glassmorphism ── */
+        /* â”€â”€ Ticket glassmorphism â”€â”€ */
         .intro-ticket {
             width: min(480px, 90vw);
             cursor: pointer;
@@ -295,10 +295,10 @@
             white-space: nowrap;
         }
 
-        /* ── CTA ── */
+        /* â”€â”€ CTA â”€â”€ */
         .intro-cta {
-            background: #f3f3f3;
-            color: #1a1a1a;
+            background: #00c8d4;
+            color: #000000;
             border: none;
             padding: 13px 32px;
             border-radius: 10px;
@@ -311,7 +311,7 @@
         }
 
         .intro-cta:hover {
-            background: #fff;
+            background: #00e5f0;
             transform: translateY(-1px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
@@ -371,7 +371,7 @@
             color: var(--text);
         }
 
-        /* ── Main ── */
+        /* â”€â”€ Main â”€â”€ */
         #main {
             flex: 1;
             display: flex;
@@ -426,7 +426,7 @@
             border-color: rgba(255, 255, 255, 0.15);
         }
 
-        /* ── Content ── */
+        /* â”€â”€ Content â”€â”€ */
         #content {
             flex: 1;
             overflow-y: auto;
@@ -449,7 +449,7 @@
             gap: 48px;
         }
 
-        /* ── TOC Sidebar ── */
+        /* â”€â”€ TOC Sidebar â”€â”€ */
         .toc {
             width: 200px;
             flex-shrink: 0;
@@ -501,7 +501,7 @@
             border-left-color: rgba(255, 255, 255, 0.2);
         }
 
-        /* ── Doc Content ── */
+        /* â”€â”€ Doc Content â”€â”€ */
         .doc-content {
             flex: 1;
             min-width: 0;
@@ -598,7 +598,7 @@
             color: var(--accent);
         }
 
-        /* ── Code Block ── */
+        /* â”€â”€ Code Block â”€â”€ */
         .code-wrap {
             background: var(--code-bg);
             border: 1px solid var(--border2);
@@ -665,7 +665,7 @@
             border-radius: 4px;
         }
 
-        /* ── Prereq list ── */
+        /* â”€â”€ Prereq list â”€â”€ */
         .prereq-list {
             display: flex;
             flex-direction: column;
@@ -689,7 +689,7 @@
             font-size: 0.9rem;
         }
 
-        /* ── Info box ── */
+        /* â”€â”€ Info box â”€â”€ */
         .info-box {
             display: flex;
             gap: 10px;
@@ -721,9 +721,9 @@
 
 <body>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      CLI INTRO OVERLAY
-══════════════════════════════════════ -->
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div id="cliIntro">
         <button class="intro-close" onclick="closeIntro()">
             <i class="bi bi-x-lg"></i>
@@ -731,7 +731,7 @@
 
         <div class="intro-content">
             <h1 class="intro-title">Your terminal,<br />now supercharged.</h1>
-            <p class="intro-sub">From idea to code — autonomously, from anywhere.</p>
+            <p class="intro-sub">From idea to code â€” autonomously, from anywhere.</p>
 
             <div class="intro-ticket" onclick="closeIntro()">
                 <div class="ticket-inner">
@@ -796,6 +796,7 @@
                     <a class="toc-sub" onclick="scrollToSection('install', this)">Instalasi</a>
                     <a class="toc-sub" onclick="scrollToSection('commands', this)">Perintah</a>
                     <a class="toc-sub" onclick="scrollToSection('session', this)">Contoh Sesi</a>
+                    <a class="toc-item" onclick="scrollToSection('install-zilf', this)">Install Zilf CLI</a>
                     <a class="toc-item" onclick="scrollToSection('usage', this)">Penggunaan</a>
                     <a class="toc-sub" onclick="scrollToSection('agent', this)">Jalankan Agent</a>
                     <a class="toc-sub" onclick="scrollToSection('python', this)">Via CLI Python</a>
@@ -822,12 +823,12 @@
                         </div>
 
                         <div class="doc-text">
-                            Gunakan Zilf AI langsung dari terminal mana saja menggunakan <code>zilf</code> — tanpa perlu
+                            Gunakan Zilf AI langsung dari terminal mana saja menggunakan <code>zilf</code> â€” tanpa perlu
                             masuk ke folder project setiap kali.
                         </div>
 
                         <!-- Prasyarat -->
-                        <div class="doc-subsection" id="prereq" data-aos="fade-up" data-aos-delay="100">
+                        <div class="doc-subsection" id="prereq" data-aos="fade-up">
                             <div class="doc-subsection-title">Prasyarat CLI</div>
                             <div class="prereq-list">
                                 <div class="prereq-item">
@@ -846,27 +847,27 @@
                         </div>
 
                         <!-- Instalasi -->
-                        <div class="doc-subsection" id="install" data-aos="fade-up" data-aos-delay="100">
-                            <div class="doc-subsection-title">Instalasi — PowerShell (Windows)</div>
+                        <div class="doc-subsection" id="install" data-aos="fade-up">
+                            <div class="doc-subsection-title">Instalasi â€” PowerShell (Windows)</div>
                             <div class="code-wrap">
                                 <div class="code-head">
                                     <span class="code-lang">powershell</span>
                                     <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i>
                                         Copy</button>
                                 </div>
-                                <pre># Step 1 — Install CLI secara global
+                                <pre># Step 1 â€” Install CLI secara global
 npm install -g @zilf-ai/cli
 
-# Step 2 — Tambahkan Python Scripts ke PATH (jika belum)
+# Step 2 â€” Tambahkan Python Scripts ke PATH (jika belum)
 $env:PATH += ";C:\Users\&lt;username&gt;\AppData\Local\Python\pythoncore-3.14-64\Scripts"
 
-# Step 3 — Install Python dependencies (pertama kali saja)
+# Step 3 â€” Install Python dependencies (pertama kali saja)
 pip install -r "C:\path\to\zilf-ai\requirements.txt"
 
-# Step 4 — Set path ke folder project zilf-ai
+# Step 4 â€” Set path ke folder project zilf-ai
 $env:ZILF_PATH = "C:\path\to\zilf-ai"
 
-# Step 5 — Jalankan!
+# Step 5 â€” Jalankan!
 zilf</pre>
                             </div>
                             <div class="info-box">
@@ -893,7 +894,7 @@ $env:ZILF_PATH = "C:\path\to\zilf-ai"</pre>
                         </div>
 
                         <!-- Perintah -->
-                        <div class="doc-subsection" id="commands" data-aos="fade-up" data-aos-delay="100">
+                        <div class="doc-subsection" id="commands" data-aos="fade-up">
                             <div class="doc-subsection-title">Perintah CLI</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -922,7 +923,7 @@ zilf --port 9000</pre>
                         </div>
 
                         <!-- Contoh Sesi -->
-                        <div class="doc-subsection" id="session" data-aos="fade-up" data-aos-delay="100">
+                        <div class="doc-subsection" id="session" data-aos="fade-up">
                             <div class="doc-subsection-title">Contoh Sesi Chat</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -932,18 +933,18 @@ zilf --port 9000</pre>
                                 </div>
                                 <pre>PS C:\Users\LENOVO> zilf
 
-zilf.ai — AI Coding Agent
+zilf.ai â€” AI Coding Agent
 
-✔ zilf.ai ready — port 8000
+âœ” zilf.ai ready â€” port 8000
 
   Type your task and press Enter. Type "exit" to quit.
 
-› Buatkan REST API sederhana dengan FastAPI
+â€º Buatkan REST API sederhana dengan FastAPI
 
   Baik, saya akan membuat REST API dengan FastAPI...
   [agent bekerja...]
 
-› exit
+â€º exit
 
   Goodbye.</pre>
                             </div>
@@ -957,7 +958,7 @@ zilf.ai — AI Coding Agent
                         </div>
 
                         <!-- Jalankan Agent -->
-                        <div class="doc-subsection" id="agent" data-aos="fade-up" data-aos-delay="100">
+                        <div class="doc-subsection" id="agent" data-aos="fade-up">
                             <div class="doc-subsection-title">Jalankan Agent</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -980,7 +981,7 @@ python examples/basic_agent.py --demo</pre>
                         </div>
 
                         <!-- Via CLI Python -->
-                        <div class="doc-subsection" id="python" data-aos="fade-up" data-aos-delay="100">
+                        <div class="doc-subsection" id="python" data-aos="fade-up">
                             <div class="doc-subsection-title">Via CLI Python</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -1000,7 +1001,7 @@ python -m agent.main run "Refactor utils.py" --verbose</pre>
                         </div>
 
                         <!-- Via API -->
-                        <div class="doc-subsection" id="api" data-aos="fade-up" data-aos-delay="100">
+                        <div class="doc-subsection" id="api" data-aos="fade-up">
                             <div class="doc-subsection-title">Via API (FastAPI)</div>
                             <div class="code-wrap">
                                 <div class="code-head">
@@ -1019,6 +1020,135 @@ curl -X POST http://localhost:8000/run \
                         </div>
                     </div>
 
+                
+                    <!-- Cara Install Zilf.ai CLI -->
+                    <div class="doc-section" id="install-zilf" data-aos="fade-up" data-aos-duration="700">
+                        <div class="doc-section-title">
+                            <i class="bi bi-download"></i> Cara Install Zilf.ai CLI
+                        </div>
+
+                        <div class="doc-text">
+                            Panduan lengkap instalasi <code>zilf</code> CLI di Windows menggunakan PowerShell, dari awal hingga siap digunakan.
+                        </div>
+
+                        <!-- Step 1 -->
+                        <div class="doc-subsection">
+                            <div class="doc-subsection-title">Step 1 — Clone repository</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">powershell</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i> Copy</button>
+                                </div>
+                                <pre># Clone repo zilf.ai ke folder lokal
+git clone https://github.com/zilf-ai/zilf.ai.git "D:\2026\Workspace\Website\.AI\.zilf.ai"
+cd "D:\2026\Workspace\Website\.AI\.zilf.ai"</pre>
+                            </div>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="doc-subsection">
+                            <div class="doc-subsection-title">Step 2 — Install Node.js dependencies & link CLI</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">powershell</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i> Copy</button>
+                                </div>
+                                <pre># Masuk ke folder CLI
+cd ".\.zilf.ai\cli"
+
+# Install dependencies
+npm install
+
+# Link ke global agar bisa dipakai dari mana saja
+npm link
+
+# Verifikasi instalasi
+zilf --version</pre>
+                            </div>
+                        </div>
+
+                        <!-- Step 3 -->
+                        <div class="doc-subsection">
+                            <div class="doc-subsection-title">Step 3 — Setup environment variables</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">powershell</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i> Copy</button>
+                                </div>
+                                <pre># Buat file .env di root project
+Copy-Item ".env.example" ".env"
+
+# Edit .env — isi API key dan URL
+notepad ".env"
+
+# Isi minimal ini di dalam .env:
+# ZILF_MAX_API_URL=https://your-zilf-max.railway.app
+# ZILF_MAX_API_KEY=your_api_key_here</pre>
+                            </div>
+                        </div>
+
+                        <!-- Step 4 -->
+                        <div class="doc-subsection">
+                            <div class="doc-subsection-title">Step 4 — Install Python dependencies & jalankan backend</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">powershell</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i> Copy</button>
+                                </div>
+                                <pre"># Install Python dependencies
+pip install -r requirements.txt
+
+# Jalankan backend FastAPI (terminal terpisah)
+uvicorn agent.api:app --host 0.0.0.0 --port 8000 --reload</pre>
+                            </div>
+                        </div>
+
+                        <!-- Step 5 -->
+                        <div class="doc-subsection">
+                            <div class="doc-subsection-title">Step 5 — Buat PATH permanen (opsional)</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">powershell</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i> Copy</button>
+                                </div>
+                                <pre># Buka PowerShell profile
+notepad $PROFILE
+
+# Tambahkan baris ini ke file profile, lalu simpan:
+$env:ZILF_PATH = "D:\2026\Workspace\Website\.AI\.zilf.ai"
+$env:PATH += ";$env:ZILF_PATH\cli\bin"
+
+# Reload profile
+. $PROFILE</pre>
+                            </div>
+                            <div class="info-box">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <p>Setelah <code>npm link</code>, perintah <code>zilf</code> sudah tersedia global. Step PATH hanya diperlukan jika <code>npm link</code> tidak bekerja di environment kamu.</p>
+                            </div>
+                        </div>
+
+                        <!-- Step 6 — Test -->
+                        <div class="doc-subsection">
+                            <div class="doc-subsection-title">Step 6 — Test CLI</div>
+                            <div class="code-wrap">
+                                <div class="code-head">
+                                    <span class="code-lang">powershell</span>
+                                    <button class="copy-btn" onclick="copyCode(this)"><i class="bi bi-clipboard"></i> Copy</button>
+                                </div>
+                                <pre"># Cek versi
+zilf --version
+
+# Cek status backend
+zilf status
+
+# Mulai sesi chat
+zilf
+
+# Atau langsung kirim task
+zilf run "Buatkan fungsi Python untuk bubble sort"</pre>
+                            </div>
+                        </div>
+                    </div>
                 </div><!-- /doc-content -->
             </div><!-- /cli-layout -->
         </div><!-- /content -->
@@ -1050,8 +1180,8 @@ curl -X POST http://localhost:8000/run \
             });
         }
 
-        // Intersection Observer — auto highlight TOC saat scroll
-        const sections = ['cli', 'prereq', 'install', 'commands', 'session', 'usage', 'agent', 'python', 'api'];
+        // Intersection Observer â€” auto highlight TOC saat scroll
+        const sections = ['cli', 'prereq', 'install', 'commands', 'session', 'install-zilf', 'usage', 'agent', 'python', 'api'];
         const tocMap = {
             'cli': document.querySelector('.toc-item:nth-child(2)'),
             'prereq': document.querySelector('.toc-sub:nth-child(3)'),
@@ -1117,7 +1247,7 @@ curl -X POST http://localhost:8000/run \
     </script>
     <!-- AOS JS -->
     <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-    <script>AOS.init({ once: true, easing: 'ease-out-cubic', container: document.getElementById('content') });</script>
+    <script>AOS.init({ once: true, easing: 'ease-out-cubic', offset: 50 });</script>
 </body>
 
 </html>
