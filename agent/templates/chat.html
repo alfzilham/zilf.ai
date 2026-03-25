@@ -1,382 +1,331 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="id" data-theme="dark">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="HAMS.OS — Autonomous AI Agent Operating System" />
+    <meta name="description" content="HAMS.AI — Autonomous AI Assistant powered by Groq &amp; NVIDIA models" />
     <meta name="theme-color" content="#07070d" />
-    <title>HAMS.OS — Agent Operating System</title>
+    <meta property="og:title" content="HAMS.AI" />
+    <meta property="og:description" content="Autonomous AI Assistant powered by Groq &amp; NVIDIA models" />
+    <meta property="og:type" content="website" />
+    <title>HAMS.AI — Autonomous AI Assistant</title>
     <link rel="icon" type="image/png" href="/static/favicon/apple-icon.png" />
-    
+    <link rel="apple-touch-icon" href="/static/image/logo.png" />
+
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
-    
-    <!-- Existing CSS for raw bubble styles (we will override layout with Tailwind) -->
-    <link rel="stylesheet" href="/static/chat.css?v=4" />
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/chat.css?v=3" />
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: ['class', '[data-theme="dark"]'],
-            theme: {
-                extend: {
-                    colors: {
-                        bg: '#07070d',
-                        surface: '#0a0a0d',
-                        surface2: '#121218',
-                        border: 'rgba(255, 255, 255, 0.08)',
-                        accent: '#4FD1C5', // Teal accent matching HAMS brand request
-                        accentglow: 'rgba(79, 209, 197, 0.15)',
-                    },
-                    fontFamily: {
-                        sans: ['Sora', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Force tailwind layout logic over chat.css for the main scaffolding */
-        body { display: flex !important; flex-direction: row !important; height: 100vh !important; overflow: hidden !important; background-color: #07070d !important; width: 100vw !important;}
-        #sidebar { width: 280px !important; flex-shrink: 0 !important; border-right: 1px solid rgba(255,255,255,0.08) !important; background: rgba(10,10,13,0.7) !important; box-shadow: none !important; }
-        #main { flex: 1 !important; display: flex !important; flex-direction: column !important; min-width: 0 !important; background: none !important; }
-        #topbar { height: 3.5rem !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; background: rgba(10,10,13,0.6) !important; box-shadow: none !important; }
-        #content { flex: 1 !important; display: flex !important; flex-direction: column !important; padding: 1.5rem !important; }
-        #inputArea { padding: 0 1.5rem 1.5rem 1.5rem !important; background: none !important; border: none !important; }
-        
-        /* Agent Message bubbles should feel more technical now */
-        .msg-row.ai .bubble { border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 85%; }
-        .msg-row.user { justify-content: flex-end; }
-        .msg-row.user .bubble { border-radius: 12px; background: rgba(79, 209, 197, 0.1); border: 1px solid rgba(79, 209, 197, 0.2); }
-        
-        /* Ensure Aurora background stays out of the way */
-        #auroraBg { z-index: -10; opacity: 0.3 !important; }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-    </style>
-
-    <!-- External Libs -->
+    <!-- === TAMBAHAN UNTUK FILE ATTACHMENT (Fase 1) === -->
+    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
-    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';</script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
+    </script>
+
+    <!-- Mammoth.js untuk .docx -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js"></script>
+
+    <!-- THREE.JS CDN — untuk 3D Orb -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 
-<body class="text-gray-200 antialiased font-sans">
+<body>
     <canvas id="auroraBg"></canvas>
-    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
 
-    <!-- LEFT SIDEBAR -->
-    <div id="sidebar" class="flex flex-col bg-surface/50 border-r border-white/10 backdrop-blur-xl z-50 transition-transform duration-300 w-[280px] h-full absolute lg:relative -translate-x-full lg:translate-x-0">
-        
-        <!-- Brand -->
-        <div class="px-5 py-4 flex items-center justify-between shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10 border border-teal-500/30 flex justify-center items-center text-teal-400">
-                    <i class="bi bi-robot text-lg"></i>
-                </div>
-                <span class="font-bold text-lg tracking-tight text-white">HAMS<span class="text-teal-400">.OS</span></span>
+    <!-- ══════════════════════════════════════
+     SIDEBAR OVERLAY (mobile backdrop)
+══════════════════════════════════════ -->
+    <div id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ══════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════ -->
+    <div id="sidebar">
+
+        <!-- Logo + Collapse -->
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <img src="/static/image/logo.png" alt="HAMS.AI"
+                    style="width:22px;height:22px;border-radius:5px;object-fit:cover;" />
             </div>
-            <button class="text-gray-400 hover:text-white lg:hidden" onclick="closeSidebar()"><i class="bi bi-x-lg"></i></button>
-        </div>
-        
-        <!-- New Session -->
-        <div class="px-5 mb-5 shrink-0">
-            <button onclick="clearChat()" class="w-full py-2.5 px-4 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 rounded-xl text-teal-400 font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(79,209,197,0.1)] hover:shadow-[0_0_20px_rgba(79,209,197,0.2)]">
-                <i class="bi bi-plus-lg"></i> New Session
+            <span class="sidebar-label">HAMS<span class="logo-dot">AI</span></span>
+            <button class="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse">
+                <i class="bi bi-layout-sidebar-reverse"></i>
             </button>
         </div>
 
-        <!-- Active Modules (AOS specific) -->
-        <div class="px-5 mb-3 shrink-0">
-            <div class="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center justify-between">
-                <span>Active Modules</span>
-                <i class="bi bi-circle-fill text-[6px] text-teal-400 animate-pulse"></i>
-            </div>
-            <div class="flex flex-col gap-2">
-                <div class="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-300 flex items-center justify-between">
-                    <div class="flex items-center gap-2"><i class="bi bi-globe2 text-teal-400"></i> Web Search</div>
-                    <div class="w-6 h-3 bg-teal-500/20 rounded-full relative"><div class="absolute right-0.5 top-0.5 w-2 h-2 bg-teal-400 rounded-full shadow-[0_0_5px_#4FD1C5]"></div></div>
-                </div>
-                <div class="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-300 flex items-center justify-between">
-                    <div class="flex items-center gap-2"><i class="bi bi-terminal text-teal-400"></i> Code Execution</div>
-                    <div class="w-6 h-3 bg-teal-500/20 rounded-full relative"><div class="absolute right-0.5 top-0.5 w-2 h-2 bg-teal-400 rounded-full shadow-[0_0_5px_#4FD1C5]"></div></div>
-                </div>
-            </div>
+        <!-- New Chat -->
+        <div class="sidebar-new-chat">
+            <button class="new-chat-btn" onclick="clearChat()">
+                <i class="bi bi-plus-lg"></i>
+                <span class="sidebar-label">New chat</span>
+            </button>
         </div>
 
         <!-- Search -->
-        <div class="px-5 mt-3 mb-2 shrink-0">
-            <div class="relative">
-                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                <input type="text" id="searchInput" placeholder="Search memory..." class="w-full bg-black/40 border border-white/10 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:border-teal-500/50 focus:outline-none transition-all" autocomplete="off" />
-            </div>
+        <div class="sidebar-search">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search chats" id="searchInput" autocomplete="off" class="sidebar-label" />
+            <span class="search-kbd sidebar-label">⌘K</span>
         </div>
 
-        <!-- Memory/History List -->
-        <div class="flex-1 overflow-y-auto mt-2 px-3" id="historyList">
-            <div class="history-empty text-xs text-gray-500 text-center py-4">No memory available</div>
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+            <div class="nav-item active" id="navHome" onclick="clearChat()" title="Home">
+                <i class="bi bi-house-door"></i> <span class="sidebar-label">Home</span>
+            </div>
+            <div class="nav-item" id="navChat" onclick="setMode('chat'); closeSidebar()" title="Chat">
+                <i class="bi bi-chat-dots"></i> <span class="sidebar-label">Chat</span>
+            </div>
+            <div class="nav-item" id="navAgent" onclick="setMode('agent'); closeSidebar()" title="Agent">
+                <i class="bi bi-lightning-charge"></i> <span class="sidebar-label">Agent</span>
+            </div>
+            <div class="nav-item" title="Code" onclick="window.location.href='/cli'">
+                <i class="bi bi-code-slash"></i> <span class="sidebar-label">Code</span>
+            </div>
+            <div class="nav-item" title="History" onclick="openHistoryModal()">
+                <i class="bi bi-clock-history"></i> <span class="sidebar-label">History</span>
+            </div>
+        </nav>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Chat history -->
+        <div class="sidebar-history sidebar-label" id="historyList">
+            <div class="history-empty">Belum ada riwayat chat</div>
         </div>
 
-        <!-- Agent Mode Toggle -->
-        <div class="p-4 border-t border-white/10 shrink-0">
-            <div class="flex bg-black/40 rounded-lg p-1 border border-white/5">
-                <button id="btnChat" onclick="setMode('chat')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-md text-gray-400 hover:text-white transition-all">Chat Mode</button>
-                <button id="btnAgent" onclick="setMode('agent')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-md bg-white/10 text-teal-400 shadow-[0_2px_10px_rgba(0,0,0,0.5)] transition-all">Agent Mode</button>
+        <!-- Bottom -->
+        <div class="sidebar-bottom">
+            <div class="nav-item" onclick="toggleTheme()" title="Theme">
+                <i class="bi bi-sun" id="themeIcon"></i>
+                <span class="sidebar-label">Theme</span>
             </div>
-        </div>
-
-        <!-- User Profile -->
-        <div class="p-4 border-t border-white/10 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-all shrink-0" onclick="toggleProfileDropdown(event)">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 flex items-center justify-center text-sm font-bold text-white shadow-inner" id="profileAvatar">U</div>
-                <div>
-                    <div class="text-xs font-semibold text-white leading-tight" id="profileName">Operator</div>
-                    <div class="text-[0.65rem] text-teal-400 font-medium">System Admin</div>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-profile" onclick="toggleProfileDropdown(event)">
+                <div class="profile-avatar" id="profileAvatar">AI</div>
+                <div class="profile-info sidebar-label">
+                    <div class="profile-name" id="profileName">HAMS User</div>
+                    <div class="profile-plan">Free plan</div>
                 </div>
-            </div>
-            <i class="bi bi-three-dots-vertical text-gray-400 text-sm"></i>
-        </div>
-    </div>
-
-    <!-- MAIN AREA -->
-    <div id="main" class="flex-1 flex flex-col bg-bg relative min-w-0">
-        
-        <!-- Top Header -->
-        <div id="topbar" class="h-[3.5rem] border-b border-white/10 bg-surface/80 backdrop-blur-xl flex items-center px-4 md:px-6 justify-between z-40 shrink-0">
-            <div class="flex items-center gap-4">
-                <button class="lg:hidden text-gray-400 hover:text-white" onclick="openSidebar()"><i class="bi bi-list text-xl"></i></button>
-                
-                <!-- Connection Status -->
-                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-black/40 rounded-lg border border-white/5">
-                    <div class="w-2 h-2 rounded-full bg-teal-400 animate-pulse shadow-[0_0_8px_#4FD1C5]"></div>
-                    <span class="text-[11px] font-semibold text-teal-400 tracking-wide uppercase">Online</span>
-                </div>
-
-                <!-- Model Selector -->
-                <div class="relative group cursor-pointer" id="modelDropdown" onclick="toggleModelDropdown()">
-                    <div class="flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10 transition-all">
-                        <i class="bi bi-cpu text-teal-400 text-sm"></i>
-                        <span id="modelLabel" class="text-xs font-bold text-white tracking-wide">HAMS-MAX</span>
-                        <i class="bi bi-chevron-down text-gray-500 text-[10px] transition-transform group-hover:rotate-180" id="modelChevron"></i>
-                    </div>
-                    <input type="hidden" id="modelSelect" value="hams-max" />
-                    <!-- Panel rendered by JS typically, but we hardcode structure back for compatibility -->
-                    <div class="absolute left-0 top-full mt-2 w-64 bg-[#121218] border border-white/10 rounded-xl shadow-2xl p-2 hidden z-50" id="modelPanel">
-                        <div class="mb-2">
-                            <div class="text-[10px] uppercase font-bold text-gray-500 px-2 py-1 tracking-widest">HAMS Core</div>
-                            <div class="flex items-center gap-2 px-2 py-2 text-xs text-white hover:bg-white/10 rounded cursor-pointer bg-white/5 border border-white/10" data-value="hams-max" onclick="selectModel(this)">
-                                <div class="w-5 h-5 rounded bg-white/10 text-[10px] flex items-center justify-center font-bold">H</div> HAMS-MAX
-                            </div>
-                        </div>
-                        <div>
-                            <div class="text-[10px] uppercase font-bold text-gray-500 px-2 py-1 tracking-widest">Google</div>
-                            <div class="flex items-center gap-2 px-2 py-2 text-xs text-gray-400 hover:bg-white/10 hover:text-white rounded cursor-pointer transition-colors" data-value="gemini-2.5-flash-lite-preview-06-17" onclick="selectModel(this)">
-                                <div class="w-5 h-5 rounded bg-blue-500/20 text-blue-400 text-[10px] flex items-center justify-center font-bold">G</div> Gemini 2.5 Flash-Lite
-                            </div>
-                            <div class="flex items-center gap-2 px-2 py-2 text-xs text-gray-400 hover:bg-white/10 hover:text-white rounded cursor-pointer transition-colors" data-value="gemini-2.5-pro-preview-06-05" onclick="selectModel(this)">
-                                <div class="w-5 h-5 rounded bg-blue-500/20 text-blue-400 text-[10px] flex items-center justify-center font-bold">G</div> Gemini 2.5 Pro
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4">
-                <!-- Theme/Ext toggles hidden in AOS, using extended by default or code toggle -->
-                <div id="extPill" class="hidden ext-pill" onclick="toggleExtended()"><span>Extended</span><div class="ext-switch"></div></div>
-                
-                <!-- Cost Tracker Segment -->
-                <div class="hidden md:flex flex-col items-end">
-                    <div class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Est. Cost</div>
-                    <div class="text-xs font-mono text-teal-400 font-bold">$0.0000</div>
-                </div>
-
-                <div class="hidden md:block w-px h-6 bg-white/10 mx-1"></div>
-
-                <!-- Right Sidebar Toggle -->
-                <button class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-teal-400 hover:bg-teal-400/10 border border-transparent hover:border-teal-400/20 transition-all font-bold" title="Toggle System Trace" onclick="document.getElementById('rightSidebar').classList.toggle('hidden'); document.getElementById('rightSidebar').classList.toggle('lg:flex');">
-                    <i class="bi bi-layout-sidebar-reverse text-lg"></i>
+                <button class="profile-menu-btn sidebar-label" title="Menu">
+                    <i class="bi bi-three-dots-vertical"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Chat Content Area -->
-        <div id="content" class="flex-1 overflow-y-auto relative scroll-smooth flex flex-col p-4 md:p-6 pb-2">
-            
-            <!-- Welcome Screen -->
-            <div id="welcome" class="m-auto w-full max-w-4xl flex flex-col items-center py-10 animate-[fadeIn_0.5s_ease-out]">
-                <!-- 3D Orb Integration -->
-                <div class="relative w-32 h-32 mb-8" id="orbWrap">
-                    <canvas id="orbCanvas" class="absolute inset-0 w-full h-full"></canvas>
-                    <div class="absolute inset-0 flex items-center justify-center gap-8 pointer-events-none" id="orbEyesOverlay">
-                        <div id="eyeLeft" class="w-1.5 h-12 bg-black rounded-full shadow-[0_0_15px_rgba(255,255,255,0.8)]"></div>
-                        <div id="eyeRight" class="w-1.5 h-12 bg-black rounded-full shadow-[0_0_15px_rgba(255,255,255,0.8)]"></div>
-                    </div>
-                </div>
-                
-                <h1 class="text-3xl font-bold tracking-tight text-white mb-2 text-center leading-tight">System <span class="text-teal-400">Initialized.</span></h1>
-                <p class="text-gray-400 text-sm text-center mb-10 max-w-lg leading-relaxed"><span id="greetPart">Hello</span>, <span id="greetingName" class="text-white font-medium">Operator</span>. The Agent Operating System is ready. Describe your objective and the agent will execute autonomously.</p>
-                
-                <!-- Quick Actions Dashboard -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full" id="featureCards">
-                    <!-- Cards will be populated dynamically by chat.js updateFeatureCards(), but we can style them in CSS or rely on existing structures -->
-                </div>
-            </div>
+    </div><!-- /sidebar -->
 
-            <!-- Chat Messages Container -->
-            <div id="chatBox" class="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-8"></div>
-        </div>
+    <!-- ══════════════════════════════════════
+     MAIN AREA
+══════════════════════════════════════ -->
+    <div id="main">
 
-        <!-- Input Area (OS Terminal Style) -->
-        <div id="inputArea" class="w-full max-w-5xl mx-auto px-4 md:px-6 pb-6 shrink-0 relative z-10">
-            <!-- Hint overlay -->
-            <div class="absolute -top-7 left-8 text-[10px] text-gray-500 font-mono tracking-widest font-bold uppercase hidden md:flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-teal-500/50"></span> Terminal Input Ready
-                <span id="modeHint" class="hidden">Chat</span>
-            </div>
+        <!-- Topbar -->
+        <div id="topbar">
 
-            <!-- Attachments -->
-            <div id="attachmentArea" class="flex flex-wrap gap-2 mb-2 empty:hidden">
-                <div id="attachmentChips" class="flex flex-wrap gap-2"></div>
-            </div>
-            
-            <div class="bg-[#0f0f13] border border-white/10 rounded-2xl focus-within:border-teal-500/50 focus-within:shadow-[0_0_30px_rgba(79,209,197,0.05)] transition-all flex flex-col pt-3 pb-2 px-1 relative shadow-2xl">
-                <!-- Textarea -->
-                <textarea id="userInput" rows="1" class="w-full bg-transparent text-[13px] md:text-sm text-gray-200 focus:outline-none resize-none max-h-48 px-3 placeholder-gray-600 font-sans" placeholder="Run command or message the agent..." oninput="autoResize(this)" onkeydown="handleKey(event)" autocomplete="off"></textarea>
-                
-                <div class="flex items-center justify-between mt-3 px-2">
-                    <div class="flex items-center gap-1.5">
-                        <button id="attachBtn" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/5 transition-all" title="Attach context (File/Image)">
-                            <i class="bi bi-paperclip text-lg"></i>
-                        </button>
-                        <input type="file" id="fileInput" class="hidden" multiple accept=".txt,.js,.py,.html,.css,.json,.md,.pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,.mp4,.webm" />
-                        
-                        <div class="w-px h-4 bg-white/10 mx-1"></div>
-                        
-                        <!-- Toggle Agent/Chat Mode in input -->
-                        <button class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all text-[11px] font-bold tracking-wide uppercase border border-transparent hover:border-white/5" onclick="setModeAndFocus('agent')">
-                            <i class="bi bi-robot text-teal-400 text-sm"></i> Auto-Pilot
-                        </button>
-                        
-                        <!-- Agent Slider -->
-                        <div id="agentSlider" class="hidden items-center gap-2 ml-2 bg-black/30 px-3 py-1.5 rounded-lg border border-white/5">
-                            <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Max Steps</span>
-                            <input type="range" class="w-20 accent-teal-500 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer" min="1" max="30" value="15" id="maxStepsRange" oninput="document.getElementById('maxStepsVal').textContent=this.value">
-                            <span id="maxStepsVal" class="text-[11px] text-teal-400 font-mono font-bold w-4 text-center">15</span>
+            <!-- Hamburger (mobile only) -->
+            <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <!-- Model selector -->
+            <div class="model-dropdown" id="modelDropdown" onclick="toggleModelDropdown()">
+                <i class="bi bi-cpu model-icon"></i>
+                <span id="modelLabel">HAMS-MAX</span>
+                <i class="bi bi-chevron-down chevron-icon" id="modelChevron"></i>
+
+                <div class="model-panel" id="modelPanel">
+                    <div class="model-group">
+                        <div class="model-group-label">HAMS-MAX — Powered by 12 Models</div>
+                        <div class="model-option selected" data-value="hams-max" onclick="selectModel(this)">
+                            <span class="model-badge hams">H</span>HAMS-MAX
                         </div>
                     </div>
-
-                    <div class="flex items-center gap-3">
-                        <span class="text-[10px] text-gray-500 hidden md:block">
-                            <kbd class="px-1.5 py-0.5 rounded border border-white/10 bg-black text-gray-400 font-sans shadow-sm">Shift</kbd> + <kbd class="px-1.5 py-0.5 rounded border border-white/10 bg-black text-gray-400 font-sans shadow-sm">Enter</kbd> line break
-                        </span>
-                        
-                        <button id="sendBtn" class="w-9 h-9 flex items-center justify-center rounded-xl bg-teal-500 hover:bg-teal-400 text-bg transition-all shadow-[0_0_15px_rgba(79,209,197,0.3)] hover:shadow-[0_0_25px_rgba(79,209,197,0.5)] active:scale-95" onclick="sendMessage()">
-                            <i class="bi bi-arrow-up text-lg font-black"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Hidden elements for chat.js logic -->
-            <div id="extHint" class="hidden"></div>
-        </div>
-    </div>
-
-    <!-- RIGHT SIDEBAR: System Trace (AOS specific) -->
-    <div id="rightSidebar" class="hidden lg:flex flex-col w-[320px] bg-surface/50 border-l border-white/10 backdrop-blur-xl z-40 relative shrink-0 -translate-x-full lg:translate-x-0 transition-transform duration-300">
-        <div class="h-[3.5rem] border-b border-white/10 flex items-center justify-between px-5 shrink-0 bg-surface/80">
-            <h3 class="text-xs font-bold text-white tracking-widest uppercase flex items-center"><i class="bi bi-cpu text-teal-400 mr-2 text-sm"></i> Context Inspector</h3>
-            <button class="text-gray-500 hover:text-white transition-colors" onclick="document.getElementById('rightSidebar').classList.add('hidden')"><i class="bi bi-x-lg"></i></button>
-        </div>
-        
-        <div class="flex-1 overflow-y-auto p-5 pb-24 flex flex-col gap-6 custom-scroll">
-            
-            <!-- Live Token Usage -->
-            <div class="bg-black/30 rounded-xl p-4 border border-white/5 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-2xl group-hover:bg-teal-500/10 transition-colors"></div>
-                <div class="flex items-center justify-between mb-3 relative z-10">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Context Window</span>
-                    <span class="text-[8px] px-1.5 py-0.5 rounded border border-teal-500/30 text-teal-400 font-bold bg-teal-500/10 flex items-center gap-1"><i class="bi bi-record-circle-fill text-[8px] animate-pulse"></i> TRACKING</span>
-                </div>
-                <div class="flex justify-between items-end mb-2 relative z-10">
-                    <span class="text-2xl font-mono text-white tracking-tight leading-none" id="tokenUsageVal">12,045</span>
-                    <span class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-0.5">/ 128k</span>
-                </div>
-                <div class="w-full bg-[#1a1a24] h-1.5 rounded-full overflow-hidden relative z-10 border border-white/5">
-                    <div class="bg-gradient-to-r from-teal-500 to-cyan-400 h-full w-[9%] rounded-full shadow-[0_0_10px_#4FD1C5]"></div>
-                </div>
-            </div>
-
-            <!-- Agent Trace / Reasoning Logic -->
-            <div>
-                <div class="flex items-center justify-between mb-4">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5"><i class="bi bi-activity text-teal-400"></i> Reasoning Logic</span>
-                    <button class="text-gray-500 hover:text-white text-[10px] font-bold uppercase tracking-widest border border-white/10 px-2 py-0.5 rounded bg-white/5">Clear</button>
-                </div>
-                
-                <div class="border-l border-white/10 ml-[5px] pl-4 py-1 flex flex-col gap-5 relative">
-                    <!-- Step 1 -->
-                    <div class="relative group">
-                        <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full border border-teal-500/50 bg-bg group-hover:bg-teal-500/20 transition-colors"></div>
-                        <div class="text-[11px] text-gray-300 font-bold mb-1 uppercase tracking-wide">Intent Parsed</div>
-                        <div class="text-[11px] text-gray-500 leading-relaxed font-mono">User requested complete application rewrite in React. Initializing project structure.</div>
-                    </div>
-
-                    <!-- Step 2 -->
-                    <div class="relative group">
-                        <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(79,209,197,0.5)]"></div>
-                        <div class="text-[11px] text-teal-400 font-bold mb-1 uppercase tracking-wide flex items-center gap-1.5">Action Executing <i class="bi bi-arrow-repeat animate-spin text-white"></i></div>
-                        <div class="text-[11px] text-gray-400 leading-relaxed font-mono p-2 bg-white/5 border border-white/5 rounded-lg mt-1"><span class="text-pink-400 break-all">tool: run_command</span><br/>npx create-react-app ./</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Artifacts / Context Pool -->
-            <div>
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 block flex items-center gap-1.5"><i class="bi bi-folder-symlink text-teal-400"></i> Local Context</span>
-                <div class="bg-black/30 rounded-xl p-2 border border-white/5 flex flex-col gap-1">
-                    <div class="flex items-center gap-2.5 px-3 py-2 hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
-                        <i class="bi bi-filetype-py text-blue-400 text-lg"></i>
-                        <div class="flex flex-col">
-                            <span class="text-[11px] font-semibold text-gray-200 group-hover:text-white">agent/api.py</span>
-                            <span class="text-[9px] text-gray-500 font-mono">248 lines • 12kb</span>
+                    <div class="model-group">
+                        <div class="model-group-label">Google — Gemini</div>
+                        <div class="model-option" data-value="gemini-2.5-flash-lite-preview-06-17"
+                            onclick="selectModel(this)">
+                            <span class="model-badge gemini">Ge</span>Gemini 2.5 Flash-Lite
                         </div>
-                    </div>
-                    <div class="flex items-center gap-2.5 px-3 py-2 hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
-                        <i class="bi bi-filetype-md text-gray-400 text-lg"></i>
-                        <div class="flex flex-col">
-                            <span class="text-[11px] font-semibold text-gray-200 group-hover:text-white">task.md</span>
-                            <span class="text-[9px] text-gray-500 font-mono">22 lines • 1kb</span>
+                        <div class="model-option" data-value="gemini-2.5-flash-preview-05-20"
+                            onclick="selectModel(this)">
+                            <span class="model-badge gemini">Ge</span>Gemini 2.5 Flash
+                        </div>
+                        <div class="model-option" data-value="gemini-2.5-pro-preview-06-05" onclick="selectModel(this)">
+                            <span class="model-badge gemini">Ge</span>Gemini 2.5 Pro - Paid
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- AOS Controls Bottom Bar -->
-        <div class="absolute bottom-0 w-full p-4 border-t border-white/10 bg-surface/90 backdrop-blur-xl flex gap-2 z-10 shrink-0">
-            <button class="flex-1 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-widest text-gray-300 transition-all flex justify-center items-center gap-1.5 shadow-lg"><i class="bi bi-pause-fill text-sm"></i> Pause</button>
-            <button class="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-[11px] font-bold uppercase tracking-widest text-red-400 transition-all flex justify-center items-center gap-1.5 shadow-lg"><i class="bi bi-stop-circle text-sm"></i> Stop</button>
-        </div>
-    </div>
+            <!-- Hidden input untuk value -->
+            <input type="hidden" id="modelSelect" value="hams-max" />
 
-    <!-- Modals & Scripts (Appended below) -->
-    
-    <!-- Preview Modal -->
+            <div class="topbar-spacer"></div>
+
+            <!-- Mode toggle -->
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="btnChat" onclick="setMode('chat')">
+                    <i class="bi bi-chat-dots"></i>
+                    <span>Chat</span>
+                </button>
+                <button class="mode-btn agent" id="btnAgent" onclick="setMode('agent')">
+                    <i class="bi bi-lightning-charge"></i>
+                    <span>Agent</span>
+                </button>
+            </div>
+
+            <!-- Extended thinking toggle -->
+            <div class="ext-pill" id="extPill" onclick="toggleExtended()" title="Extended Thinking">
+                <span>Extended</span>
+                <div class="ext-switch"></div>
+            </div>
+
+            <!-- New chat -->
+            <button class="tb-btn" onclick="clearChat()" title="New chat">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+
+        </div><!-- /topbar -->
+
+        <!-- ── Content area ── -->
+        <div id="content">
+
+            <!-- Welcome screen -->
+            <div id="welcome">
+
+                <!-- ════════════════════════════════════
+     3D ORB & EYES
+════════════════════════════════════ -->
+                <div class="orb-wrap" id="orbWrap">
+                    <!-- Three.js Canvas -->
+                    <canvas id="orbCanvas"></canvas>
+
+                    <!-- Eyes Overlay -->
+                    <div class="orb-eyes-overlay" id="orbEyesOverlay">
+                        <div class="orb-eye-line" id="eyeLeft"></div>
+                        <div class="orb-eye-line" id="eyeRight"></div>
+                    </div>
+                </div>
+
+                <div class="welcome-greeting">
+                    Good <span id="greetPart">Evening</span>,
+                    <span class="greeting-name" id="greetingName">HAMS AI</span>.<br />
+                    Can I help you with anything?
+                </div>
+                <div class="welcome-sub">Powered by HAMS-MAX — Groq &amp; NVIDIA models</div>
+
+                <!-- Feature cards (updated by JS based on mode) -->
+                <div class="feature-cards" id="featureCards">
+                    <div class="feature-card"
+                        onclick="sendSuggestion('Buatkan landing page modern untuk produk kopi premium, HTML CSS JS lengkap dengan animasi.')">
+                        <div class="feature-card-title"><i class="bi bi-globe2" style="color:var(--accent)"></i>
+                            &nbsp;Buat Website</div>
+                        <div class="feature-card-desc">Landing page, dashboard, UI component, dan animasi interaktif
+                            siap pakai.</div>
+                    </div>
+                    <div class="feature-card"
+                        onclick="sendSuggestion('Buatkan REST API FastAPI Python untuk todo list dengan CRUD dan auth JWT, kode lengkap.')">
+                        <div class="feature-card-title"><i class="bi bi-code-slash" style="color:var(--accent)"></i>
+                            &nbsp;Generate Kode</div>
+                        <div class="feature-card-desc">Python, JS, SQL, API — kode lengkap dengan komentar dan error
+                            handling.</div>
+                    </div>
+                    <div class="feature-card"
+                        onclick="sendSuggestion('Analisis perbandingan React vs Vue vs Svelte untuk startup kecil: performa, ekosistem, rekomendasi.')">
+                        <div class="feature-card-title"><i class="bi bi-bar-chart-line" style="color:var(--accent)"></i>
+                            &nbsp;Analisis &amp; Riset</div>
+                        <div class="feature-card-desc">Perbandingan teknologi, strategi, breakdown mendalam, dan
+                            rekomendasi aksi.</div>
+                    </div>
+                </div>
+
+            </div><!-- /welcome -->
+
+            <!-- Chat messages -->
+            <div id="chatBox"></div>
+
+        </div><!-- /content -->
+
+        <!-- ── Input area ── -->
+        <div id="inputArea">
+
+            <!-- Attachment Chips Area -->
+            <div id="attachmentArea" class="attachment-area">
+                <div id="attachmentChips" class="attachment-chips"></div>
+            </div>
+
+            <div class="input-card">
+                <textarea id="userInput" rows="1" placeholder="Message AI Chat..." onkeydown="handleKey(event)"
+                    oninput="autoResize(this)" autocomplete="off"></textarea>
+                <div class="input-actions">
+                    <!-- Attach File -->
+                    <button class="input-icon-btn" id="attachBtn" title="Attach file">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+
+                    <!-- Hidden File Input -->
+                    <input type="file" id="fileInput" multiple
+                        accept=".txt,.js,.py,.html,.css,.json,.md,.pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.webm"
+                        style="display:none;" />
+
+                    <!-- Create image -->
+                    <button class="input-action-btn" onclick="sendSuggestion('Buatkan ilustrasi SVG yang menarik: ')">
+                        <i class="bi bi-image"></i>
+                        <span>Create an image</span>
+                    </button>
+
+                    <!-- Agent mode shortcut -->
+                    <button class="input-action-btn" onclick="setModeAndFocus('agent')">
+                        <i class="bi bi-globe2"></i>
+                        <span>Agent mode</span>
+                    </button>
+
+                    <div class="input-actions-spacer"></div>
+
+                    <!-- Send -->
+                    <button id="sendBtn" onclick="sendMessage()" title="Send">
+                        <i class="bi bi-arrow-up"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Agent Max Steps Slider -->
+            <div id="agentSlider" style="display:none" class="agent-slider-wrap">
+                <i class="bi bi-list-ol"></i>
+                <span>Max steps:</span>
+                <input type="range" min="1" max="30" value="15" id="maxStepsRange"
+                    oninput="document.getElementById('maxStepsVal').textContent = this.value">
+                <span id="maxStepsVal">15</span>
+            </div>
+            <div class="input-hint">
+                Enter kirim &nbsp;·&nbsp; Shift+Enter baris baru &nbsp;·&nbsp;
+                Mode: <span id="modeHint">Chat</span> &nbsp;·&nbsp;
+                <span id="extHint" style="color:var(--text-3)">Extended Off</span>
+            </div>
+        </div><!-- /inputArea -->
+
+    </div><!-- /main -->
+
+    <!-- ══════════════════════════════════════
+     PREVIEW MODAL
+══════════════════════════════════════ -->
     <div id="previewModal">
         <div class="preview-box">
             <div class="preview-head">
-                <div class="preview-title"><i class="bi bi-window" style="color:var(--accent)"></i> Live Preview</div>
-                <button class="preview-close-btn" onclick="closePreview()"><i class="bi bi-x-lg"></i></button>
+                <div class="preview-title">
+                    <i class="bi bi-window" style="color:var(--green)"></i>
+                    Live Preview
+                </div>
+                <button class="preview-close-btn" onclick="closePreview()">
+                    <i class="bi bi-x-lg"></i> Tutup
+                </button>
             </div>
             <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
@@ -385,8 +334,7 @@
     <!-- Toast -->
     <div id="toast"></div>
 
-    <!-- Scripts -->
-    <!-- Same webgl shader block as before -->
+    <!-- Script -->
     <script>
         (function () {
             const canvas = document.getElementById('auroraBg');
@@ -417,8 +365,7 @@
                 const t = (performance.now() - t0) * 0.001 * 0.4;
                 gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
                 gl.uniform1f(uTime, t); gl.uniform1f(uAmp, 0.8);
-                // Adjusted colors for teal aurora vibe
-                gl.uniform3fv(uCS, [0.1, 0.5, 0.5, 0.1, 0.3, 0.4, 0.05, 0.05, 0.1]);
+                gl.uniform3fv(uCS, [1.0, 1.0, 1.0, 0.55, 0.55, 0.55, 0.1, 0.1, 0.1]);
                 gl.uniform2f(uRes, canvas.width, canvas.height); gl.uniform1f(uBlend, 0.6);
                 gl.drawArrays(gl.TRIANGLES, 0, 3);
             })();
@@ -426,17 +373,23 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="/static/chat.js?v=4"></script>
-    
+
     <!-- History Modal -->
     <div id="historyModal">
         <div class="hmodal-box">
             <div class="hmodal-head">
-                <div class="hmodal-title"><i class="bi bi-clock-history" style="color:var(--accent)"></i> Riwayat Chat</div>
-                <button class="hmodal-close" onclick="closeHistoryModal()"><i class="bi bi-x-lg"></i></button>
+                <div class="hmodal-title">
+                    <i class="bi bi-clock-history" style="color:var(--accent)"></i>
+                    Riwayat Chat
+                </div>
+                <button class="hmodal-close" onclick="closeHistoryModal()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
             <div class="hmodal-search">
                 <i class="bi bi-search"></i>
-                <input type="text" placeholder="Cari riwayat..." id="hmSearch" oninput="filterHistoryModal(this.value)" />
+                <input type="text" placeholder="Cari riwayat..." id="hmSearch"
+                    oninput="filterHistoryModal(this.value)" />
             </div>
             <div class="hmodal-list" id="hmList"></div>
         </div>
@@ -446,8 +399,13 @@
     <div id="settingsModal">
         <div class="smodal-box">
             <div class="smodal-head">
-                <div class="smodal-title"><i class="bi bi-gear" style="color:var(--accent)"></i> Settings</div>
-                <button class="smodal-close" onclick="closeSettings()"><i class="bi bi-x-lg"></i></button>
+                <div class="smodal-title">
+                    <i class="bi bi-gear" style="color:var(--accent)"></i>
+                    Settings
+                </div>
+                <button class="smodal-close" onclick="closeSettings()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
             <div class="smodal-body">
                 <div class="smodal-section-label">Profile</div>
@@ -457,23 +415,28 @@
                         <i class="bi bi-person"></i>
                         <input type="text" id="settingsName" placeholder="Enter your name..." maxlength="32" />
                     </div>
+                    <div class="smodal-hint">Shown in chat interface and profile.</div>
                 </div>
                 <div class="smodal-section-label" style="margin-top:24px;">Appearance</div>
                 <div class="smodal-field">
                     <label class="smodal-label">Theme</label>
                     <div class="smodal-theme-row">
                         <div class="smodal-theme-opt" id="themeOptDark" onclick="setThemeOpt('dark')">
-                            <div class="theme-preview dark-preview"></div><span>Dark</span>
+                            <div class="theme-preview dark-preview"></div>
+                            <span>Dark</span>
                         </div>
                         <div class="smodal-theme-opt" id="themeOptLight" onclick="setThemeOpt('light')">
-                            <div class="theme-preview light-preview"></div><span>Light</span>
+                            <div class="theme-preview light-preview"></div>
+                            <span>Light</span>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="smodal-footer">
                 <button class="smodal-cancel" onclick="closeSettings()">Cancel</button>
-                <button class="smodal-save" onclick="saveSettings()"><i class="bi bi-check-lg"></i> Save changes</button>
+                <button class="smodal-save" onclick="saveSettings()">
+                    <i class="bi bi-check-lg"></i> Save changes
+                </button>
             </div>
         </div>
     </div>
@@ -482,13 +445,32 @@
     <div id="helpModal">
         <div class="hpmodal-box">
             <div class="smodal-head">
-                <div class="smodal-title"><i class="bi bi-question-circle" style="color:var(--accent)"></i> Get Help</div>
-                <button class="smodal-close" onclick="closeHelp()"><i class="bi bi-x-lg"></i></button>
+                <div class="smodal-title">
+                    <i class="bi bi-question-circle" style="color:var(--accent)"></i>
+                    Get Help
+                </div>
+                <button class="smodal-close" onclick="closeHelp()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
+
+            <!-- Search -->
             <div class="hpmodal-search">
                 <i class="bi bi-search"></i>
-                <input type="text" id="helpSearchInput" placeholder="Cari pertanyaan..." oninput="filterFAQ(this.value)" />
+                <input type="text" id="helpSearchInput" placeholder="Cari pertanyaan..."
+                    oninput="filterFAQ(this.value)" />
             </div>
+
+            <!-- Category Tabs -->
+            <div class="help-tabs" id="helpTabs">
+                <button class="help-tab active" data-cat="all" onclick="switchHelpTab(this)">Semua</button>
+                <button class="help-tab" data-cat="general" onclick="switchHelpTab(this)">Umum</button>
+                <button class="help-tab" data-cat="features" onclick="switchHelpTab(this)">Fitur</button>
+                <button class="help-tab" data-cat="shortcuts" onclick="switchHelpTab(this)">Shortcuts</button>
+                <button class="help-tab" data-cat="troubleshoot" onclick="switchHelpTab(this)">Troubleshoot</button>
+            </div>
+
+            <!-- Body -->
             <div class="hpmodal-body" id="faqList"></div>
         </div>
     </div>
@@ -498,25 +480,36 @@
         <div class="pdrop-email" id="profileEmail"></div>
         <div class="pdrop-divider"></div>
         <div class="pdrop-item" onclick="openSettings(); closeProfileDropdown()">
-            <i class="bi bi-gear"></i><span data-i18n="settings">Settings</span>
+            <i class="bi bi-gear"></i>
+            <span data-i18n="settings">Settings</span>
+            <span class="pdrop-kbd">⇧+Ctrl+,</span>
         </div>
+        <!-- Language item — trigger flyout -->
         <div class="pdrop-item pdrop-lang-trigger" id="langTrigger" onclick="toggleLangMenu(event)">
-            <i class="bi bi-globe2"></i><span data-i18n="language">Language</span>
+            <i class="bi bi-globe2"></i>
+            <span data-i18n="language">Language</span>
             <i class="bi bi-chevron-right" style="margin-left:auto;font-size:0.65rem;color:var(--text-3)"></i>
         </div>
         <div class="pdrop-item" onclick="openHelp(); closeProfileDropdown()">
-            <i class="bi bi-question-circle"></i><span data-i18n="getHelp">Get help</span>
+            <i class="bi bi-question-circle"></i>
+            <span data-i18n="getHelp">Get help</span>
         </div>
         <div class="pdrop-divider"></div>
         <div class="pdrop-item pdrop-logout" onclick="logout()">
-            <i class="bi bi-box-arrow-right"></i><span data-i18n="logout">Log out</span>
+            <i class="bi bi-box-arrow-right"></i>
+            <span data-i18n="logout">Log out</span>
         </div>
     </div>
 
     <!-- Language Submenu Flyout -->
     <div id="langMenu">
-        <div class="lang-menu-header"><i class="bi bi-globe2"></i><span>Language</span></div>
+        <div class="lang-menu-header">
+            <i class="bi bi-globe2"></i>
+            <span>Language</span>
+        </div>
         <div class="lang-menu-list" id="langMenuList"></div>
     </div>
+
 </body>
+
 </html>
