@@ -2725,4 +2725,47 @@ async function sendMessage(overrideText) {
         }
     };
 
+    // ═══════════════════════════════════════════════
+    // FLOATING RESPONSE BUBBLE - ZILF-MAX Style
+    // ═══════════════════════════════════════════════
+    window.showFloatingResponse = function (message = "ZILF-MAX telah menjawab", duration = 4500) {
+        // Hapus yang lama kalau ada
+        const old = document.getElementById('zilf-floating');
+        if (old) old.remove();
+
+        const bubble = document.createElement('div');
+        bubble.id = 'zilf-floating';
+        bubble.className = 'floating-response';
+
+        bubble.innerHTML = `
+        <div class="header">
+            <div class="orb"></div>
+            <span class="ai-name">ZILF-MAX</span>
+        </div>
+        <div class="content">
+            ${message}
+        </div>
+    `;
+
+        document.body.appendChild(bubble);
+
+        // Trigger animasi masuk
+        setTimeout(() => bubble.classList.add('show'), 10);
+
+        // Auto hide
+        const timeout = setTimeout(() => {
+            if (bubble.parentNode) {
+                bubble.classList.remove('show');
+                setTimeout(() => bubble.remove(), 350);
+            }
+        }, duration);
+
+        // Klik untuk dismiss manual
+        bubble.addEventListener('click', () => {
+            clearTimeout(timeout);
+            bubble.classList.remove('show');
+            setTimeout(() => bubble.remove(), 350);
+        });
+    };
+
 })();

@@ -3628,16 +3628,75 @@ body>* {
 
 /* ══ AVATAR ORB MINI — Blue-Teal Gradient (matches welcome orb) ══ */
 .avatar-orb-mini {
-    background: radial-gradient(
-        circle at 32% 28%,
-        #00c8d4 0%,
-        #006677 42%,
-        #001e2b 75%,
-        #000000 100%
-    ) !important;
+    background: radial-gradient(circle at 32% 28%,
+            #00c8d4 0%,
+            #006677 42%,
+            #001e2b 75%,
+            #000000 100%) !important;
     box-shadow:
         0 0 10px rgba(0, 200, 212, 0.4),
-        0 0 3px  rgba(0, 200, 212, 0.2),
+        0 0 3px rgba(0, 200, 212, 0.2),
         inset 0 0 8px rgba(0, 10, 20, 0.6) !important;
     border: 1px solid rgba(0, 200, 212, 0.18) !important;
+}
+
+/* FLOATING RESPONSE BUBBLE - ZILF-MAX Style */
+.floating-response {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: 14px;
+    padding: 14px 18px;
+    width: 280px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.floating-response.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.floating-response .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.floating-response .orb {
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+}
+
+.floating-response .ai-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #00d4ff;
+    letter-spacing: 0.3px;
+}
+
+.floating-response .content {
+    font-size: 14.5px;
+    line-height: 1.45;
+    color: #e2e8f0;
+    padding-left: 32px;
+}
+
+/* Efek hover */
+.floating-response:hover {
+    border-color: rgba(0, 212, 255, 0.4);
+    box-shadow: 0 16px 50px rgba(0, 212, 255, 0.15);
 }
