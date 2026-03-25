@@ -20,7 +20,7 @@ from loguru import logger
 
 from agent.llm.base import BaseLLM, LLMResponse
 
-ZILF_MAX_BASE_URL = "https://zilf-max-api-production.up.railway.app"
+ZILF_MAX_BASE_URL = "https://zilfmax.up.railway.app"
 
 ZILF_MAX_MODELS: dict[str, str] = {
     "groq":       "llama-3.3-70b-versatile",
