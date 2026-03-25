@@ -1,5 +1,4 @@
 "use strict";
-
 const axios = require("axios");
 
 class ZilfClient {
@@ -11,11 +10,36 @@ class ZilfClient {
     });
   }
 
-  async runTask(task) {
-    const resp = await this.http.post("/run", { task });
-    return resp.data;
+  // -- Deteksi apakah input butuh agent mode --------------------------
+  isAgentTask(input) {
+    const agentKeywords = [
+      "buat", "buatkan", "tambah", "tambahkan", "fix", "perbaiki",
+      "hapus", "ubah", "refactor", "debug", "test", "install",
+      "create", "make", "add", "remove", "update", "write", "run",
+      "generate", "implement", "deploy", "build", "edit", "delete",
+      "rename", "move", "copy", "migrate", "optimize", "convert"
+    ];
+    const lower = input.toLowerCase();
+    return agentKeywords.some((kw) => lower.includes(kw));
   }
 
+  // -- Smart router: /chat untuk sapaan, /run/stream untuk coding -----
+  async smartTask(task, onChunk) {
+    if (this.isAgentTask(task)) {
+      return this.streamTask(task, onChunk);
+    } else {
+      try {
+        const resp = await this.http.post("/chat", { message: task });
+        const text = resp.data.response || resp.data.answer || JSON.stringify(resp.data);
+        onChunk(text);
+      } catch (err) {
+        // fallback ke agent jika /chat gagal
+        return this.streamTask(task, onChunk);
+      }
+    }
+  }
+
+  // -- Agent mode via SSE stream ---------------------------------------
   async streamTask(task, onChunk) {
     try {
       const resp = await this.http.post(
@@ -33,9 +57,12 @@ class ZilfClient {
             if (line.startsWith("data: ")) {
               try {
                 const payload = JSON.parse(line.slice(6));
-                onChunk(payload.text || payload.content || "");
+                const text = payload.text || payload.content ||
+                             payload.final_answer || payload.answer || "";
+                if (text) onChunk(text);
               } catch (_) {
-                onChunk(line.slice(6));
+                const raw = line.slice(6);
+                if (raw) onChunk(raw);
               }
             }
           }
@@ -44,9 +71,18 @@ class ZilfClient {
         resp.data.on("error", reject);
       });
     } catch (err) {
+      // fallback ke /run blocking
       const result = await this.runTask(task);
-      onChunk(result.result || result.output || JSON.stringify(result));
+      const text = result.final_answer || result.result ||
+                   result.output || JSON.stringify(result);
+      onChunk(text);
     }
+  }
+
+  // -- Blocking run (fallback) -----------------------------------------
+  async runTask(task) {
+    const resp = await this.http.post("/run", { task });
+    return resp.data;
   }
 
   async health() {

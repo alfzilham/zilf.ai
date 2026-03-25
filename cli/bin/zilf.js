@@ -112,6 +112,7 @@ async function setup(verbose = false, port = 8000) {
 
 // ─── Print result ─────────────────────────────────────────────────────────────
 function printResult(text) {
+  if (text) process.stdout.write(text);
   process.stdout.write("\n");
 }
 
@@ -144,7 +145,7 @@ async function interactiveMode(client) {
     try {
       let output = "";
       let started = false;
-      await client.streamTask(trimmed, (chunk) => {
+      await client.smartTask(trimmed, (chunk) => {
         if (!started) {
           spinner.stop();
           process.stdout.write("\n");
@@ -203,7 +204,7 @@ program
     const spinner = ora({ text: chalk.dim("Running..."), color: "white" }).start();
     try {
       let started = false;
-      await client.streamTask(task, (chunk) => {
+      await client.smartTask(task, (chunk) => {
         if (!started) { spinner.stop(); process.stdout.write("\n"); started = true; }
         process.stdout.write(chunk);
       });

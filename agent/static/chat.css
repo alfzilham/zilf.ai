@@ -3788,3 +3788,5 @@ body>* {
     flex-shrink: 0;
     margin-top: 2px;
 }
+/* GLM badge */
+.model-badge.glm { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; }
