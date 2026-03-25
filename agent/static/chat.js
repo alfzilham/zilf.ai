@@ -531,16 +531,41 @@ function showContent() {
     return box;
 }
 
+function buildUserAvatar() {
+    const user = JSON.parse(localStorage.getItem('hams_user') || '{}');
+    if (user.avatar_url) {
+        const img = document.createElement('img');
+        img.src = user.avatar_url;
+        img.className = 'avatar-user-photo';
+        img.alt = user.name || 'User';
+        img.onerror = function () {
+            const fallback = buildUserInitials(user);
+            img.replaceWith(fallback);
+        };
+        return img;
+    }
+    return buildUserInitials(user);
+}
+
+function buildUserInitials(user) {
+    const el = document.createElement('div');
+    el.className = 'avatar-user-initials';
+    el.textContent = (user.name || 'U')[0].toUpperCase();
+    return el;
+}
+
+function buildAiAvatar() {
+    const el = document.createElement('div');
+    el.className = 'avatar-orb-mini';
+    return el;
+}
+
 function appendMsg(role, content, thinkingText) {
     const box = showContent();
     const row = document.createElement('div');
     row.className = `msg-row ${role}`;
 
-    const av = document.createElement('div');
-    av.className = `avatar ${role}`;
-    av.innerHTML = role === 'ai'
-        ? '<i class="bi bi-stars"></i>'
-        : '<i class="bi bi-person-fill"></i>';
+    const av = role === 'ai' ? buildAiAvatar() : buildUserAvatar();
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${role}`;
@@ -590,9 +615,7 @@ function showTypingWithTimer() {
     row.className = 'msg-row ai';
     row.id = 'typingRow';
 
-    const av = document.createElement('div');
-    av.className = 'avatar ai';
-    av.innerHTML = '<i class="bi bi-stars"></i>';
+    const av = buildAiAvatar();
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble ai';
@@ -769,9 +792,7 @@ function appendMsgStreaming(role, text, id) {
     const wrap = document.createElement('div');
     wrap.className = `msg-row ${role}`;
 
-    const av = document.createElement('div');
-    av.className = `avatar ${role}`;
-    av.innerHTML = '<i class="bi bi-stars"></i>';
+    const av = buildAiAvatar();
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${role}`;
