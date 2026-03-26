@@ -25,12 +25,12 @@ import json
 import os
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse, Response
+from fastapi.responses import FileResponse, StreamingResponse, Response, RedirectResponse
 from fastapi import UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -67,6 +67,8 @@ def _init_feedback_db():
     c.execute("CREATE TABLE IF NOT EXISTS threads(id TEXT PRIMARY KEY,user_id INTEGER,email TEXT NOT NULL,tags TEXT DEFAULT '',resolved INTEGER DEFAULT 0,created_at TEXT,updated_at TEXT)")
     c.execute("CREATE TABLE IF NOT EXISTS messages(id TEXT PRIMARY KEY,thread_id TEXT NOT NULL,sender TEXT NOT NULL,message TEXT NOT NULL,rating INTEGER,category TEXT,created_at TEXT)")
     c.execute("CREATE TABLE IF NOT EXISTS attachments(id TEXT PRIMARY KEY,message_id TEXT NOT NULL,path TEXT NOT NULL,mime TEXT,size INTEGER)")
+    c.execute("CREATE TABLE IF NOT EXISTS admin_users(id TEXT PRIMARY KEY,name TEXT NOT NULL,pass_hash TEXT NOT NULL,created_at TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS admin_sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL,expires_at TEXT NOT NULL,created_at TEXT)")
     conn.commit()
     conn.close()
 
@@ -307,6 +309,75 @@ def _feedback_db_conn():
     import sqlite3
     return sqlite3.connect(_FEEDBACK_DB)
 
+def _pbkdf2_hash(password: str, salt: bytes, iterations: int = 200_000) -> str:
+    import base64
+    import hashlib
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    return f"pbkdf2_sha256${iterations}${base64.urlsafe_b64encode(salt).decode()}${base64.urlsafe_b64encode(dk).decode()}"
+
+def _verify_pbkdf2(password: str, stored: str) -> bool:
+    import base64
+    import hashlib
+    import hmac
+    try:
+        algo, it_s, salt_b64, dk_b64 = stored.split("$", 3)
+        if algo != "pbkdf2_sha256":
+            return False
+        iterations = int(it_s)
+        salt = base64.urlsafe_b64decode(salt_b64.encode())
+        expected = base64.urlsafe_b64decode(dk_b64.encode())
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+        return hmac.compare_digest(dk, expected)
+    except Exception:
+        return False
+
+def _ensure_bootstrap_admin():
+    name = os.environ.get("FEEDBACK_ADMIN_BOOTSTRAP_NAME", "").strip()
+    password = os.environ.get("FEEDBACK_ADMIN_BOOTSTRAP_PASSWORD", "")
+    if not name or not password:
+        return
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(1) FROM admin_users")
+    if (c.fetchone() or [0])[0] > 0:
+        conn.close()
+        return
+    import uuid
+    salt = os.urandom(16)
+    now = datetime.now(timezone.utc).isoformat()
+    c.execute(
+        "INSERT INTO admin_users(id,name,pass_hash,created_at) VALUES(?,?,?,?)",
+        (str(uuid.uuid4()), name, _pbkdf2_hash(password, salt), now),
+    )
+    conn.commit()
+    conn.close()
+
+_ensure_bootstrap_admin()
+
+def _require_admin(request: Request) -> dict:
+    token = request.cookies.get("fb_admin", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    c.execute("SELECT user_id, expires_at FROM admin_sessions WHERE token=?", (token,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id, expires_at = row
+    if expires_at <= datetime.now(timezone.utc).isoformat():
+        c.execute("DELETE FROM admin_sessions WHERE token=?", (token,))
+        conn.commit()
+        conn.close()
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    c.execute("SELECT id,name FROM admin_users WHERE id=?", (user_id,))
+    u = c.fetchone()
+    conn.close()
+    if not u:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {"id": u[0], "name": u[1]}
+
 def _feedback_broadcast(thread_id: str, event: dict):
     qs = _feedback_streams.get(thread_id, [])
     for q in qs:
@@ -317,13 +388,151 @@ def _feedback_broadcast(thread_id: str, event: dict):
 
 @app.get("/feedback", include_in_schema=False)
 async def feedback_page(request: Request):
-    _get_current_user(request)
     return FileResponse(os.path.join(_TEMPLATES_DIR, "feedback.html"), media_type="text/html")
 
 @app.get("/admin/feedback", include_in_schema=False)
 async def feedback_admin_page(request: Request):
-    _get_current_user(request)
-    return FileResponse(os.path.join(_TEMPLATES_DIR, "feedback_admin.html"), media_type="text/html")
+    try:
+        _require_admin(request)
+        return FileResponse(os.path.join(_TEMPLATES_DIR, "feedback_admin.html"), media_type="text/html")
+    except HTTPException:
+        return RedirectResponse(url="/admin/feedback/login", status_code=302)
+
+@app.get("/admin/feedback/login", include_in_schema=False)
+async def feedback_admin_login_page() -> FileResponse:
+    return FileResponse(os.path.join(_TEMPLATES_DIR, "feedback_admin_login.html"), media_type="text/html")
+
+@app.post("/api/admin/feedback/login", tags=["feedback"])
+async def feedback_admin_login(request: Request, name: str = Form(...), password: str = Form(...)):
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    c.execute("SELECT id, pass_hash FROM admin_users WHERE name=?", (name.strip(),))
+    row = c.fetchone()
+    if not row or not _verify_pbkdf2(password, row[1]):
+        conn.close()
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    import uuid
+    now = datetime.now(timezone.utc)
+    exp = (now + timedelta(days=30)).isoformat()
+    tok = str(uuid.uuid4())
+    c.execute("INSERT INTO admin_sessions(token,user_id,expires_at,created_at) VALUES(?,?,?,?)", (tok, row[0], exp, now.isoformat()))
+    conn.commit()
+    conn.close()
+    resp = Response(content=json.dumps({"ok": True}), media_type="application/json")
+    resp.set_cookie("fb_admin", tok, httponly=True, samesite="lax", secure=(request.url.scheme == "https"), path="/")
+    return resp
+
+@app.post("/api/admin/feedback/logout", tags=["feedback"])
+async def feedback_admin_logout(request: Request):
+    token = request.cookies.get("fb_admin", "")
+    if token:
+        conn = _feedback_db_conn()
+        c = conn.cursor()
+        c.execute("DELETE FROM admin_sessions WHERE token=?", (token,))
+        conn.commit()
+        conn.close()
+    resp = Response(content=json.dumps({"ok": True}), media_type="application/json")
+    resp.delete_cookie("fb_admin", path="/")
+    return resp
+
+@app.get("/api/admin/feedback/threads", tags=["feedback"])
+async def admin_feedback_threads(request: Request, q: str | None = None):
+    _require_admin(request)
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    if q:
+        like = f"%{q}%"
+        c.execute("SELECT id,email,tags,resolved,created_at,updated_at FROM threads WHERE email LIKE ? OR tags LIKE ? ORDER BY updated_at DESC", (like, like))
+    else:
+        c.execute("SELECT id,email,tags,resolved,created_at,updated_at FROM threads ORDER BY updated_at DESC")
+    rows = c.fetchall()
+    conn.close()
+    return [{"id":r[0],"email":r[1],"tags":r[2],"resolved":bool(r[3]),"created_at":r[4],"updated_at":r[5]} for r in rows]
+
+@app.get("/api/admin/feedback/messages", tags=["feedback"])
+async def admin_feedback_messages(request: Request, thread_id: str):
+    _require_admin(request)
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    c.execute("SELECT id,sender,message,rating,category,created_at FROM messages WHERE thread_id=? ORDER BY created_at ASC", (thread_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [{"id":r[0],"sender":r[1],"message":r[2],"rating":r[3],"category":r[4],"created_at":r[5]} for r in rows]
+
+@app.post("/api/admin/feedback/messages", tags=["feedback"])
+async def admin_feedback_post_message(request: Request, thread_id: str = Form(...), message: str = Form(...)):
+    admin = _require_admin(request)
+    if not message.strip():
+        raise HTTPException(status_code=400, detail="Message required")
+    import uuid
+    now = datetime.now(timezone.utc).isoformat()
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    mid = str(uuid.uuid4())
+    c.execute("INSERT INTO messages(id,thread_id,sender,message,rating,category,created_at) VALUES(?,?,?,?,?,?,?)",
+              (mid, thread_id, "admin", message, None, None, now))
+    c.execute("UPDATE threads SET updated_at=? WHERE id=?", (now, thread_id))
+    conn.commit()
+    conn.close()
+    _feedback_broadcast(thread_id, {"type":"message","sender":"admin","message":message,"created_at":now})
+    return {"ok": True, "message_id": mid, "admin": admin.get("name")}
+
+@app.patch("/api/admin/feedback/threads/{thread_id}/resolve", tags=["feedback"])
+async def admin_feedback_resolve(request: Request, thread_id: str, resolved: bool = True):
+    _require_admin(request)
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+    c.execute("UPDATE threads SET resolved=?, updated_at=? WHERE id=?", (1 if resolved else 0, now, thread_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+@app.patch("/api/admin/feedback/threads/{thread_id}/tags", tags=["feedback"])
+async def admin_feedback_tags(request: Request, thread_id: str, tags: str):
+    _require_admin(request)
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+    c.execute("UPDATE threads SET tags=?, updated_at=? WHERE id=?", (tags, now, thread_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+@app.get("/api/admin/feedback/stream", tags=["feedback"])
+async def admin_feedback_stream(request: Request, thread_id: str):
+    _require_admin(request)
+    async def es():
+        q: asyncio.Queue = asyncio.Queue()
+        _feedback_streams.setdefault(thread_id, []).append(q)
+        try:
+            while True:
+                ev = await q.get()
+                yield f"data: {json.dumps(ev)}\n\n"
+        except asyncio.CancelledError:
+            ...
+        finally:
+            try:
+                _feedback_streams[thread_id].remove(q)
+            except Exception:
+                ...
+    return StreamingResponse(es(), media_type="text/event-stream", headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
+
+@app.get("/api/admin/feedback/export.csv", tags=["feedback"])
+async def admin_feedback_export(request: Request):
+    _require_admin(request)
+    import csv, io
+    conn = _feedback_db_conn()
+    c = conn.cursor()
+    c.execute("SELECT t.id,t.email,t.tags,t.resolved,m.created_at,m.sender,m.message,m.rating,m.category FROM messages m JOIN threads t ON m.thread_id=t.id ORDER BY t.updated_at DESC,m.created_at ASC")
+    rows = c.fetchall()
+    conn.close()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["thread_id","email","tags","resolved","created_at","sender","message","rating","category"])
+    for r in rows:
+        w.writerow(r)
+    return Response(content=buf.getvalue(), media_type="text/csv")
 
 @app.post("/api/feedback/messages", tags=["feedback"])
 async def feedback_post(request: Request, data: FeedbackMessageIn):
@@ -395,8 +604,16 @@ async def feedback_tags(request: Request, thread_id: str, tags: str):
     return {"ok": True}
 
 @app.get("/api/feedback/stream", tags=["feedback"])
-async def feedback_stream(request: Request, thread_id: str):
-    _get_current_user(request)
+async def feedback_stream(request: Request, thread_id: str, token: str | None = None):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        if not token:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        if not decode_token(token):
+            raise HTTPException(status_code=401, detail="Invalid token")
+    else:
+        if not decode_token(auth.split(" ", 1)[1]):
+            raise HTTPException(status_code=401, detail="Invalid token")
     async def es():
         q: asyncio.Queue = asyncio.Queue()
         _feedback_streams.setdefault(thread_id, []).append(q)

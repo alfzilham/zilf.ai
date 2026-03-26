@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Feedback Login</title>
+<link rel="stylesheet" href="/static/chat.css"/>
+</head>
+<body>
+<div id="main" style="padding:20px;max-width:520px;margin:0 auto;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <a href="/chat-ui" class="ext-pill"><i class="bi bi-arrow-left"></i><span>Kembali</span></a>
+    <h2 style="margin:0;">Admin Feedback</h2>
+  </div>
+
+  <div class="input-card">
+    <div style="padding:14px 16px 0;">
+      <div style="color:var(--text-2);font-weight:800;margin-bottom:8px;">Login Admin</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:12px 16px;">
+      <input id="adminName" class="ext-pill" placeholder="Name" style="padding:10px 12px;border:none;background:transparent;"/>
+      <input id="adminPass" type="password" class="ext-pill" placeholder="Password" style="padding:10px 12px;border:none;background:transparent;"/>
+    </div>
+    <div class="input-actions">
+      <div class="input-actions-spacer"></div>
+      <button id="adminLoginBtn" class="input-action-btn"><i class="bi bi-shield-lock"></i><span>Login</span></button>
+    </div>
+    <div id="adminLoginErr" style="padding:0 16px 14px;color:var(--red);font-size:0.9rem;"></div>
+  </div>
+</div>
+<script src="/static/feedback.js"></script>
+</body>
+</html>
