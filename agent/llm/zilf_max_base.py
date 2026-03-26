@@ -72,12 +72,12 @@ _FRONTEND_TO_ZILFMAX: dict[str, tuple[str, str]] = {
 }
 
 FALLBACK_CHAIN: list[str] = [
-    "nvidia/nemotron-super-3",
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
     "nvidia/deepseek-v3.2",
     "nvidia/qwen-3.5",
     "nvidia/mistral-small-4",
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
+    "nvidia/nemotron-super-3",
 ]
 
 
@@ -237,6 +237,25 @@ class ZilfMaxBase(BaseLLM):
             "tpd", "tpm", "capacity", "overloaded", "503",
         ])
 
+    def _is_auth_error(self, exc: Exception) -> bool:
+        msg = str(exc).lower()
+        return any(k in msg for k in [
+            "401", "403",
+            "unauthorized", "forbidden",
+            "authentication failed", "auth failed",
+            "invalid api key", "invalid_api_key",
+            "permission", "access denied",
+        ])
+
+    def _is_model_not_found_error(self, exc: Exception) -> bool:
+        msg = str(exc).lower()
+        return any(k in msg for k in [
+            "model_not_found",
+            "does not exist",
+            "not found",
+            "invalid model",
+        ])
+
     async def _call_api_with_fallback(
         self, payload: dict, per_model_timeout: float = 15.0, track_tokens: bool = False
     ) -> str | tuple[str, int, int]:
@@ -286,8 +305,8 @@ class ZilfMaxBase(BaseLLM):
                 continue
             except Exception as exc:
                 last_error = exc
-                if self._is_rate_limit_error(exc):
-                    logger.warning(f"[zilf-max] rate limit on {frontend_key}, next...")
+                if self._is_rate_limit_error(exc) or self._is_auth_error(exc) or self._is_model_not_found_error(exc):
+                    logger.warning(f"[zilf-max] retryable error on {frontend_key}, next...")
                     continue
                 raise
 
