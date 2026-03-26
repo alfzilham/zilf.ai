@@ -27,6 +27,7 @@
     --code-bg: #050505;
     --input-bg: #050505;
     --sidebar-w: 260px;
+    --orb-size: 130px;
     --glass-bg: linear-gradient(145deg, rgba(0, 242, 255, 0.06) 0%, rgba(0, 242, 255, 0.01) 100%);
     --glass-border: rgba(0, 242, 255, 0.1);
     --glass-shadow: inset 0 1px 0 rgba(0, 242, 255, 0.08), 0 4px 24px rgba(0, 0, 0, 0.3);
@@ -775,11 +776,17 @@ body>* {
 /* Orb hover and interaction states */
 .orb-wrap {
     position: relative;
-    width: 130px;
-    height: 130px;
+    width: var(--orb-size);
+    height: var(--orb-size);
     margin-bottom: 28px;
     cursor: none;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#orbCanvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
 }
 
 .orb-wrap:hover {
@@ -1897,6 +1904,7 @@ body>* {
 @media (min-width: 768px) and (max-width: 1024px) {
     :root {
         --sidebar-w: 240px;
+        --orb-size: 120px;
     }
 
     body {
@@ -1937,6 +1945,10 @@ body>* {
    RESPONSIVE — MOBILE (320px - 767px)
 ════════════════════════════════════ */
 @media (max-width: 767px) {
+    :root {
+        --orb-size: clamp(96px, 28vw, 120px);
+    }
+
     #sidebar {
         position: fixed;
         top: 0;
@@ -2048,13 +2060,13 @@ body>* {
     }
 
     .orb-wrap {
-        width: 120px;
-        height: 120px;
+        width: var(--orb-size);
+        height: var(--orb-size);
     }
 
     .orb {
-        width: 120px;
-        height: 120px;
+        width: var(--orb-size);
+        height: var(--orb-size);
     }
 
     /* Fix potential overflow on small mobile */
@@ -3654,134 +3666,4 @@ body>* {
         0 0 3px rgba(0, 200, 212, 0.2),
         inset 0 0 8px rgba(0, 10, 20, 0.6) !important;
     border: 1px solid rgba(0, 200, 212, 0.18) !important;
-}
-
-/* ══ MINIMAP RIGHT PANEL ══ */
-#minimapPanel {
-    position: fixed;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 40px;
-    background: linear-gradient(180deg, #071412 0%, #0a1e1b 50%, #071412 100%);
-    border-left: 1px solid rgba(0, 200, 180, 0.10);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 56px;
-    z-index: 900;
-    overflow: hidden;
-}
-
-#minimapPanel::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(180deg, transparent 0%, rgba(0, 200, 180, 0.4) 50%, transparent 100%);
-}
-
-#minimapPct {
-    position: absolute;
-    bottom: 14px;
-    font-size: 8px;
-    color: rgba(0, 200, 180, 0.45);
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    user-select: none;
-}
-
-#minimapLines {
-    position: relative;
-    width: 26px;
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 0 40px 0;
-}
-
-#minimapViewport {
-    position: absolute;
-    left: -3px;
-    right: -3px;
-    background: rgba(0, 200, 180, 0.07);
-    border: 1px solid rgba(0, 200, 180, 0.22);
-    border-radius: 3px;
-    pointer-events: none;
-    transition: top 0.12s ease;
-    min-height: 24px;
-    z-index: 2;
-}
-
-.mm-msg {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    cursor: pointer;
-    width: 100%;
-    flex-shrink: 0;
-    z-index: 3;
-    padding: 1px 0;
-}
-
-.mm-line {
-    height: 2px;
-    border-radius: 2px;
-    transition: opacity 0.2s, background 0.2s;
-}
-
-.mm-tooltip {
-    position: absolute;
-    right: 34px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(5, 20, 18, 0.96);
-    border: 1px solid rgba(0, 200, 180, 0.28);
-    border-radius: 8px;
-    padding: 6px 10px;
-    width: 190px;
-    font-size: 10.5px;
-    color: #94a3b8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    transition: opacity 0.15s;
-    pointer-events: none;
-    z-index: 1000;
-}
-
-.mm-msg:hover .mm-tooltip {
-    opacity: 1;
-}
-
-.mm-tooltip-role {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    margin-bottom: 2px;
-}
-
-#main {
-    padding-right: 40px !important;
-}
-
-/* ══ RESPONSIVE HIDE MINIMAP ══ */
-@media (max-width: 1024px) {
-    #minimapPanel {
-        display: none !important;
-    }
-
-    #main {
-        padding-right: 0 !important;
-    }
 }
