@@ -142,7 +142,7 @@ class ToolDefinition:
     is_async: bool
     schema: dict[str, Any]
 
-    def to_anthropic_schema(self) -> dict[str, Any]:
+    def to_simple_schema(self) -> dict[str, Any]:
         return {"name": self.name, "description": self.description, "input_schema": self.schema}
 
     def to_openai_schema(self) -> dict[str, Any]:
@@ -223,14 +223,12 @@ class ToolRegistry:
     # Schema export
     # -----------------------------------------------------------------------
 
-    def tool_schemas(self, provider: str = "anthropic") -> list[dict[str, Any]]:
+    def tool_schemas(self, provider: str = "openai") -> list[dict[str, Any]]:
         """Export all tool schemas for a given provider."""
-        if provider == "anthropic":
-            return [t.to_anthropic_schema() for t in self._tools.values()]
-        elif provider == "openai":
+        if provider == "openai":
             return [t.to_openai_schema() for t in self._tools.values()]
         else:
-            return [t.to_anthropic_schema() for t in self._tools.values()]
+            return [t.to_simple_schema() for t in self._tools.values()]
 
     def tool_descriptions(self) -> dict[str, str]:
         """Return {name: description} mapping for system prompts."""

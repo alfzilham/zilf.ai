@@ -15,10 +15,10 @@ Fixes applied:
 Usage::
 
     from agent.core.agent import Agent
-    from agent.llm.anthropic_provider import AnthropicLLM
+    from agent.llm.groq_provider import GroqLLM
     from agent.tools.registry import ToolRegistry
 
-    agent = Agent(llm=AnthropicLLM(), tool_registry=ToolRegistry.default())
+    agent = Agent(llm=GroqLLM(), tool_registry=ToolRegistry.default())
     result = await agent.run("Write a Python script that fetches GitHub trending repos")
     print(result.final_answer)
 """
@@ -88,7 +88,7 @@ class Agent:
     Orchestrates: TaskPlanner → ReasoningLoop → MemoryManager
 
     Args:
-        llm:            LLM provider instance (AnthropicLLM, OpenAILLM, OllamaLLM)
+        llm:            LLM provider instance (GroqLLM, GoogleLLM, OllamaLLM)
         tool_registry:  Registry of all available tools
         memory:         Optional MemoryManager; created automatically if omitted
         max_steps:      Hard cap on reasoning iterations (default 30)

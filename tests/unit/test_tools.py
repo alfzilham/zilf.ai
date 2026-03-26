@@ -184,10 +184,10 @@ class TestToolRegistry:
                     "delete_file", "run_command", "web_search", "run_code"}
         assert expected.issubset(set(reg.list_names()))
 
-    def test_schema_export_anthropic(self) -> None:
+    def test_schema_export_simple(self) -> None:
         from agent.tools.registry import ToolRegistry
         reg = ToolRegistry.default()
-        schemas = reg.tool_schemas("anthropic")
+        schemas = reg.tool_schemas("simple")
         assert len(schemas) > 0
         for s in schemas:
             assert "name" in s

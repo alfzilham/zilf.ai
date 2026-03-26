@@ -12,8 +12,8 @@ Usage::
 
     # Fallback: try Claude first, fall back to GPT-4o, then local Ollama
     router = LLMRouter(
-        primary=AnthropicLLM(),
-        fallbacks=[OpenAILLM(), OllamaLLM()],
+        primary=GroqLLM(),
+        fallbacks=[GoogleLLM(), OllamaLLM()],
     )
 
     response = await router.generate(messages=[...], tools=[...])
@@ -95,13 +95,6 @@ class LLMRouter(BaseLLM):
             try:
                 from agent.llm.google_provider import GoogleLLM
                 primary = GoogleLLM(model=model or "gemini-1.5-flash")
-            except ImportError:
-                pass
-
-        elif provider_name == "anthropic":
-            try:
-                from agent.llm.anthropic_provider import AnthropicLLM
-                primary = AnthropicLLM(model=model or "claude-3-7-sonnet-20250219")
             except ImportError:
                 pass
 

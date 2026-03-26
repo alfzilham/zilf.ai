@@ -103,7 +103,6 @@ class Settings(BaseSettings):
     tavily_api_key: SecretStr = Field(default=SecretStr(""), alias="TAVILY_API_KEY")
     hf_token: SecretStr = Field(default=SecretStr(""), alias="HF_TOKEN")
     zilf_max_api_key: SecretStr | None = None
-    anthropic_api_key: SecretStr | None = None
     qwen_api_key: SecretStr | None = None
     together_api_key: SecretStr | None = None
 

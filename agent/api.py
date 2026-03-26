@@ -219,9 +219,6 @@ def _build_llm(model: str = "zilf-max", extended: bool = False):
     if "gemini" in model.lower():
         from agent.llm.google_provider import GoogleLLM
         return GoogleLLM(model=model)
-    elif "claude" in model.lower():
-        from agent.llm.anthropic_provider import AnthropicLLM
-        return AnthropicLLM(model=model)
     elif "qwen" in model.lower() or "llama" in model.lower() or "mixtral" in model.lower():
         from agent.llm.together_provider import TogetherLLM
         return TogetherLLM(model=model)
@@ -285,9 +282,6 @@ def _create_agent(model: str, max_steps: int, step_callback: Any = None):
     elif "gemini" in model.lower():
         from agent.llm.google_provider import GoogleLLM
         llm = GoogleLLM(model=model)
-    elif "claude" in model.lower():
-        from agent.llm.anthropic_provider import AnthropicLLM
-        llm = AnthropicLLM(model=model)
     elif "qwen" in model.lower() or "llama" in model.lower() or "mixtral" in model.lower():
         from agent.llm.together_provider import TogetherLLM
         llm = TogetherLLM(model=model)
