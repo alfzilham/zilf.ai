@@ -3770,3 +3770,14 @@ body>* {
 #main {
     padding-right: 40px !important;
 }
+
+/* ══ RESPONSIVE HIDE MINIMAP ══ */
+@media (max-width: 1024px) {
+    #minimapPanel {
+        display: none !important;
+    }
+
+    #main {
+        padding-right: 0 !important;
+    }
+}

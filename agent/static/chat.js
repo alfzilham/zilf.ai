@@ -2834,12 +2834,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Debounced observer
+    // Debounced observer — perbaikan untuk merespon perubahan konten (streaming)
     let mmTimer = null;
     new MutationObserver(function () {
         clearTimeout(mmTimer);
-        mmTimer = setTimeout(buildMinimap, 250);
-    }).observe(chatBox, { childList: true, subtree: false });
+        mmTimer = setTimeout(buildMinimap, 150); // Kecepatan refresh ditingkatkan (250ms -> 150ms)
+    }).observe(chatBox, { childList: true, subtree: true, characterData: true });
 
     content.addEventListener('scroll', updateViewport, { passive: true });
+    
+    // Initial build
+    buildMinimap();
 });
