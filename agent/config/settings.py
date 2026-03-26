@@ -139,6 +139,7 @@ class Settings(BaseSettings):
         mapping = {
             "groq": self.groq_api_key,
             "google": self.google_api_key,
+            "glm": self.glm_api_key,
             "tavily": self.tavily_api_key,
         }
         secret = mapping.get(provider.lower())
@@ -149,7 +150,7 @@ class Settings(BaseSettings):
 
     def active_providers(self) -> list[str]:
         """Return a list of providers that have API keys configured."""
-        candidates = ["groq", "google", "ollama"]
+        candidates = ["groq", "google", "glm", "ollama"]
         return [p for p in candidates if self.has_api_key(p)]
 
     def __repr__(self) -> str:
@@ -201,6 +202,10 @@ def get_settings() -> Settings:
     config_dir = _find_config_dir()
     yaml_data = _load_yaml_config(config_dir)
 
+    # Find root .env file path
+    root_dir = config_dir.parent
+    env_file = root_dir / ".env"
+
     # Extract sub-sections for sub-models
     agent_yaml = yaml_data.get("agent", {})
     sandbox_yaml = yaml_data.get("sandbox", {})
@@ -212,6 +217,7 @@ def get_settings() -> Settings:
     memory_settings = MemorySettings(**memory_yaml)
 
     return Settings(
+        _env_file=str(env_file) if env_file.exists() else ".env",
         agent=agent_settings,
         sandbox=sandbox_settings,
         memory=memory_settings,

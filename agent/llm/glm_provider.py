@@ -12,6 +12,7 @@ import httpx
 from loguru import logger
 
 from agent.llm.base import BaseLLM, LLMResponse
+from agent.config.settings import get_settings
 
 
 class GLMLLM(BaseLLM):
@@ -34,7 +35,9 @@ class GLMLLM(BaseLLM):
             max_tokens=max_tokens,
             temperature=temperature,
         )
-        self.api_key = api_key or os.environ.get("GLM_API_KEY")
+        settings = get_settings()
+        # Fallback sequence: parameter -> os.environ -> settings.py
+        self.api_key = api_key or os.environ.get("GLM_API_KEY") or settings.get_api_key("glm")
         if not self.api_key:
             raise ValueError("GLM_API_KEY environment variable is required")
 
