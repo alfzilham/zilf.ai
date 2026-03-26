@@ -211,17 +211,15 @@ def _build_llm(model: str = "zilf-max", extended: bool = False):
     - Frontend modelSelect default = "zilf-max"
     - _FRONTEND_TO_ZILFMAX["zilf-max"] = ("llama-3.3-70b-versatile", "groq")
     """
-    # Mapping untuk ZILF-PRO (mengarahkan ke Qwen untuk chat biasa)
+    # Mapping untuk ZILF-PRO (mengarahkan ke GLM)
     if model == "zilf-pro":
-        model = "Qwen/Qwen2.5-Coder-32B-Instruct"
+        from agent.llm.glm_provider import GLMLLM
+        return GLMLLM(model="glm-4-plus")
 
     # Routing
     if "gemini" in model.lower():
         from agent.llm.google_provider import GoogleLLM
         return GoogleLLM(model=model)
-    elif "qwen" in model.lower() or "llama" in model.lower() or "mixtral" in model.lower():
-        from agent.llm.together_provider import TogetherLLM
-        return TogetherLLM(model=model)
     elif model == "zilf-max":
         if extended:
             from agent.llm.zilf_max_thinking import ZilfMaxThinkingLLM
@@ -237,16 +235,16 @@ def _build_llm(model: str = "zilf-max", extended: bool = False):
 # ---------------------------------------------------------------------------
 # Zilf Action Engine Integration
 # ---------------------------------------------------------------------------
-def _create_zilf_action_orchestrator(model: str = "Qwen/Qwen2.5-Coder-32B-Instruct", max_steps: int = 30):
-    from agent.llm.together_provider import TogetherLLM
+def _create_zilf_action_orchestrator(model: str = "glm-4-plus", max_steps: int = 30):
+    from agent.llm.glm_provider import GLMLLM
     from agent.core.zilf_action import ZilfActionOrchestrator
     from agent.tools.registry import ToolRegistry
     
-    # 1. Planner & Verifier: Smartest Model (We'll use Qwen via Together for ZILF-PRO)
-    planner_llm = TogetherLLM(model="Qwen/Qwen2.5-Coder-32B-Instruct", temperature=0.0)
+    # 1. Planner & Verifier: Smartest Model (We'll use GLM for ZILF-PRO)
+    planner_llm = GLMLLM(model="glm-4-plus", temperature=0.0)
     
-    # 2. Executor: Coding/Action Model (Qwen2.5-Coder via Together)
-    executor_llm = TogetherLLM(model="Qwen/Qwen2.5-Coder-32B-Instruct", temperature=0.0)
+    # 2. Executor: Coding/Action Model (GLM)
+    executor_llm = GLMLLM(model="glm-4-plus", temperature=0.0)
     
     # 3. Tool Registry
     registry = ToolRegistry.default()
@@ -282,9 +280,6 @@ def _create_agent(model: str, max_steps: int, step_callback: Any = None):
     elif "gemini" in model.lower():
         from agent.llm.google_provider import GoogleLLM
         llm = GoogleLLM(model=model)
-    elif "qwen" in model.lower() or "llama" in model.lower() or "mixtral" in model.lower():
-        from agent.llm.together_provider import TogetherLLM
-        llm = TogetherLLM(model=model)
     else:
         from agent.llm.groq_provider import GroqLLM
         llm = GroqLLM(model=model)

@@ -2,7 +2,6 @@ from agent.llm.base import BaseLLM, LLMResponse
 from agent.llm.ollama_provider import OllamaLLM
 from agent.llm.groq_provider import GroqLLM
 from agent.llm.google_provider import GoogleLLM
-from agent.llm.together_provider import TogetherLLM
 from agent.llm.router import LLMRouter
 
 __all__ = [
@@ -11,6 +10,5 @@ __all__ = [
     "OllamaLLM",
     "GroqLLM",
     "GoogleLLM",
-    "TogetherLLM",
     "LLMRouter",
 ]

@@ -98,13 +98,6 @@ class LLMRouter(BaseLLM):
             except ImportError:
                 pass
 
-        elif provider_name == "together":
-            try:
-                from agent.llm.together_provider import TogetherLLM
-                primary = TogetherLLM(model=model or "Qwen/Qwen2.5-Coder-32B-Instruct")
-            except ImportError:
-                pass
-
         elif provider_name == "ollama":
             primary = OllamaLLM(model=model or "deepseek-coder")
 

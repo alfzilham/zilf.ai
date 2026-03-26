@@ -1,5 +1,5 @@
 """
-Together AI LLM Provider
+GLM (Zhipu AI) LLM Provider
 """
 
 from __future__ import annotations
@@ -14,25 +14,35 @@ from loguru import logger
 from agent.llm.base import BaseLLM, LLMResponse
 
 
-class TogetherLLM(BaseLLM):
+class GLMLLM(BaseLLM):
     """
-    Integration with Together AI (OpenAI-compatible API).
-    Good for Qwen, Llama, Mixtral models.
+    Integration with Zhipu AI's GLM models (OpenAI-compatible API).
     """
 
-    BASE_URL = "https://api.together.xyz/v1/chat/completions"
+    BASE_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+    DEFAULT_MODEL = "glm-4-plus"
 
     def __init__(
         self,
-        model: str = "Qwen/Qwen2.5-Coder-32B-Instruct",
+        model: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.0,
         api_key: str | None = None,
     ) -> None:
-        super().__init__(model, max_tokens, temperature)
-        self.api_key = api_key or os.environ.get("TOGETHER_API_KEY")
+        super().__init__(
+            model=model or self.DEFAULT_MODEL,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        self.api_key = api_key or os.environ.get("GLM_API_KEY")
         if not self.api_key:
-            raise ValueError("TOGETHER_API_KEY environment variable is required")
+            raise ValueError("GLM_API_KEY environment variable is required")
+
+    def _get_headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
 
     async def generate(
         self,
@@ -42,27 +52,14 @@ class TogetherLLM(BaseLLM):
         **kwargs: Any,
     ) -> LLMResponse:
         """
-        Agentic generation with tool call support (via JSON mode prompting).
+        Agentic generation with tool call support.
         """
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-
-        # Build full prompt with system message and tool schemas
-        full_system = system or ""
-        if tools:
-            # We use JSON mode for tools on Together models for better reliability
-            full_system += "\n\nAvailable tools:\n" + json.dumps(tools, indent=2)
-            full_system += "\n\nRespond with a JSON object in one of these two formats:\n"
-            full_system += '{"action": "tool_call", "tool": "<name>", "input": {<args>}, "thought": "<reasoning>"}\n'
-            full_system += '{"action": "final_answer", "answer": "<response>", "thought": "<reasoning>"}\n'
+        headers = self._get_headers()
 
         api_messages = []
-        if full_system:
-            api_messages.append({"role": "system", "content": full_system})
+        if system:
+            api_messages.append({"role": "system", "content": system})
         
-        # Add conversation history
         for msg in messages:
             api_messages.append(msg)
 
@@ -73,50 +70,34 @@ class TogetherLLM(BaseLLM):
             "temperature": self.temperature,
         }
 
-        logger.debug(f"[TogetherLLM] Generating with {self.model}")
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
+
+        logger.debug(f"[GLMLLM] Generating with {self.model}")
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(self.BASE_URL, headers=headers, json=payload)
             response.raise_for_status()
             data = response.json()
 
-        content = data["choices"][0]["message"]["content"] or ""
+        choice = data["choices"][0]
+        message = choice.get("message", {})
         
-        # Parse JSON response if tools were provided
-        if tools:
-            try:
-                # Find JSON block
-                import re
-                match = re.search(r"\{.*\}", content, re.DOTALL)
-                if match:
-                    json_data = json.loads(match.group())
-                    thought = json_data.get("thought", "")
-                    
-                    if json_data.get("action") == "tool_call":
-                        return LLMResponse(
-                            thought=thought,
-                            action_type="tool_call",
-                            tool_calls=[{
-                                "id": f"call_{os.urandom(4).hex()}",
-                                "type": "function",
-                                "function": {
-                                    "name": json_data["tool"],
-                                    "arguments": json.dumps(json_data["input"])
-                                }
-                            }],
-                            raw=data
-                        )
-                    else:
-                        return LLMResponse(
-                            thought=thought,
-                            action_type="final_answer",
-                            final_answer=json_data.get("answer", ""),
-                            raw=data
-                        )
-            except Exception as e:
-                logger.warning(f"[TogetherLLM] Failed to parse JSON response: {e}")
+        content = message.get("content") or ""
+        tool_calls_raw = message.get("tool_calls")
 
-        # Fallback to plain text if not tools or parsing failed
+        # Parse tool calls if present
+        if tool_calls_raw:
+            return LLMResponse(
+                thought="",
+                action_type="tool_call",
+                tool_calls=tool_calls_raw,
+                final_answer=None,
+                raw=data
+            )
+
+        # Fallback to plain text
         return LLMResponse(
             thought="",
             action_type="final_answer",
@@ -132,10 +113,7 @@ class TogetherLLM(BaseLLM):
         **kwargs: Any,
     ) -> str:
         """Simple text generation."""
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = self._get_headers()
 
         api_messages = []
         if system:
@@ -162,10 +140,7 @@ class TogetherLLM(BaseLLM):
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Streaming text generation."""
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = self._get_headers()
 
         api_messages = []
         if system:
