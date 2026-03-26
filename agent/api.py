@@ -408,6 +408,8 @@ async def _team_refine_agent_answer(
     steps: list[Any] | None,
     *,
     lang: str = "id",
+    review_timeout_s: float = 6.0,
+    edit_timeout_s: float = 8.0,
 ) -> str:
     if not draft_answer.strip():
         return draft_answer
@@ -500,9 +502,12 @@ async def _team_refine_agent_answer(
     async def run_review(model_key: str) -> str | None:
         try:
             llm = ZilfMaxChatLLM(model=model_key)
-            return await llm.generate_text(
-                messages=[{"role": "user", "content": review_prompt}],
-                system=reviewer_system,
+            return await asyncio.wait_for(
+                llm.generate_text(
+                    messages=[{"role": "user", "content": review_prompt}],
+                    system=reviewer_system,
+                ),
+                timeout=review_timeout_s,
             )
         except Exception:
             return None
@@ -514,9 +519,12 @@ async def _team_refine_agent_answer(
 
     try:
         llm = ZilfMaxChatLLM(model=editor_model)
-        refined = await llm.generate_text(
-            messages=[{"role": "user", "content": merge_prompt.replace("{REVIEWS}", reviews)}],
-            system=editor_system,
+        refined = await asyncio.wait_for(
+            llm.generate_text(
+                messages=[{"role": "user", "content": merge_prompt.replace("{REVIEWS}", reviews)}],
+                system=editor_system,
+            ),
+            timeout=edit_timeout_s,
         )
         return refined.strip() or draft_answer
     except Exception:
@@ -545,6 +553,8 @@ async def agent_run(req: AgentRunRequest) -> AgentRunResponse:
         response.final_answer or "",
         response._state.steps or [],
         lang="id",
+        review_timeout_s=8.0,
+        edit_timeout_s=10.0,
     )
 
     return AgentRunResponse(
@@ -610,6 +620,8 @@ async def agent_stream(req: AgentRunRequest) -> StreamingResponse:
                         response.final_answer or "",
                         step_store,
                         lang="id",
+                        review_timeout_s=3.0,
+                        edit_timeout_s=4.0,
                     )
                     await queue.put({
                         "type":        "final",
