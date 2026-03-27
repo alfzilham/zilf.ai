@@ -1,4 +1,4 @@
-﻿"""
+"""
 =================================================================
   zilf.ai — AI Observability Dashboard Backend
   Tambahkan ke agent/api.py
@@ -14,6 +14,8 @@ import httpx
 from datetime import datetime, date, timedelta
 from functools import wraps
 from fastapi import Request, HTTPException, Depends
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 # ── ENV VARIABLES (set di Railway dashboard) ──────────────────
 # DATABASE_URL        = postgresql://user:pass@host:5432/dbname
@@ -89,6 +91,7 @@ from fastapi import APIRouter
 dashboard_router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 payout_router    = APIRouter(prefix="/api/payout",    tags=["payout"])
 
+templates = Jinja2Templates(directory="agent/templates")
 
 # -----------------------------------------------------------------
 # GET /api/dashboard/summary
@@ -410,10 +413,13 @@ REGISTER_SNIPPET = '''
 # Tambahkan di agent/api.py (setelah app = FastAPI(...))
 
 from agent.dashboard_routes import dashboard_router, payout_router
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 
 app.include_router(dashboard_router)
 app.include_router(payout_router)
 
+templates = Jinja2Templates(directory="agent/templates")
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):

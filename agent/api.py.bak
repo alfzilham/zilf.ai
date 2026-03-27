@@ -29,9 +29,11 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request
+from agent.dashboard_routes import dashboard_router, payout_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse, Response, RedirectResponse
 from fastapi import UploadFile, File, Form
+from agent.dashboard_routes import dashboard_router, payout_router
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -74,7 +76,6 @@ def _init_feedback_db():
 
 _init_feedback_db()
 
-_ZILF_DB_PATH = os.environ.get("ZILF_DB_PATH", "/app/data/zilf.db")
 
 def _zilf_db_conn():
     import sqlite3
@@ -85,68 +86,6 @@ def _zilf_db_conn():
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
-def _init_observability_db():
-    conn = _zilf_db_conn()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS model_logs (
-            id            INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id       INTEGER NOT NULL,
-            model         TEXT NOT NULL,
-            input_tokens  INTEGER NOT NULL DEFAULT 0,
-            output_tokens INTEGER NOT NULL DEFAULT 0,
-            latency_ms    REAL,
-            cost_usd      REAL NOT NULL DEFAULT 0.0,
-            created_at    TEXT NOT NULL DEFAULT (datetime('now'))
-        )
-    """)
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_model_logs_user_date ON model_logs(user_id, created_at)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_model_logs_created_at ON model_logs(created_at)")
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS model_quality (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id     INTEGER NOT NULL,
-            model       TEXT NOT NULL,
-            accuracy    REAL,
-            drift_score REAL,
-            created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-        )
-    """)
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_model_quality_user_date ON model_quality(user_id, created_at)")
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS security_audit (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id      INTEGER,
-            event_type   TEXT NOT NULL,
-            severity     TEXT NOT NULL,
-            pii_detected INTEGER NOT NULL DEFAULT 0,
-            detail       TEXT,
-            created_at   TEXT NOT NULL DEFAULT (datetime('now'))
-        )
-    """)
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_security_audit_user_date ON security_audit(user_id, created_at)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_security_audit_created_at ON security_audit(created_at)")
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS payout_requests (
-            id               TEXT PRIMARY KEY,
-            provider         TEXT NOT NULL,
-            to_account       TEXT NOT NULL,
-            amount_idr       INTEGER NOT NULL,
-            total_users      INTEGER NOT NULL,
-            status           TEXT NOT NULL DEFAULT 'recorded',
-            provider_ref     TEXT,
-            created_at       TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
-        )
-    """)
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_payout_requests_created_at ON payout_requests(created_at)")
-
-    conn.commit()
-    conn.close()
-
-_init_observability_db()
 
 def _require_dashboard_access(request: Request) -> None:
     token = os.environ.get("DASHBOARD_ACCESS_TOKEN", "").strip()
@@ -182,9 +121,6 @@ class FeedbackMessageIn(BaseModel):
     rating: int | None = None
     category: str | None = None
     thread_id: str | None = None
-
-class GoPayPayoutIn(BaseModel):
-    gopay_phone: str = Field(..., min_length=8, max_length=20)
 
 
 class ChatMessage(BaseModel):
@@ -420,6 +356,10 @@ def _get_current_user(request: Request) -> dict:
 # Health
 # ---------------------------------------------------------------------------
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/health", response_model=HealthResponse, tags=["system"])
 async def health() -> HealthResponse:
     return HealthResponse(
@@ -510,9 +450,17 @@ def _feedback_broadcast(thread_id: str, event: dict):
         except Exception:
             pass
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/feedback", include_in_schema=False)
 async def feedback_page(request: Request):
     return FileResponse(os.path.join(_TEMPLATES_DIR, "feedback.html"), media_type="text/html")
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.get("/admin/feedback", include_in_schema=False)
 async def feedback_admin_page(request: Request):
@@ -522,9 +470,17 @@ async def feedback_admin_page(request: Request):
     except HTTPException:
         return RedirectResponse(url="/admin/feedback/login", status_code=302)
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/admin/feedback/login", include_in_schema=False)
 async def feedback_admin_login_page() -> FileResponse:
     return FileResponse(os.path.join(_TEMPLATES_DIR, "feedback_admin_login.html"), media_type="text/html")
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.post("/api/admin/feedback/login", tags=["feedback"])
 async def feedback_admin_login(request: Request, name: str = Form(...), password: str = Form(...)):
@@ -546,6 +502,10 @@ async def feedback_admin_login(request: Request, name: str = Form(...), password
     resp.set_cookie("fb_admin", tok, httponly=True, samesite="lax", secure=(request.url.scheme == "https"), path="/")
     return resp
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.post("/api/admin/feedback/logout", tags=["feedback"])
 async def feedback_admin_logout(request: Request):
     token = request.cookies.get("fb_admin", "")
@@ -558,6 +518,10 @@ async def feedback_admin_logout(request: Request):
     resp = Response(content=json.dumps({"ok": True}), media_type="application/json")
     resp.delete_cookie("fb_admin", path="/")
     return resp
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.get("/api/admin/feedback/threads", tags=["feedback"])
 async def admin_feedback_threads(request: Request, q: str | None = None):
@@ -573,6 +537,10 @@ async def admin_feedback_threads(request: Request, q: str | None = None):
     conn.close()
     return [{"id":r[0],"email":r[1],"tags":r[2],"resolved":bool(r[3]),"created_at":r[4],"updated_at":r[5]} for r in rows]
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/api/admin/feedback/messages", tags=["feedback"])
 async def admin_feedback_messages(request: Request, thread_id: str):
     _require_admin(request)
@@ -582,6 +550,10 @@ async def admin_feedback_messages(request: Request, thread_id: str):
     rows = c.fetchall()
     conn.close()
     return [{"id":r[0],"sender":r[1],"message":r[2],"rating":r[3],"category":r[4],"created_at":r[5]} for r in rows]
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.post("/api/admin/feedback/messages", tags=["feedback"])
 async def admin_feedback_post_message(request: Request, thread_id: str = Form(...), message: str = Form(...)):
@@ -623,6 +595,10 @@ async def admin_feedback_tags(request: Request, thread_id: str, tags: str):
     conn.close()
     return {"ok": True}
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/api/admin/feedback/stream", tags=["feedback"])
 async def admin_feedback_stream(request: Request, thread_id: str):
     _require_admin(request)
@@ -642,6 +618,10 @@ async def admin_feedback_stream(request: Request, thread_id: str):
                 ...
     return StreamingResponse(es(), media_type="text/event-stream", headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/api/admin/feedback/export.csv", tags=["feedback"])
 async def admin_feedback_export(request: Request):
     _require_admin(request)
@@ -657,6 +637,10 @@ async def admin_feedback_export(request: Request):
     for r in rows:
         w.writerow(r)
     return Response(content=buf.getvalue(), media_type="text/csv")
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.post("/api/feedback/messages", tags=["feedback"])
 async def feedback_post(request: Request, data: FeedbackMessageIn):
@@ -681,6 +665,10 @@ async def feedback_post(request: Request, data: FeedbackMessageIn):
     _feedback_broadcast(tid, {"type":"message","sender":"user","message":data.message,"created_at":now,"rating":data.rating,"category":data.category})
     return {"ok": True, "thread_id": tid, "message_id": mid}
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/api/feedback/threads", tags=["feedback"])
 async def feedback_threads(request: Request, q: str | None = None):
     _get_current_user(request)
@@ -694,6 +682,10 @@ async def feedback_threads(request: Request, q: str | None = None):
     rows = c.fetchall()
     conn.close()
     return [{"id":r[0],"email":r[1],"tags":r[2],"resolved":bool(r[3]),"created_at":r[4],"updated_at":r[5]} for r in rows]
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.get("/api/feedback/messages", tags=["feedback"])
 async def feedback_messages(request: Request, thread_id: str):
@@ -727,6 +719,10 @@ async def feedback_tags(request: Request, thread_id: str, tags: str):
     conn.close()
     return {"ok": True}
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/api/feedback/stream", tags=["feedback"])
 async def feedback_stream(request: Request, thread_id: str, token: str | None = None):
     auth = request.headers.get("Authorization", "")
@@ -754,6 +750,10 @@ async def feedback_stream(request: Request, thread_id: str, token: str | None = 
                 ...
     return StreamingResponse(es(), media_type="text/event-stream", headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/api/feedback/export.csv", tags=["feedback"])
 async def feedback_export(request: Request):
     _get_current_user(request)
@@ -769,6 +769,10 @@ async def feedback_export(request: Request):
     for r in rows:
         w.writerow(r)
     return Response(content=buf.getvalue(), media_type="text/csv")
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.post("/api/feedback/upload", tags=["feedback"])
 async def feedback_upload(request: Request, thread_id: str = Form(...), files: list[UploadFile] = File(...)):
@@ -790,10 +794,18 @@ async def feedback_upload(request: Request, thread_id: str = Form(...), files: l
 # Chat UI
 # ---------------------------------------------------------------------------
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/dashboard", tags=["dashboard"], include_in_schema=False)
 async def dashboard_ui() -> FileResponse:
     html_path = os.path.join(_TEMPLATES_DIR, "dashboard.html")
     return FileResponse(html_path, media_type="text/html")
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.get("/api/dashboard/meta", tags=["dashboard"])
 async def dashboard_meta(request: Request) -> dict:
@@ -802,7 +814,7 @@ async def dashboard_meta(request: Request) -> dict:
         _require_dashboard_access(request)
     return {"token_required": token_required}
 
-@app.get("/api/dashboard/summary", tags=["dashboard"])
+
 async def dashboard_summary(request: Request) -> dict:
     _require_dashboard_access(request)
     conn = _zilf_db_conn()
@@ -829,7 +841,7 @@ async def dashboard_summary(request: Request) -> dict:
     finally:
         conn.close()
 
-@app.get("/api/dashboard/users", tags=["dashboard"])
+
 async def dashboard_users(request: Request, limit: int = 200) -> dict:
     _require_dashboard_access(request)
     limit = max(1, min(int(limit), 1000))
@@ -844,7 +856,7 @@ async def dashboard_users(request: Request, limit: int = 200) -> dict:
     finally:
         conn.close()
 
-@app.get("/api/dashboard/latency_timeseries", tags=["dashboard"])
+
 async def dashboard_latency_timeseries(request: Request, days: int = 14) -> dict:
     _require_dashboard_access(request)
     days = max(1, min(int(days), 90))
@@ -866,7 +878,7 @@ async def dashboard_latency_timeseries(request: Request, days: int = 14) -> dict
     finally:
         conn.close()
 
-@app.get("/api/dashboard/security_summary", tags=["dashboard"])
+
 async def dashboard_security_summary(request: Request) -> dict:
     _require_dashboard_access(request)
     conn = _zilf_db_conn()
@@ -886,7 +898,7 @@ async def dashboard_security_summary(request: Request) -> dict:
     finally:
         conn.close()
 
-@app.post("/api/payout/gopay/request", tags=["payout"])
+
 async def payout_gopay_request(request: Request, body: GoPayPayoutIn) -> dict:
     _require_dashboard_access(request)
     gopay_phone = body.gopay_phone.strip()
@@ -917,10 +929,18 @@ async def payout_gopay_request(request: Request, body: GoPayPayoutIn) -> dict:
     finally:
         conn.close()
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/chat-ui", tags=["chat"], include_in_schema=False)
 async def chat_ui() -> FileResponse:
     html_path = os.path.join(_TEMPLATES_DIR, "chat.html")
     return FileResponse(html_path, media_type="text/html")
+
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
 
 
 @app.get("/login", include_in_schema=False)
@@ -928,13 +948,25 @@ async def login_page() -> FileResponse:
     return FileResponse(os.path.join(_TEMPLATES_DIR, "login.html"), media_type="text/html")
 
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/register", include_in_schema=False)
 async def register_page() -> FileResponse:
     return FileResponse(os.path.join(_TEMPLATES_DIR, "register.html"), media_type="text/html")
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/onboarding/topics", include_in_schema=False)
 async def onboarding_topics_page() -> FileResponse:
     return FileResponse(os.path.join(_TEMPLATES_DIR, "onboarding_topics.html"), media_type="text/html")
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.get("/onboarding/suggestions", include_in_schema=False)
 async def onboarding_suggestions_page() -> FileResponse:
@@ -944,6 +976,10 @@ async def onboarding_suggestions_page() -> FileResponse:
 # ---------------------------------------------------------------------------
 # /chat — multitask dengan Extended Thinking
 # ---------------------------------------------------------------------------
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.post("/chat", response_model=ChatResponse, tags=["chat"])
 async def chat(req: ChatRequest) -> ChatResponse:
@@ -1003,6 +1039,10 @@ async def chat(req: ChatRequest) -> ChatResponse:
 # ══════════════════════════════════════════════════════════════
 # /chat/stream juga perlu A2 FIX yang sama
 # ══════════════════════════════════════════════════════════════
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.post("/chat/stream", tags=["chat"])
 async def chat_stream(req: ChatRequest) -> StreamingResponse:
@@ -1167,6 +1207,10 @@ async def _team_refine_agent_answer(
         return draft_answer
 
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.post("/agent/run", response_model=AgentRunResponse, tags=["agent"])
 async def agent_run(req: AgentRunRequest) -> AgentRunResponse:
     """
@@ -1239,6 +1283,10 @@ async def agent_run(req: AgentRunRequest) -> AgentRunResponse:
 # ---------------------------------------------------------------------------
 # /agent/stream — agentic SSE
 # ---------------------------------------------------------------------------
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
 
 @app.post("/agent/stream", tags=["agent"])
 async def agent_stream(req: AgentRunRequest) -> StreamingResponse:
@@ -1332,6 +1380,10 @@ def _build_legacy_agent(request: RunRequest) -> Any:
                  use_planner=True, verbose=False)
 
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.post("/run", response_model=RunResponse, tags=["agent-legacy"])
 async def run_task(request: RunRequest) -> RunResponse:
     agent    = _build_legacy_agent(request)
@@ -1352,6 +1404,10 @@ async def run_task(request: RunRequest) -> RunResponse:
     )
 
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.post("/run/stream", tags=["agent-legacy"])
 async def run_task_stream(request: RunRequest) -> StreamingResponse:
     async def event_stream() -> AsyncIterator[str]:
@@ -1363,11 +1419,19 @@ async def run_task_stream(request: RunRequest) -> StreamingResponse:
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+app.include_router(dashboard_router)
+app.include_router(payout_router)
+
+
 @app.get("/status/{run_id}", tags=["agent-legacy"])
 async def get_status(run_id: str) -> dict[str, Any]:
     if run_id not in _tasks:
         raise HTTPException(status_code=404, detail=f"Run ID '{run_id}' not found.")
     return _tasks[run_id]
+
+
+app.include_router(dashboard_router)
+app.include_router(payout_router)
 
 
 @app.get("/cli", include_in_schema=False)

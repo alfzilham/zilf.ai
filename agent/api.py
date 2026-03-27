@@ -33,7 +33,6 @@ from agent.dashboard_routes import dashboard_router, payout_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse, Response, RedirectResponse
 from fastapi import UploadFile, File, Form
-from agent.dashboard_routes import dashboard_router, payout_router
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -450,16 +449,12 @@ def _feedback_broadcast(thread_id: str, event: dict):
         except Exception:
             pass
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/feedback", include_in_schema=False)
 async def feedback_page(request: Request):
     return FileResponse(os.path.join(_TEMPLATES_DIR, "feedback.html"), media_type="text/html")
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/admin/feedback", include_in_schema=False)
@@ -470,16 +465,12 @@ async def feedback_admin_page(request: Request):
     except HTTPException:
         return RedirectResponse(url="/admin/feedback/login", status_code=302)
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/admin/feedback/login", include_in_schema=False)
 async def feedback_admin_login_page() -> FileResponse:
     return FileResponse(os.path.join(_TEMPLATES_DIR, "feedback_admin_login.html"), media_type="text/html")
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/api/admin/feedback/login", tags=["feedback"])
@@ -502,8 +493,6 @@ async def feedback_admin_login(request: Request, name: str = Form(...), password
     resp.set_cookie("fb_admin", tok, httponly=True, samesite="lax", secure=(request.url.scheme == "https"), path="/")
     return resp
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/api/admin/feedback/logout", tags=["feedback"])
@@ -519,8 +508,6 @@ async def feedback_admin_logout(request: Request):
     resp.delete_cookie("fb_admin", path="/")
     return resp
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/admin/feedback/threads", tags=["feedback"])
@@ -537,8 +524,6 @@ async def admin_feedback_threads(request: Request, q: str | None = None):
     conn.close()
     return [{"id":r[0],"email":r[1],"tags":r[2],"resolved":bool(r[3]),"created_at":r[4],"updated_at":r[5]} for r in rows]
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/admin/feedback/messages", tags=["feedback"])
@@ -551,8 +536,6 @@ async def admin_feedback_messages(request: Request, thread_id: str):
     conn.close()
     return [{"id":r[0],"sender":r[1],"message":r[2],"rating":r[3],"category":r[4],"created_at":r[5]} for r in rows]
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/api/admin/feedback/messages", tags=["feedback"])
@@ -595,8 +578,6 @@ async def admin_feedback_tags(request: Request, thread_id: str, tags: str):
     conn.close()
     return {"ok": True}
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/admin/feedback/stream", tags=["feedback"])
@@ -618,8 +599,6 @@ async def admin_feedback_stream(request: Request, thread_id: str):
                 ...
     return StreamingResponse(es(), media_type="text/event-stream", headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/admin/feedback/export.csv", tags=["feedback"])
@@ -638,8 +617,6 @@ async def admin_feedback_export(request: Request):
         w.writerow(r)
     return Response(content=buf.getvalue(), media_type="text/csv")
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/api/feedback/messages", tags=["feedback"])
@@ -665,8 +642,6 @@ async def feedback_post(request: Request, data: FeedbackMessageIn):
     _feedback_broadcast(tid, {"type":"message","sender":"user","message":data.message,"created_at":now,"rating":data.rating,"category":data.category})
     return {"ok": True, "thread_id": tid, "message_id": mid}
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/feedback/threads", tags=["feedback"])
@@ -683,8 +658,6 @@ async def feedback_threads(request: Request, q: str | None = None):
     conn.close()
     return [{"id":r[0],"email":r[1],"tags":r[2],"resolved":bool(r[3]),"created_at":r[4],"updated_at":r[5]} for r in rows]
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/feedback/messages", tags=["feedback"])
@@ -719,8 +692,6 @@ async def feedback_tags(request: Request, thread_id: str, tags: str):
     conn.close()
     return {"ok": True}
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/feedback/stream", tags=["feedback"])
@@ -750,8 +721,6 @@ async def feedback_stream(request: Request, thread_id: str, token: str | None = 
                 ...
     return StreamingResponse(es(), media_type="text/event-stream", headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/feedback/export.csv", tags=["feedback"])
@@ -770,8 +739,6 @@ async def feedback_export(request: Request):
         w.writerow(r)
     return Response(content=buf.getvalue(), media_type="text/csv")
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/api/feedback/upload", tags=["feedback"])
@@ -794,8 +761,6 @@ async def feedback_upload(request: Request, thread_id: str = Form(...), files: l
 # Chat UI
 # ---------------------------------------------------------------------------
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/dashboard", tags=["dashboard"], include_in_schema=False)
@@ -803,8 +768,6 @@ async def dashboard_ui() -> FileResponse:
     html_path = os.path.join(_TEMPLATES_DIR, "dashboard.html")
     return FileResponse(html_path, media_type="text/html")
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/api/dashboard/meta", tags=["dashboard"])
@@ -929,8 +892,6 @@ async def payout_gopay_request(request: Request, body: GoPayPayoutIn) -> dict:
     finally:
         conn.close()
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/chat-ui", tags=["chat"], include_in_schema=False)
@@ -939,8 +900,6 @@ async def chat_ui() -> FileResponse:
     return FileResponse(html_path, media_type="text/html")
 
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/login", include_in_schema=False)
@@ -948,24 +907,18 @@ async def login_page() -> FileResponse:
     return FileResponse(os.path.join(_TEMPLATES_DIR, "login.html"), media_type="text/html")
 
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/register", include_in_schema=False)
 async def register_page() -> FileResponse:
     return FileResponse(os.path.join(_TEMPLATES_DIR, "register.html"), media_type="text/html")
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/onboarding/topics", include_in_schema=False)
 async def onboarding_topics_page() -> FileResponse:
     return FileResponse(os.path.join(_TEMPLATES_DIR, "onboarding_topics.html"), media_type="text/html")
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/onboarding/suggestions", include_in_schema=False)
@@ -977,8 +930,6 @@ async def onboarding_suggestions_page() -> FileResponse:
 # /chat — multitask dengan Extended Thinking
 # ---------------------------------------------------------------------------
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/chat", response_model=ChatResponse, tags=["chat"])
@@ -1040,8 +991,6 @@ async def chat(req: ChatRequest) -> ChatResponse:
 # /chat/stream juga perlu A2 FIX yang sama
 # ══════════════════════════════════════════════════════════════
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/chat/stream", tags=["chat"])
@@ -1207,8 +1156,6 @@ async def _team_refine_agent_answer(
         return draft_answer
 
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/agent/run", response_model=AgentRunResponse, tags=["agent"])
@@ -1284,8 +1231,6 @@ async def agent_run(req: AgentRunRequest) -> AgentRunResponse:
 # /agent/stream — agentic SSE
 # ---------------------------------------------------------------------------
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/agent/stream", tags=["agent"])
@@ -1380,8 +1325,6 @@ def _build_legacy_agent(request: RunRequest) -> Any:
                  use_planner=True, verbose=False)
 
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/run", response_model=RunResponse, tags=["agent-legacy"])
@@ -1404,8 +1347,6 @@ async def run_task(request: RunRequest) -> RunResponse:
     )
 
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.post("/run/stream", tags=["agent-legacy"])
@@ -1419,8 +1360,6 @@ async def run_task_stream(request: RunRequest) -> StreamingResponse:
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/status/{run_id}", tags=["agent-legacy"])
@@ -1430,8 +1369,6 @@ async def get_status(run_id: str) -> dict[str, Any]:
     return _tasks[run_id]
 
 
-app.include_router(dashboard_router)
-app.include_router(payout_router)
 
 
 @app.get("/cli", include_in_schema=False)
